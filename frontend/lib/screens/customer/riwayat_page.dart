@@ -355,15 +355,42 @@ class _RiwayatPageState extends State<RiwayatPage> with WidgetsBindingObserver {
             ),
             SizedBox(height: 16),
 
-            // Route
+            // Route (show origin, clear arrow icon, destination)
             if (route.isNotEmpty) ...[
-              Text(
-                route,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF0F4AA3),
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      origin,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF0F4AA3),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: Icon(
+                      Icons.arrow_forward,
+                      color: Color(0xFF0F4AA3),
+                      size: 18,
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      destination,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF0F4AA3),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               SizedBox(height: 12),
             ],
