@@ -1,0 +1,1 @@
+ /home/naufal/project/nebeng-fullstack/frontend/.dart_tool/flutter_build/2ef20d181488ca1abeed0e4a4b354d31/native_assets.yaml: 

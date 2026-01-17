@@ -1,0 +1,4 @@
+#Sat Jan 17 13:18:27 WIB 2026
+base.0=/home/naufal/project/nebeng-fullstack/frontend/build/app/intermediates/dex/debug/mergeDexDebug/classes.dex
+renamed.0=classes.dex
+path.0=classes.dex

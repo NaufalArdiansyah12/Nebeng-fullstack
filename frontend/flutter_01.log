@@ -1,0 +1,101 @@
+Flutter crash report.
+Please report a bug at https://github.com/flutter/flutter/issues.
+
+## command
+
+flutter run -d chrome
+
+## exception
+
+RPCError: ext.flutter.debugDumpFocusTree: (-32603) Unexpected DWDS error for callServiceExtension: Unexpected error from chrome devtools:
+text: Uncaught (in promise)
+exception:
+  preview: null
+  description: null
+  type: string
+  value: Unexpected null value.
+attempted JS eval: `require("dart_sdk").developer.invokeExtension(
+    "ext.flutter.debugDumpFocusTree", JSON.stringify({}));
+`
+
+
+```
+#0      new _OutstandingRequest (package:vm_service/src/vm_service.dart:265:34)
+#1      VmService._call.<anonymous closure> (package:vm_service/src/vm_service.dart:1771:25)
+#2      VmService._call (package:vm_service/src/vm_service.dart:1783:8)
+#3      VmService.callServiceExtension (package:vm_service/src/vm_service.dart:1733:14)
+#4      FlutterVmService._checkedCallServiceExtension (package:flutter_tools/src/vmservice.dart:868:28)
+#5      FlutterVmService.invokeFlutterExtensionRpcRaw (package:flutter_tools/src/vmservice.dart:887:49)
+#6      FlutterVmService.flutterDebugDumpFocusTree (package:flutter_tools/src/vmservice.dart:645:50)
+#7      ResidentHandlers.debugDumpFocusTree (package:flutter_tools/src/resident_runner.dart:777:53)
+<asynchronous suspension>
+#8      TerminalHandler.processTerminalInput (package:flutter_tools/src/resident_runner.dart:1837:7)
+<asynchronous suspension>
+```
+
+## flutter doctor
+
+```
+[32m[✓][39m Flutter (Channel stable, 3.19.6, on Linux Mint 22.2 6.14.0-37-generic,
+    locale en_US.UTF-8)
+    [32m•[39m Flutter version 3.19.6 on channel stable at /home/naufal/flutter
+    [32m•[39m Upstream repository https://github.com/flutter/flutter.git
+    [32m•[39m Framework revision 54e66469a9 (1 year, 9 months ago), 2024-04-17
+      13:08:03 -0700
+    [32m•[39m Engine revision c4cd48e186
+    [32m•[39m Dart version 3.3.4
+    [32m•[39m DevTools version 2.31.1
+
+[32m[✓][39m Android toolchain - develop for Android devices (Android SDK version
+    36.1.0)
+    [32m•[39m Android SDK at /home/naufal/Android/Sdk
+    [32m•[39m Platform android-36, build-tools 36.1.0
+    [32m•[39m ANDROID_HOME = /home/naufal/Android/Sdk
+    [32m•[39m Java binary at: /usr/lib/jvm/java-17-openjdk-amd64/bin/java
+    [32m•[39m Java version OpenJDK Runtime Environment (build
+      17.0.17+10-Ubuntu-124.04)
+    [32m•[39m All Android licenses accepted.
+
+[32m[✓][39m Chrome - develop for the web
+    [32m•[39m Chrome at google-chrome
+
+[31m[✗][39m Linux toolchain - develop for Linux desktop
+    [31m✗[39m clang++ is required for Linux development.
+      It is likely available from your distribution (e.g.: apt install
+      clang), or can be downloaded from https://releases.llvm.org/
+    [32m•[39m cmake version 3.28.3
+    [31m✗[39m ninja is required for Linux development.
+      It is likely available from your distribution (e.g.: apt install
+      ninja-build), or can be downloaded from
+      https://github.com/ninja-build/ninja/releases
+    [32m•[39m pkg-config version 1.8.1
+    [31m✗[39m GTK 3.0 development libraries are required for Linux development.
+      They are likely available from your distribution (e.g.: apt install
+      libgtk-3-dev)
+
+[32m[✓][39m Android Studio (version 2025.2.2)
+    [32m•[39m Android Studio at /opt/android-studio
+    [32m•[39m Flutter plugin can be installed from:
+      🔨 https://plugins.jetbrains.com/plugin/9212-flutter
+    [32m•[39m Dart plugin can be installed from:
+      🔨 https://plugins.jetbrains.com/plugin/6351-dart
+    [32m•[39m Java version OpenJDK Runtime Environment (build
+      21.0.8+-14196175-b1038.72)
+
+[32m[✓][39m VS Code (version 1.107.1)
+    [32m•[39m VS Code at /usr/share/code
+    [32m•[39m Flutter extension version 3.126.0
+
+[32m[✓][39m Connected device (3 available)
+    [32m•[39m sdk gphone64 x86 64 (mobile) • emulator-5554 • android-x64    •
+      Android 16 (API 36) (emulator)
+    [32m•[39m Linux (desktop)              • linux         • linux-x64      • Linux
+      Mint 22.2 6.14.0-37-generic
+    [32m•[39m Chrome (web)                 • chrome        • web-javascript • Google
+      Chrome 143.0.7499.169
+
+[32m[✓][39m Network resources
+    [32m•[39m All expected network resources are available.
+
+[33m![39m Doctor found issues in 1 category.
+```

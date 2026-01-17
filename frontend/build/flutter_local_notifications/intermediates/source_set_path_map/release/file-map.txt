@@ -1,0 +1,13 @@
+com.dexterous.flutterlocalnotifications.flutter_local_notifications-jetified-window-1.0.0-beta04-0 /home/naufal/.gradle/caches/transforms-3/032f4dff274e516110d9363a9793a3e3/transformed/jetified-window-1.0.0-beta04/res
+com.dexterous.flutterlocalnotifications.flutter_local_notifications-jetified-window-java-1.0.0-beta04-1 /home/naufal/.gradle/caches/transforms-3/142c24f2530665bb6deb4123ab140714/transformed/jetified-window-java-1.0.0-beta04/res
+com.dexterous.flutterlocalnotifications.flutter_local_notifications-core-1.6.0-2 /home/naufal/.gradle/caches/transforms-3/2579a7de00054bf46a8dbc332552f622/transformed/core-1.6.0/res
+com.dexterous.flutterlocalnotifications.flutter_local_notifications-media-1.1.0-3 /home/naufal/.gradle/caches/transforms-3/30f019b4abc95840d13619d9b235449b/transformed/media-1.1.0/res
+com.dexterous.flutterlocalnotifications.flutter_local_notifications-jetified-annotation-experimental-1.1.0-4 /home/naufal/.gradle/caches/transforms-3/3f96ca76068ab400b494bc7d541ee256/transformed/jetified-annotation-experimental-1.1.0/res
+com.dexterous.flutterlocalnotifications.flutter_local_notifications-main-5 /home/naufal/.pub-cache/hosted/pub.dev/flutter_local_notifications-13.0.0/android/src/main/res
+com.dexterous.flutterlocalnotifications.flutter_local_notifications-release-6 /home/naufal/.pub-cache/hosted/pub.dev/flutter_local_notifications-13.0.0/android/src/release/res
+com.dexterous.flutterlocalnotifications.flutter_local_notifications-pngs-7 /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/generated/res/pngs/release
+com.dexterous.flutterlocalnotifications.flutter_local_notifications-resValues-8 /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/generated/res/resValues/release
+com.dexterous.flutterlocalnotifications.flutter_local_notifications-rs-9 /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/generated/res/rs/release
+com.dexterous.flutterlocalnotifications.flutter_local_notifications-mergeReleaseResources-10 /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/incremental/release/mergeReleaseResources/merged.dir
+com.dexterous.flutterlocalnotifications.flutter_local_notifications-mergeReleaseResources-11 /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/incremental/release/mergeReleaseResources/stripped.dir
+com.dexterous.flutterlocalnotifications.flutter_local_notifications-merged_res-12 /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_res/release

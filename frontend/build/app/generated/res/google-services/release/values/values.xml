@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gcm_defaultSenderId" translatable="false">182582993392</string>
+    <string name="google_api_key" translatable="false">AIzaSyCVwNs0NPTD2Ks91Hu5T7X88ikSFWYTu1Y</string>
+    <string name="google_app_id" translatable="false">1:182582993392:android:64da5961385366b6ba3d35</string>
+    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyCVwNs0NPTD2Ks91Hu5T7X88ikSFWYTu1Y</string>
+    <string name="google_storage_bucket" translatable="false">nebeng1.firebasestorage.app</string>
+    <string name="project_id" translatable="false">nebeng1</string>
+</resources>

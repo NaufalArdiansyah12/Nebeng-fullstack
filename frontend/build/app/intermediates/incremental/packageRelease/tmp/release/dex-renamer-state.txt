@@ -1,0 +1,4 @@
+#Tue Jan 13 15:53:30 WIB 2026
+base.0=/home/naufal/project/nebeng-fullstack/frontend/build/app/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+renamed.0=classes.dex
+path.0=classes.dex

@@ -1,0 +1,37 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('penumpang_booking_mobil', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('booking_mobil_id');
+            $table->string('nama');
+            $table->string('nik')->nullable();
+            $table->string('no_telepon')->nullable();
+            $table->enum('jenis_kelamin', ['Laki-laki', 'Perempuan'])->nullable();
+            $table->timestamps();
+
+            $table->foreign('booking_mobil_id')
+                  ->references('id')
+                  ->on('booking_mobil')
+                  ->onDelete('cascade');
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('penumpang_booking_mobil');
+    }
+};
