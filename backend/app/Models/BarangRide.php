@@ -20,6 +20,7 @@ class BarangRide extends Model
         'price',
         'available_seats',
         'bagasi_capacity',
+        'jumlah_bagasi',
         'kendaraan_mitra_id',
         'extra',
         'status',
@@ -29,6 +30,10 @@ class BarangRide extends Model
         'departure_date' => 'date',
         'price' => 'decimal:2',
         'extra' => 'array',
+    ];
+
+    protected $attributes = [
+        'jumlah_bagasi' => 0,
     ];
 
     public function user(): BelongsTo

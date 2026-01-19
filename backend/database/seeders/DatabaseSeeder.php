@@ -29,5 +29,9 @@ class DatabaseSeeder extends Seeder
         $this->call(\Database\Seeders\CarRideSeeder::class);
         $this->call(\Database\Seeders\BarangRideSeeder::class);
         $this->call(\Database\Seeders\TebenganTitipBarangSeeder::class);
+        
+        // Rewards
+        $this->call(\Database\Seeders\RewardSeeder::class);
+        $this->call(\Database\Seeders\RewardRedemptionSeeder::class);
     }
 }

@@ -699,15 +699,21 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage> {
                 ),
               ),
               SizedBox(height: 20),
-              
+
               // Add bottom padding when button is shown in bottomNavigationBar
-              if (bookingType == 'mobil' || bookingType == 'motor')
+              if (bookingType == 'mobil' ||
+                  bookingType == 'motor' ||
+                  bookingType == 'barang' ||
+                  bookingType == 'titip')
                 SizedBox(height: 80),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: (bookingType == 'mobil' || bookingType == 'motor')
+      bottomNavigationBar: (bookingType == 'mobil' ||
+              bookingType == 'motor' ||
+              bookingType == 'barang' ||
+              bookingType == 'titip')
           ? SafeArea(
               child: Container(
                 padding: const EdgeInsets.all(16.0),

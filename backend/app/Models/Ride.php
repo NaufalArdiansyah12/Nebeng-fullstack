@@ -20,6 +20,7 @@ class Ride extends Model
         'service_type',
         'price',
         'bagasi_capacity',
+        'jumlah_bagasi',
         'available_seats',
         'kendaraan_mitra_id',
         'status',
@@ -28,6 +29,10 @@ class Ride extends Model
     protected $casts = [
         'departure_date' => 'date',
         'price' => 'decimal:2',
+    ];
+
+    protected $attributes = [
+        'jumlah_bagasi' => 0,
     ];
 
     public function user(): BelongsTo

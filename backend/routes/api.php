@@ -108,6 +108,19 @@ Route::prefix('api/v1')->group(function () {
     Route::delete('/tebengan-titip-barang/{id}', [TebenganTitipBarangController::class, 'destroy']);
     Route::get('/tebengan-titip-barang/my/list', [TebenganTitipBarangController::class, 'myTebengan']);
 
+    // Rewards (points / merchandise)
+    Route::get('/rewards', [\App\Http\Controllers\Api\RewardController::class, 'index']);
+    Route::post('/rewards/{id}/redeem', [\App\Http\Controllers\Api\RewardController::class, 'redeem']);
+    Route::get('/rewards/my', [\App\Http\Controllers\Api\RewardController::class, 'myRedemptions']);
+
+    // Customer Verification (requires auth via bearer token)
+    Route::get('/customer/verification/status', [\App\Http\Controllers\Api\VerifikasiCustomerController::class, 'getStatus']);
+    Route::get('/customer/verification', [\App\Http\Controllers\Api\VerifikasiCustomerController::class, 'getVerification']);
+    Route::post('/customer/verification/upload-face', [\App\Http\Controllers\Api\VerifikasiCustomerController::class, 'uploadFacePhoto']);
+    Route::post('/customer/verification/upload-ktp', [\App\Http\Controllers\Api\VerifikasiCustomerController::class, 'uploadKtpPhoto']);
+    Route::post('/customer/verification/upload-face-ktp', [\App\Http\Controllers\Api\VerifikasiCustomerController::class, 'uploadFaceKtpPhoto']);
+    Route::post('/customer/verification/submit', [\App\Http\Controllers\Api\VerifikasiCustomerController::class, 'submitVerification']);
+
     // Admin routes for managing locations (requires auth:sanctum)
     Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
         Route::post('/locations', [LocationController::class, 'store']);

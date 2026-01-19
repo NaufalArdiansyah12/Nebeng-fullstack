@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
+
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../services/api_service.dart';
 import '../../../widgets/custom_calendar_widget.dart';
+import '../barang_umum/pages/penerima_picker_page.dart';
 import 'ubah_jadwal_list_page.dart';
 
 class UbahJadwalPage extends StatefulWidget {
@@ -16,6 +20,81 @@ class UbahJadwalPage extends StatefulWidget {
 class _UbahJadwalPageState extends State<UbahJadwalPage> {
   DateTime? selectedDate;
   bool isLoading = false;
+  // Barang-specific fields
+  final TextEditingController _barangDescriptionController =
+      TextEditingController();
+  String? _selectedBarangSize;
+  String? _barangImagePath;
+  final List<String> _barangSizes = [
+    'Kecil',
+    'Sedang',
+    'Besar',
+  ];
+  final Map<String, String> _barangSizeDescriptions = {
+    'Kecil': 'Maksimal 5 Kg',
+    'Sedang': 'Maksimal 10 Kg',
+    'Besar': 'Maksimal 20 Kg',
+  };
+
+  final ImagePicker _picker = ImagePicker();
+  // Penerima (recipient) fields for titip/barang
+  String? _dataPenerima;
+  String? _penerimaPhone;
+  final TextEditingController _penerimaController = TextEditingController();
+
+  Future<void> _pickImage() async {
+    try {
+      final XFile? picked = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1280,
+        maxHeight: 1280,
+        imageQuality: 80,
+      );
+      if (picked != null) {
+        setState(() {
+          _barangImagePath = picked.path;
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal memilih gambar: $e')),
+      );
+    }
+  }
+
+  void _showPenerimaPicker() async {
+    final result = await showModalBottomSheet<Map<String, String>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.75,
+        minChildSize: 0.5,
+        maxChildSize: 0.9,
+        builder: (context, scrollController) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
+          child: PenerimaPickerPage(
+            currentPenerima: _dataPenerima,
+            scrollController: scrollController,
+          ),
+        ),
+      ),
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        _dataPenerima = result['name'];
+        _penerimaPhone = result['phone'];
+        _penerimaController.text = result['name'] ?? '';
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -83,14 +162,35 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
   }
 
   String _getDayName(int weekday) {
-    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const days = [
+      'Minggu',
+      'Senin',
+      'Selasa',
+      'Rabu',
+      'Kamis',
+      'Jumat',
+      'Sabtu'
+    ];
     if (weekday < 1 || weekday > 7) return '';
     return days[weekday % 7];
   }
 
   String _getMonthName(int month) {
-    const months = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
-                    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    const months = [
+      '',
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember'
+    ];
     if (month < 1 || month > 12) return '';
     return months[month];
   }
@@ -102,7 +202,8 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          padding:
+              EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
           child: Wrap(
             children: [
               CustomCalendarWidget(
@@ -131,6 +232,25 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
       return;
     }
 
+    // If booking is barang or titip, validate barang fields
+    final bookingType =
+        (widget.booking['booking_type'] ?? '').toString().toLowerCase();
+    if (bookingType == 'barang' || bookingType == 'titip') {
+      if ((_selectedBarangSize ?? '').isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Pilih ukuran barang terlebih dahulu')),
+        );
+        return;
+      }
+      if ((_barangDescriptionController.text ?? '').isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Isi keterangan barang terlebih dahulu')),
+        );
+        return;
+      }
+    }
+
     setState(() {
       isLoading = true;
     });
@@ -147,12 +267,13 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
       }
 
       final bookingId = widget.booking['id'];
-      final bookingType = (widget.booking['booking_type'] ?? 'mobil').toString();
+      final bookingType =
+          (widget.booking['booking_type'] ?? 'mobil').toString();
 
       final available = await ApiService.fetchAvailableRides(
-          bookingId, 
-          bookingType,
-          date: '${selectedDate!.year}-${selectedDate!.month.toString().padLeft(2, '0')}-${selectedDate!.day.toString().padLeft(2, '0')}');
+          bookingId, bookingType,
+          date:
+              '${selectedDate!.year}-${selectedDate!.month.toString().padLeft(2, '0')}-${selectedDate!.day.toString().padLeft(2, '0')}');
 
       setState(() {
         isLoading = false;
@@ -165,6 +286,7 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
             booking: widget.booking,
             availableRides: available,
             selectedDate: selectedDate!,
+            barangImagePath: _barangImagePath,
           ),
         ),
       );
@@ -181,21 +303,27 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
   @override
   Widget build(BuildContext context) {
     final ride = widget.booking['ride'] ?? {};
-    final bookingType = (widget.booking['booking_type'] ?? '').toString().toLowerCase();
+    final bookingType =
+        (widget.booking['booking_type'] ?? '').toString().toLowerCase();
 
     String origin = '';
     String destination = '';
-    String departureTime = _formatRideTime(
-        ride['departure_time'] ?? ride['departure_datetime'] ?? ride['departure_date']);
-    String arrivalTime = _formatRideTime(
-        ride['arrival_time'] ?? ride['arrival_datetime'] ?? ride['arrival_date']);
-    String departureDate = _formatRideDate(ride['departure_date'] ?? ride['departure_datetime']);
-    String arrivalDate = _formatRideDate(ride['arrival_date'] ?? ride['arrival_datetime']);
+    String departureTime = _formatRideTime(ride['departure_time'] ??
+        ride['departure_datetime'] ??
+        ride['departure_date']);
+    String arrivalTime = _formatRideTime(ride['arrival_time'] ??
+        ride['arrival_datetime'] ??
+        ride['arrival_date']);
+    String departureDate =
+        _formatRideDate(ride['departure_date'] ?? ride['departure_datetime']);
+    String arrivalDate =
+        _formatRideDate(ride['arrival_date'] ?? ride['arrival_datetime']);
 
     if (ride['origin_location'] is Map && ride['origin_location'] != null) {
       origin = ride['origin_location']['name'] ?? '';
     }
-    if (ride['destination_location'] is Map && ride['destination_location'] != null) {
+    if (ride['destination_location'] is Map &&
+        ride['destination_location'] != null) {
       destination = ride['destination_location']['name'] ?? '';
     }
 
@@ -206,7 +334,8 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
       vehicle = (kendaraan['brand'] ?? '') + ' ' + (kendaraan['model'] ?? '');
       vehicle = vehicle.trim();
       if (vehicle.isEmpty) {
-        vehicle = kendaraan['name'] ?? (bookingType == 'motor' ? 'Yamaha NMAX' : 'Mobil Avanza');
+        vehicle = kendaraan['name'] ??
+            (bookingType == 'motor' ? 'Yamaha NMAX' : 'Mobil Avanza');
       }
       plate = kendaraan['plate_number'] ?? 'B 5678 ABC';
     } else {
@@ -219,9 +348,12 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
       title = 'Nebeng Motor';
     } else if (bookingType == 'barang') {
       title = 'Nebeng Barang';
+    } else if (bookingType == 'titip') {
+      title = 'Titip Barang';
     }
 
-    final bookingNumber = widget.booking['booking_number']?.toString() ?? 'FR-1768365708-295';
+    final bookingNumber =
+        widget.booking['booking_number']?.toString() ?? 'FR-1768365708-295';
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -289,9 +421,9 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 8),
-            
+
             // Label Jadwal Saat Ini
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -318,9 +450,9 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 12),
-            
+
             // Card Jadwal Saat Ini
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -359,7 +491,9 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
-                              bookingType == 'motor' ? Icons.two_wheeler : Icons.directions_car,
+                              bookingType == 'motor'
+                                  ? Icons.two_wheeler
+                                  : Icons.directions_car,
                               color: Colors.white,
                               size: 24,
                             ),
@@ -392,7 +526,7 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
                         ],
                       ),
                     ),
-                    
+
                     // Route Information
                     Padding(
                       padding: const EdgeInsets.all(20),
@@ -410,28 +544,28 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
                           //       width: 1,
                           //     ),
                           //   ),
-                            // child: Row(
-                            //   children: [
-                            //     Icon(
-                            //       Icons.info_outline,
-                            //       size: 18,
-                            //       color: const Color(0xFF0284C7),
-                            //     ),
-                            //     const SizedBox(width: 8),
-                            //     Expanded(
-                            //       child: Text(
-                            //         'Perjalanan ini akan memakan waktu sekitar 3-4 jam',
-                            //         style: TextStyle(
-                            //           fontSize: 12,
-                            //           color: const Color(0xFF0C4A6E),
-                            //           fontWeight: FontWeight.w500,
-                            //         ),
-                            //       ),
-                            //     ),
-                            //   ],
-                            // ),
+                          // child: Row(
+                          //   children: [
+                          //     Icon(
+                          //       Icons.info_outline,
+                          //       size: 18,
+                          //       color: const Color(0xFF0284C7),
+                          //     ),
+                          //     const SizedBox(width: 8),
+                          //     Expanded(
+                          //       child: Text(
+                          //         'Perjalanan ini akan memakan waktu sekitar 3-4 jam',
+                          //         style: TextStyle(
+                          //           fontSize: 12,
+                          //           color: const Color(0xFF0C4A6E),
+                          //           fontWeight: FontWeight.w500,
+                          //         ),
+                          //       ),
+                          //     ),
+                          //   ],
                           // ),
-                          
+                          // ),
+
                           // Departure
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -463,7 +597,9 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
                                         const SizedBox(width: 8),
                                         Expanded(
                                           child: Text(
-                                            origin.isNotEmpty ? origin : 'Jakarta Pos 1',
+                                            origin.isNotEmpty
+                                                ? origin
+                                                : 'Jakarta Pos 1',
                                             style: const TextStyle(
                                               fontSize: 15,
                                               fontWeight: FontWeight.w600,
@@ -484,7 +620,8 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
                                     ),
                                     const SizedBox(height: 4),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 4),
                                       decoration: BoxDecoration(
                                         color: const Color(0xFFD1FAE5),
                                         borderRadius: BorderRadius.circular(4),
@@ -503,17 +640,18 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
                               ),
                             ],
                           ),
-                          
+
                           // Connecting Line
                           Padding(
-                            padding: const EdgeInsets.only(left: 3.5, top: 8, bottom: 8),
+                            padding: const EdgeInsets.only(
+                                left: 3.5, top: 8, bottom: 8),
                             child: Container(
                               width: 1,
                               height: 32,
                               color: Colors.grey[300],
                             ),
                           ),
-                          
+
                           // Arrival
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -545,7 +683,9 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
                                         const SizedBox(width: 8),
                                         Expanded(
                                           child: Text(
-                                            destination.isNotEmpty ? destination : 'Bandung Pos 1',
+                                            destination.isNotEmpty
+                                                ? destination
+                                                : 'Bandung Pos 1',
                                             style: const TextStyle(
                                               fontSize: 15,
                                               fontWeight: FontWeight.w600,
@@ -566,7 +706,8 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
                                     ),
                                     const SizedBox(height: 4),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 4),
                                       decoration: BoxDecoration(
                                         color: const Color(0xFFFEE2E2),
                                         borderRadius: BorderRadius.circular(4),
@@ -592,9 +733,9 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Section Pilih Tanggal Baru
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -623,11 +764,13 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
                     onTap: _selectDate,
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 16),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFF1E40AF), width: 1.5),
+                        border: Border.all(
+                            color: const Color(0xFF1E40AF), width: 1.5),
                         boxShadow: [
                           BoxShadow(
                             color: const Color(0xFF1E40AF).withOpacity(0.08),
@@ -666,8 +809,315 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
                 ],
               ),
             ),
-            
-            const SizedBox(height: 100),
+
+            const SizedBox(height: 12),
+
+            // If booking is barang or titip, show barang-specific form (wrapped with horizontal padding)
+            if (bookingType == 'barang' || bookingType == 'titip') ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Ukuran Barang',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.black,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    InkWell(
+                      onTap: () async {
+                        final picked = await showModalBottomSheet<String>(
+                          context: context,
+                          backgroundColor: Colors.transparent,
+                          isScrollControlled: true,
+                          builder: (ctx) {
+                            return DraggableScrollableSheet(
+                              initialChildSize: 0.5,
+                              minChildSize: 0.3,
+                              maxChildSize: 0.9,
+                              builder: (_, controller) {
+                                return Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: const BorderRadius.vertical(
+                                        top: Radius.circular(16)),
+                                  ),
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Center(
+                                        child: Container(
+                                          width: 40,
+                                          height: 4,
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey[300],
+                                            borderRadius:
+                                                BorderRadius.circular(4),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      const Text(
+                                        'Pilih Kapasitas Bagasi',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Expanded(
+                                        child: ListView.separated(
+                                          controller: controller,
+                                          itemCount: _barangSizes.length,
+                                          separatorBuilder: (_, __) =>
+                                              const SizedBox(height: 12),
+                                          itemBuilder: (context, idx) {
+                                            final key = _barangSizes[idx];
+                                            final desc =
+                                                _barangSizeDescriptions[key] ??
+                                                    '';
+                                            return InkWell(
+                                              onTap: () =>
+                                                  Navigator.of(ctx).pop(key),
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 16,
+                                                        vertical: 14),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.grey[50],
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                                child: Row(
+                                                  children: [
+                                                    Container(
+                                                      width: 40,
+                                                      height: 40,
+                                                      decoration: BoxDecoration(
+                                                        color: const Color(
+                                                            0xFF1E40AF),
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(8),
+                                                      ),
+                                                      child: const Icon(
+                                                          Icons.card_travel,
+                                                          color: Colors.white),
+                                                    ),
+                                                    const SizedBox(width: 12),
+                                                    Expanded(
+                                                      child: Text(
+                                                        '$key - $desc',
+                                                        style: const TextStyle(
+                                                            fontSize: 14,
+                                                            fontWeight:
+                                                                FontWeight
+                                                                    .w600),
+                                                      ),
+                                                    ),
+                                                    if (_selectedBarangSize ==
+                                                        key)
+                                                      const Icon(Icons.check,
+                                                          color: Color(
+                                                              0xFF1E40AF)),
+                                                  ],
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        );
+
+                        if (picked != null) {
+                          setState(() {
+                            _selectedBarangSize = picked;
+                          });
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey[300]!),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                _selectedBarangSize == null
+                                    ? 'Pilih ukuran barang anda'
+                                    : '$_selectedBarangSize - ${_barangSizeDescriptions[_selectedBarangSize] ?? ''}',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: _selectedBarangSize == null
+                                      ? Colors.grey[600]
+                                      : Colors.black,
+                                  fontWeight: _selectedBarangSize == null
+                                      ? FontWeight.w400
+                                      : FontWeight.w600,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Icon(Icons.arrow_drop_down,
+                                color: Colors.grey),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Keterangan Barang',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.black,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey[300]!),
+                      ),
+                      child: TextField(
+                        controller: _barangDescriptionController,
+                        maxLines: 3,
+                        decoration: const InputDecoration(
+                          hintText: 'contoh: berisi dokumen',
+                          border: InputBorder.none,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Foto Barang',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.black,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    InkWell(
+                      onTap: _pickImage,
+                      child: Container(
+                        height: 120,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey[300]!),
+                        ),
+                        child: _barangImagePath == null
+                            ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: const [
+                                    Icon(Icons.image,
+                                        size: 36, color: Colors.grey),
+                                    SizedBox(height: 8),
+                                    Text('Unggah foto barang',
+                                        style: TextStyle(color: Colors.grey)),
+                                  ],
+                                ),
+                              )
+                            : ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.file(
+                                  File(_barangImagePath!),
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: 120,
+                                ),
+                              ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    // Data Penerima section (only for barang/titip)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.person_rounded,
+                                  color: Color(0xFF1E40AF)),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Data Penerima',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          InkWell(
+                            onTap: _showPenerimaPicker,
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.grey[50],
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.grey.withOpacity(0.15),
+                                ),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 16),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      _dataPenerima ?? 'Data Penerima',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: _dataPenerima == null
+                                            ? Colors.grey[400]
+                                            : Colors.black87,
+                                      ),
+                                    ),
+                                  ),
+                                  Icon(
+                                    Icons.edit_outlined,
+                                    color: Colors.grey[400],
+                                    size: 20,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -704,9 +1154,11 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
                       strokeWidth: 2.5,
                     ),
                   )
-                : const Text(
-                    'Cari Jadwal Tersedia',
-                    style: TextStyle(
+                : Text(
+                    (bookingType == 'barang' || bookingType == 'titip')
+                        ? 'Ubah Jadwal'
+                        : 'Cari Jadwal Tersedia',
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -717,5 +1169,12 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _barangDescriptionController.dispose();
+    _penerimaController.dispose();
+    super.dispose();
   }
 }

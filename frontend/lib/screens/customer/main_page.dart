@@ -22,6 +22,13 @@ class _MainPageState extends State<MainPage> {
     const ProfilePage(showBottomNav: false),
   ];
 
+  final List<Map<String, dynamic>> _navItems = [
+    {'icon': FontAwesomeIcons.house, 'label': 'Beranda'},
+    {'icon': FontAwesomeIcons.receipt, 'label': 'Riwayat'},
+    {'icon': FontAwesomeIcons.comment, 'label': 'Pesan'},
+    {'icon': FontAwesomeIcons.user, 'label': 'Profil'},
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -29,36 +36,70 @@ class _MainPageState extends State<MainPage> {
         index: _currentIndex,
         children: _pages,
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
-            icon: FaIcon(FontAwesomeIcons.house),
-            label: 'Beranda',
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.only(top: 8, bottom: 18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 14,
+              offset: const Offset(0, -4),
+            ),
+          ],
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(22),
+            topRight: Radius.circular(22),
           ),
-          BottomNavigationBarItem(
-            icon: FaIcon(FontAwesomeIcons.receipt),
-            label: 'Riwayat',
+        ),
+        child: SafeArea(
+          top: false,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: List.generate(_navItems.length, (index) {
+              final item = _navItems[index];
+              final bool active = _currentIndex == index;
+              final Color activeColor = const Color(0xFF123F8A);
+              final Color inactiveColor = const Color(0xFFBFCBE6);
+
+              return GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => setState(() => _currentIndex = index),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // top pill indicator
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeInOut,
+                      height: 6,
+                      width: active ? 48 : 0,
+                      decoration: BoxDecoration(
+                        color: active ? activeColor : Colors.transparent,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    FaIcon(
+                      item['icon'] as IconData,
+                      size: active ? 28 : 24,
+                      color: active ? activeColor : inactiveColor,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      item['label'] as String,
+                      style: TextStyle(
+                        fontSize: active ? 13 : 12,
+                        fontWeight: active ? FontWeight.w700 : FontWeight.w600,
+                        color: active ? activeColor : inactiveColor,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
           ),
-          BottomNavigationBarItem(
-            icon: FaIcon(FontAwesomeIcons.comment),
-            label: 'Pesan',
-          ),
-          BottomNavigationBarItem(
-            icon: FaIcon(FontAwesomeIcons.user),
-            label: 'Profil',
-          ),
-        ],
-        currentIndex: _currentIndex,
-        selectedItemColor: const Color(0xFF1E3A8A),
-        unselectedItemColor: Colors.grey[400],
-        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
-        unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500),
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
+        ),
       ),
     );
   }

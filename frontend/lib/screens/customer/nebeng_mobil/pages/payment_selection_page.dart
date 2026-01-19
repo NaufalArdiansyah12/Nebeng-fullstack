@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/trip_model.dart';
 import '../utils/theme.dart';
 import 'payment_method_page.dart';
+import '../../../../widgets/loading_button.dart';
 
 class PaymentSelectionPage extends StatefulWidget {
   final TripModel trip;
@@ -262,8 +263,13 @@ class _PaymentSelectionPageState extends State<PaymentSelectionPage> {
       color: Colors.white,
       padding: const EdgeInsets.all(20),
       child: SafeArea(
-        child: ElevatedButton(
-          onPressed: selectedPaymentMethod != null ? _handleContinue : null,
+        child: LoadingButton(
+          onPressed: selectedPaymentMethod != null
+              ? () async {
+                  _handleContinue();
+                }
+              : null,
+          enabled: selectedPaymentMethod != null,
           style: ElevatedButton.styleFrom(
             backgroundColor: NebengMobilTheme.primaryBlue,
             disabledBackgroundColor: Colors.grey[300],

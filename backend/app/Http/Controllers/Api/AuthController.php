@@ -43,6 +43,7 @@ class AuthController extends Controller
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
+                    'reward_points' => $user->reward_points ?? 0,
                     'role' => $user->role,
                 ],
                 'token' => $token,
@@ -199,6 +200,7 @@ class AuthController extends Controller
                     'phone' => $user->phone,
                     'gender' => $user->gender,
                     'profile_photo' => $user->profile_photo,
+                    'reward_points' => $user->reward_points ?? 0,
                 ],
             ],
         ]);
@@ -249,6 +251,7 @@ class AuthController extends Controller
                     'gender' => $user->gender,
                     'profile_photo' => $user->profile_photo,
                     'role' => $user->role,
+                    'reward_points' => $user->reward_points ?? 0,
                 ],
             ],
         ]);

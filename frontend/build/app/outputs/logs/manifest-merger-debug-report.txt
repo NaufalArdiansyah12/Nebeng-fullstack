@@ -1,6 +1,6 @@
 -- Merging decision tree log ---
 application
-INJECTED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:2:5-32:19
+INJECTED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:3:5-33:19
 MERGED from [:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:15:5-48:19
 MERGED from [:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:15:5-48:19
 MERGED from [:firebase_core] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_core/intermediates/merged_manifest/debug/AndroidManifest.xml:9:5-15:19
@@ -50,11 +50,11 @@ MERGED from [com.google.android.datatransport:transport-runtime:3.1.8] /home/nau
 	android:name
 		INJECTED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml
 manifest
-ADDED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:1:1-44:12
-INJECTED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:1:1-44:12
-INJECTED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:1:1-44:12
-INJECTED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:1:1-44:12
-MERGED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:1:1-44:12
+ADDED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:1:1-45:12
+INJECTED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:1:1-45:12
+INJECTED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:1:1-45:12
+INJECTED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:1:1-45:12
+MERGED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:1:1-45:12
 MERGED from [:shared_preferences_android] /home/naufal/project/nebeng-fullstack/frontend/build/shared_preferences_android/intermediates/merged_manifest/debug/AndroidManifest.xml:2:1-9:12
 MERGED from [:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:2:1-50:12
 MERGED from [:firebase_core] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_core/intermediates/merged_manifest/debug/AndroidManifest.xml:2:1-17:12
@@ -112,30 +112,44 @@ INJECTED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/deb
 INJECTED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/debug/AndroidManifest.xml:1:1-7:12
 	package
 		INJECTED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml
-		ADDED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:1:1-44:12
+		ADDED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:1:1-45:12
 		INJECTED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/debug/AndroidManifest.xml
 	android:versionName
 		INJECTED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml
-		ADDED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:1:1-44:12
+		ADDED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:1:1-45:12
 		INJECTED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/debug/AndroidManifest.xml
 	android:versionCode
 		INJECTED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml
-		ADDED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:1:1-44:12
+		ADDED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:1:1-45:12
 		INJECTED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/debug/AndroidManifest.xml
 	xmlns:android
 		ADDED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:1:11-69
-queries
-ADDED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:38:5-43:15
-intent#action:name:android.intent.action.PROCESS_TEXT+data:mimeType:text/plain
-ADDED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:39:9-42:18
-action#android.intent.action.PROCESS_TEXT
-ADDED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:40:13-72
+uses-permission#android.permission.INTERNET
+ADDED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:2:5-67
+MERGED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:2:5-67
+MERGED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:2:5-67
+MERGED from [:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:9:5-67
+MERGED from [:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:9:5-67
+MERGED from [com.google.firebase:firebase-installations:17.2.0] /home/naufal/.gradle/caches/transforms-3/f6abc83b05941d4736e94a9e27c1a813/transformed/jetified-firebase-installations-17.2.0/AndroidManifest.xml:8:5-67
+MERGED from [com.google.firebase:firebase-installations:17.2.0] /home/naufal/.gradle/caches/transforms-3/f6abc83b05941d4736e94a9e27c1a813/transformed/jetified-firebase-installations-17.2.0/AndroidManifest.xml:8:5-67
+MERGED from [com.google.android.gms:play-services-cloud-messaging:17.1.0] /home/naufal/.gradle/caches/transforms-3/ad94281bac4b6758b18a0d40c8fb4186/transformed/jetified-play-services-cloud-messaging-17.1.0/AndroidManifest.xml:8:5-67
+MERGED from [com.google.android.gms:play-services-cloud-messaging:17.1.0] /home/naufal/.gradle/caches/transforms-3/ad94281bac4b6758b18a0d40c8fb4186/transformed/jetified-play-services-cloud-messaging-17.1.0/AndroidManifest.xml:8:5-67
+MERGED from [com.google.android.datatransport:transport-backend-cct:3.1.8] /home/naufal/.gradle/caches/transforms-3/af73949769087a357b326260c4043148/transformed/jetified-transport-backend-cct-3.1.8/AndroidManifest.xml:25:5-67
+MERGED from [com.google.android.datatransport:transport-backend-cct:3.1.8] /home/naufal/.gradle/caches/transforms-3/af73949769087a357b326260c4043148/transformed/jetified-transport-backend-cct-3.1.8/AndroidManifest.xml:25:5-67
 	android:name
-		ADDED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:40:21-70
+		ADDED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:2:22-64
+queries
+ADDED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:39:5-44:15
+intent#action:name:android.intent.action.PROCESS_TEXT+data:mimeType:text/plain
+ADDED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:40:9-43:18
+action#android.intent.action.PROCESS_TEXT
+ADDED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:41:13-72
+	android:name
+		ADDED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:41:21-70
 data
-ADDED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:41:13-50
+ADDED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:42:13-50
 	android:mimeType
-		ADDED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:41:19-48
+		ADDED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:42:19-48
 uses-sdk
 INJECTED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml
@@ -252,18 +266,6 @@ INJECTED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/deb
 	android:minSdkVersion
 		INJECTED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml
 		INJECTED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/debug/AndroidManifest.xml
-uses-permission#android.permission.INTERNET
-ADDED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/debug/AndroidManifest.xml:6:5-66
-MERGED from [:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:9:5-67
-MERGED from [:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:9:5-67
-MERGED from [com.google.firebase:firebase-installations:17.2.0] /home/naufal/.gradle/caches/transforms-3/f6abc83b05941d4736e94a9e27c1a813/transformed/jetified-firebase-installations-17.2.0/AndroidManifest.xml:8:5-67
-MERGED from [com.google.firebase:firebase-installations:17.2.0] /home/naufal/.gradle/caches/transforms-3/f6abc83b05941d4736e94a9e27c1a813/transformed/jetified-firebase-installations-17.2.0/AndroidManifest.xml:8:5-67
-MERGED from [com.google.android.gms:play-services-cloud-messaging:17.1.0] /home/naufal/.gradle/caches/transforms-3/ad94281bac4b6758b18a0d40c8fb4186/transformed/jetified-play-services-cloud-messaging-17.1.0/AndroidManifest.xml:8:5-67
-MERGED from [com.google.android.gms:play-services-cloud-messaging:17.1.0] /home/naufal/.gradle/caches/transforms-3/ad94281bac4b6758b18a0d40c8fb4186/transformed/jetified-play-services-cloud-messaging-17.1.0/AndroidManifest.xml:8:5-67
-MERGED from [com.google.android.datatransport:transport-backend-cct:3.1.8] /home/naufal/.gradle/caches/transforms-3/af73949769087a357b326260c4043148/transformed/jetified-transport-backend-cct-3.1.8/AndroidManifest.xml:25:5-67
-MERGED from [com.google.android.datatransport:transport-backend-cct:3.1.8] /home/naufal/.gradle/caches/transforms-3/af73949769087a357b326260c4043148/transformed/jetified-transport-backend-cct-3.1.8/AndroidManifest.xml:25:5-67
-	android:name
-		ADDED from /home/naufal/project/nebeng-fullstack/frontend/android/app/src/debug/AndroidManifest.xml:6:22-64
 uses-permission#android.permission.WAKE_LOCK
 ADDED from [:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:10:5-68
 MERGED from [com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/6da6dea2f303825e096a56d1a70f3f70/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:24:5-68

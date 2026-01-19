@@ -17,6 +17,7 @@ class TebenganTitipBarang extends Model
         'departure_time',
         'transportation_type',
         'bagasi_capacity',
+        'jumlah_bagasi',
         'price',
         'status',
     ];
@@ -26,6 +27,11 @@ class TebenganTitipBarang extends Model
         'departure_time' => 'datetime:H:i:s',
         'price' => 'decimal:2',
         'bagasi_capacity' => 'integer',
+        'jumlah_bagasi' => 'integer',
+    ];
+
+    protected $attributes = [
+        'jumlah_bagasi' => 0,
     ];
 
     // Relationships

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
@@ -7,6 +8,10 @@ class ApiService {
   // Android emulator uses 10.0.2.2 to access host machine
   // Web and other platforms use localhost
   static String get baseUrl {
+    // Allow overriding at build/runtime via --dart-define=API_BASE_URL
+    const _envBase = String.fromEnvironment('API_BASE_URL', defaultValue: '');
+    if (_envBase.isNotEmpty) return _envBase;
+
     // Web builds run in browser — use localhost
     if (kIsWeb) return 'http://localhost:8000';
 
@@ -17,6 +22,63 @@ class ApiService {
 
     // Fallback: localhost
     return 'http://localhost:8000';
+  }
+
+  /// Fetch available rewards (merchandise)
+  static Future<List<Map<String, dynamic>>> fetchRewards() async {
+    final uri = Uri.parse('$baseUrl/api/v1/rewards');
+    final resp = await http.get(uri, headers: {'Accept': 'application/json'});
+    if (resp.statusCode == 200) {
+      final body = json.decode(resp.body);
+      if (body is Map && body['success'] == true && body['data'] is List) {
+        return List<Map<String, dynamic>>.from(body['data']);
+      }
+      throw Exception('Unexpected response format');
+    }
+    throw Exception('Failed to fetch rewards: ${resp.statusCode}');
+  }
+
+  /// Redeem reward (requires Bearer token)
+  static Future<Map<String, dynamic>> redeemReward({
+    required String token,
+    required int rewardId,
+    Map<String, dynamic>? metadata,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/rewards/$rewardId/redeem');
+    final resp = await http.post(uri,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode(metadata ?? {}));
+
+    final body = json.decode(resp.body);
+    if ((resp.statusCode == 200 || resp.statusCode == 201) &&
+        body is Map &&
+        body['success'] == true) {
+      return Map<String, dynamic>.from(body['data']);
+    }
+    throw Exception(body['message'] ?? 'Failed to redeem reward');
+  }
+
+  /// Fetch current user's redemptions
+  static Future<List<Map<String, dynamic>>> fetchMyRedemptions({
+    required String token,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/rewards/my');
+    final resp = await http.get(uri, headers: {
+      'Accept': 'application/json',
+      'Authorization': 'Bearer $token',
+    });
+    if (resp.statusCode == 200) {
+      final body = json.decode(resp.body);
+      if (body is Map && body['success'] == true && body['data'] is List) {
+        return List<Map<String, dynamic>>.from(body['data']);
+      }
+      throw Exception('Unexpected response format');
+    }
+    throw Exception('Failed to fetch redemptions: ${resp.statusCode}');
   }
 
   /// Fetch locations from backend
@@ -187,8 +249,10 @@ class ApiService {
         request.fields['kendaraan_mitra_id'] = kendaraanMitraId.toString();
       if (availableSeats != null)
         request.fields['available_seats'] = availableSeats.toString();
-      if (bagasiCapacity != null)
+      if (bagasiCapacity != null) {
         request.fields['bagasi_capacity'] = bagasiCapacity.toString();
+        request.fields['jumlah_bagasi'] = bagasiCapacity.toString();
+      }
 
       final file = await http.MultipartFile.fromPath('photo', photoFilePath);
       request.files.add(file);
@@ -233,6 +297,7 @@ class ApiService {
         'vehicle_color': vehicleColor,
         'available_seats': availableSeats,
         'bagasi_capacity': bagasiCapacity,
+        'jumlah_bagasi': bagasiCapacity,
       }),
     );
 
@@ -773,8 +838,40 @@ class ApiService {
     required String requestedTargetType,
     required int requestedTargetId,
     String? reason,
+    String? barangImagePath,
   }) async {
     final uri = Uri.parse('$baseUrl/api/v1/bookings/$bookingId/reschedule');
+
+    if (barangImagePath != null && barangImagePath.isNotEmpty) {
+      // Upload as multipart request with optional image
+      final request = http.MultipartRequest('POST', uri);
+      request.headers.addAll({
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      });
+      request.fields['booking_type'] = bookingType;
+      request.fields['requested_target_type'] = requestedTargetType;
+      request.fields['requested_target_id'] = requestedTargetId.toString();
+      if (reason != null) request.fields['reason'] = reason;
+
+      final file = File(barangImagePath);
+      if (await file.exists()) {
+        request.files
+            .add(await http.MultipartFile.fromPath('photo', barangImagePath));
+      }
+
+      final streamed = await request.send();
+      final resp = await http.Response.fromStream(streamed);
+      final body = json.decode(resp.body);
+      if ((resp.statusCode == 200 || resp.statusCode == 201) &&
+          body is Map &&
+          body['success'] == true) {
+        return Map<String, dynamic>.from(body['data']);
+      }
+      throw Exception(body['message'] ?? 'Failed to create reschedule');
+    }
+
+    // Fallback to JSON POST when no image
     final resp = await http.post(uri,
         headers: {
           'Accept': 'application/json',

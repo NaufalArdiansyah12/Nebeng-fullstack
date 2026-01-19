@@ -184,19 +184,33 @@ class _RiwayatPageState extends State<RiwayatPage> with WidgetsBindingObserver {
       }).toList();
     }
 
-    // Dalam Proses => not past and not completed
+    // Dalam Proses => only show rides scheduled for today and not completed/cancelled
     return items.where((b) {
       final ride = b['ride'] ?? {};
       final dateStr =
           (ride['departure_date'] ?? b['created_at'] ?? '').toString();
       final dt = DateTime.tryParse(dateStr);
-      if (dt != null && dt.isBefore(now)) return false;
+
+      // If we don't have a valid departure date, skip it for "Dalam Proses"
+      if (dt == null) return false;
+
+      // Compare only the date part (year, month, day) with today
+      if (!(dt.year == now.year &&
+          dt.month == now.month &&
+          dt.day == now.day)) {
+        return false;
+      }
+
       final status =
           (b['status'] ?? ride['status'] ?? '').toString().toLowerCase();
+      // Exclude completed/cancelled statuses
       if (status.contains('selesai') ||
           status.contains('paid') ||
           status.contains('completed') ||
-          status.contains('done')) return false;
+          status.contains('done') ||
+          status.contains('cancel') ||
+          status.contains('batalkan')) return false;
+
       return true;
     }).toList();
   }

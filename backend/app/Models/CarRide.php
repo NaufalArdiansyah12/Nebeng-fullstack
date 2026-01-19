@@ -30,12 +30,17 @@ class CarRide extends Model
         'available_seats',
         'status',
         'bagasi_capacity',
+        'jumlah_bagasi',
         'kendaraan_mitra_id',
     ];
 
     protected $casts = [
         'departure_date' => 'date',
         'price' => 'decimal:2',
+    ];
+
+    protected $attributes = [
+        'jumlah_bagasi' => 0,
     ];
 
     public function ride(): BelongsTo

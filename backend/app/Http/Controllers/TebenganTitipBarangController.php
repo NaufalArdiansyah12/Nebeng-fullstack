@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\TebenganTitipBarang;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Auth;
 
 class TebenganTitipBarangController extends Controller
@@ -117,6 +118,7 @@ class TebenganTitipBarangController extends Controller
                 'departure_time' => 'required',
                 'transportation_type' => 'required|in:kereta,pesawat,bus',
                 'bagasi_capacity' => 'required|integer|in:5,10,20',
+                'jumlah_bagasi' => 'nullable|integer|min:0',
                 'price' => 'required|numeric|min:0',
             ]);
 
@@ -128,17 +130,28 @@ class TebenganTitipBarangController extends Controller
                 ], 422);
             }
 
-            $tebengan = TebenganTitipBarang::create([
+            $data = [
                 'user_id' => $apiToken->user_id,
                 'origin_location_id' => $request->origin_location_id,
                 'destination_location_id' => $request->destination_location_id,
                 'departure_date' => $request->departure_date,
                 'departure_time' => $request->departure_time,
                 'transportation_type' => $request->transportation_type,
-                'bagasi_capacity' => $request->bagasi_capacity,
                 'price' => $request->price,
                 'status' => 'active',
-            ]);
+            ];
+
+            $bagasi = $request->jumlah_bagasi ?? $request->bagasi_capacity ?? null;
+            if ($bagasi !== null) {
+                if (Schema::hasColumn('tebengan_titip_barang', 'jumlah_bagasi')) {
+                    $data['jumlah_bagasi'] = $bagasi;
+                }
+                if (Schema::hasColumn('tebengan_titip_barang', 'bagasi_capacity')) {
+                    $data['bagasi_capacity'] = $bagasi;
+                }
+            }
+
+            $tebengan = TebenganTitipBarang::create($data);
 
             $tebengan->load(['user', 'originLocation', 'destinationLocation']);
 
@@ -179,6 +192,7 @@ class TebenganTitipBarangController extends Controller
                 'departure_time' => 'sometimes',
                 'transportation_type' => 'sometimes|in:kereta,pesawat,bus',
                 'bagasi_capacity' => 'sometimes|integer|in:5,10,20',
+                'jumlah_bagasi' => 'sometimes|integer|min:0',
                 'price' => 'sometimes|numeric|min:0',
                 'status' => 'sometimes|in:active,inactive,completed',
             ]);
@@ -191,7 +205,7 @@ class TebenganTitipBarangController extends Controller
                 ], 422);
             }
 
-            $tebengan->update($request->only([
+            $update = $request->only([
                 'origin_location_id',
                 'destination_location_id',
                 'departure_date',
@@ -200,7 +214,20 @@ class TebenganTitipBarangController extends Controller
                 'bagasi_capacity',
                 'price',
                 'status',
-            ]));
+            ]);
+
+            // handle jumlah_bagasi if provided
+            if ($request->has('jumlah_bagasi')) {
+                $bag = $request->jumlah_bagasi;
+                if (Schema::hasColumn('tebengan_titip_barang', 'jumlah_bagasi')) {
+                    $update['jumlah_bagasi'] = $bag;
+                }
+                if (Schema::hasColumn('tebengan_titip_barang', 'bagasi_capacity')) {
+                    $update['bagasi_capacity'] = $bag;
+                }
+            }
+
+            $tebengan->update($update);
 
             $tebengan->load(['mitra', 'originLocation', 'destinationLocation']);
 

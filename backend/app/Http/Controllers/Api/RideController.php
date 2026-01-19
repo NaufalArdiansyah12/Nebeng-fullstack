@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Ride;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -124,6 +125,7 @@ class RideController extends Controller
             'service_type' => 'required|in:tebengan,barang,both',
             'price' => 'required|numeric|min:0',
             'bagasi_capacity' => 'nullable|integer|min:0',
+            'jumlah_bagasi' => 'nullable|integer|min:0',
             'kendaraan_mitra_id' => 'nullable|exists:kendaraan_mitra,id',
             'available_seats' => 'nullable|integer|min:0',
         ]);
@@ -161,7 +163,7 @@ class RideController extends Controller
             $ride = DB::transaction(function () use ($request, $apiToken) {
                 // For motor rides we keep using the Ride model (tebengan_motor).
                 if ($request->ride_type === 'motor') {
-                    $r = Ride::create([
+                    $data = [
                         'user_id' => $apiToken->user_id,
                         'origin_location_id' => $request->origin_location_id,
                         'destination_location_id' => $request->destination_location_id,
@@ -172,9 +174,20 @@ class RideController extends Controller
                         'price' => $request->price,
                         'kendaraan_mitra_id' => $request->kendaraan_mitra_id ?? null,
                         'available_seats' => $request->available_seats ?? 1,
-                        'bagasi_capacity' => $request->bagasi_capacity ?? null,
                         'status' => 'active',
-                    ]);
+                    ];
+
+                    $bagasi = $request->jumlah_bagasi ?? $request->bagasi_capacity ?? null;
+                    if ($bagasi !== null) {
+                        if (Schema::hasColumn('tebengan_motor', 'jumlah_bagasi')) {
+                            $data['jumlah_bagasi'] = $bagasi;
+                        }
+                        if (Schema::hasColumn('tebengan_motor', 'bagasi_capacity')) {
+                            $data['bagasi_capacity'] = $bagasi;
+                        }
+                    }
+
+                    $r = Ride::create($data);
 
                     return $r;
                 }
@@ -183,7 +196,7 @@ class RideController extends Controller
                 // to avoid duplicated data (we store vehicle info in `kendaraan_mitra`).
                 // Do NOT attempt to insert vehicle_name/plate/brand/type/color here.
                 if ($request->ride_type === 'mobil') {
-                    $car = \App\Models\CarRide::create([
+                    $data = [
                         'user_id' => $apiToken->user_id,
                         'origin_location_id' => $request->origin_location_id,
                         'destination_location_id' => $request->destination_location_id,
@@ -194,16 +207,27 @@ class RideController extends Controller
                         'price' => $request->price,
                         'kendaraan_mitra_id' => $request->kendaraan_mitra_id ?? null,
                         'available_seats' => $request->available_seats ?? 1,
-                        'bagasi_capacity' => $request->bagasi_capacity ?? null,
                         'status' => 'active',
-                    ]);
+                    ];
+
+                    $bagasi = $request->jumlah_bagasi ?? $request->bagasi_capacity ?? null;
+                    if ($bagasi !== null) {
+                        if (Schema::hasColumn('tebengan_mobil', 'jumlah_bagasi')) {
+                            $data['jumlah_bagasi'] = $bagasi;
+                        }
+                        if (Schema::hasColumn('tebengan_mobil', 'bagasi_capacity')) {
+                            $data['bagasi_capacity'] = $bagasi;
+                        }
+                    }
+
+                    $car = \App\Models\CarRide::create($data);
 
                     return $car;
                 }
 
                 // For barang rides, persist into tebengan_barang via BarangRide model.
                 if ($request->ride_type === 'barang') {
-                    $barang = \App\Models\BarangRide::create([
+                    $data = [
                         'user_id' => $apiToken->user_id,
                         'origin_location_id' => $request->origin_location_id,
                         'destination_location_id' => $request->destination_location_id,
@@ -214,9 +238,20 @@ class RideController extends Controller
                         'price' => $request->price,
                         'kendaraan_mitra_id' => $request->kendaraan_mitra_id ?? null,
                         'available_seats' => 0,
-                        'bagasi_capacity' => $request->bagasi_capacity ?? null,
                         'status' => 'active',
-                    ]);
+                    ];
+
+                    $bagasi = $request->jumlah_bagasi ?? $request->bagasi_capacity ?? null;
+                    if ($bagasi !== null) {
+                        if (Schema::hasColumn('tebengan_barang', 'jumlah_bagasi')) {
+                            $data['jumlah_bagasi'] = $bagasi;
+                        }
+                        if (Schema::hasColumn('tebengan_barang', 'bagasi_capacity')) {
+                            $data['bagasi_capacity'] = $bagasi;
+                        }
+                    }
+
+                    $barang = \App\Models\BarangRide::create($data);
 
                     // If a photo was uploaded as part of the request, store it and save into extra
                     if ($request->hasFile('photo')) {

@@ -6,6 +6,9 @@ import 'security_page.dart';
 import 'edit_profile_page.dart';
 import '../help/help_center_page.dart';
 import '../../pin/create_pin_page.dart';
+import '../main_page.dart';
+import 'reward_page.dart';
+import 'verifikasi_intro_page.dart';
 
 class ProfilePage extends StatefulWidget {
   final bool showBottomNav;
@@ -111,13 +114,21 @@ class _ProfilePageState extends State<ProfilePage> {
         children: [
           Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white,
               borderRadius: BorderRadius.circular(8),
             ),
             child: IconButton(
               icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-              onPressed: () => Navigator.pop(context),
-              color: Colors.white,
+              onPressed: () {
+                if (Navigator.of(context).canPop()) {
+                  Navigator.of(context).pop();
+                } else {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (_) => const MainPage()),
+                  );
+                }
+              },
+              color: const Color(0xFF1E3A8A),
             ),
           ),
           const SizedBox(width: 16),
@@ -230,7 +241,12 @@ class _ProfilePageState extends State<ProfilePage> {
             icon: Icons.monetization_on,
             iconColor: const Color(0xFFFFA500),
             title: 'Reward Point',
-            onTap: () {},
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const RewardPage()),
+              );
+            },
           ),
           _buildMenuItem(
             icon: Icons.person_outline,
@@ -245,6 +261,19 @@ class _ProfilePageState extends State<ProfilePage> {
               );
               // refresh profile after returning from edit
               _loadProfile();
+            },
+          ),
+          _buildMenuItem(
+            icon: Icons.verified_user,
+            iconColor: const Color(0xFF1E40AF),
+            title: 'Verifikasi Akun',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const VerifikasiIntroPage(),
+                ),
+              );
             },
           ),
           _buildMenuItem(

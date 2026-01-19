@@ -8,6 +8,7 @@ import '../../nebeng_motor/pages/payment_success_page.dart';
 import '../../nebeng_motor/models/trip_model.dart' as motor_model;
 import '../models/trip_model.dart';
 import '../utils/theme.dart';
+import '../../../../widgets/loading_button.dart';
 
 class PaymentMethodPage extends StatefulWidget {
   final TripModel trip;
@@ -494,8 +495,10 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
       color: Colors.white,
       padding: const EdgeInsets.all(20),
       child: SafeArea(
-        child: ElevatedButton(
-          onPressed: _handlePayment,
+        child: LoadingButton(
+          onPressed: () async {
+            _handlePayment();
+          },
           style: ElevatedButton.styleFrom(
             backgroundColor: NebengMobilTheme.primaryBlue,
             padding: const EdgeInsets.symmetric(vertical: 16),

@@ -6,12 +6,14 @@ class UbahJadwalListPage extends StatefulWidget {
   final Map<String, dynamic> booking;
   final List<Map<String, dynamic>> availableRides;
   final DateTime selectedDate;
+  final String? barangImagePath;
 
   const UbahJadwalListPage({
     Key? key,
     required this.booking,
     required this.availableRides,
     required this.selectedDate,
+    this.barangImagePath,
   }) : super(key: key);
 
   @override
@@ -253,6 +255,7 @@ class _UbahJadwalListPageState extends State<UbahJadwalListPage> {
                             booking: widget.booking,
                             selectedDate: selectedDate,
                             onRefresh: () => _fetchAvailableRides(selectedDate),
+                            barangImagePath: widget.barangImagePath,
                           );
                         },
                       ),
@@ -268,12 +271,14 @@ class _RideCard extends StatelessWidget {
   final Map<String, dynamic> booking;
   final DateTime selectedDate;
   final VoidCallback onRefresh;
+  final String? barangImagePath;
 
   const _RideCard({
     required this.ride,
     required this.booking,
     required this.selectedDate,
     required this.onRefresh,
+    this.barangImagePath,
   });
 
   String _formatTime(String? time) {
@@ -576,6 +581,7 @@ class _RideCard extends StatelessWidget {
                             booking: booking,
                             selectedRide: ride,
                             selectedDate: selectedDate,
+                            barangImagePath: barangImagePath,
                           ),
                         ),
                       );
