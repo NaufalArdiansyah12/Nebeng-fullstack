@@ -32,7 +32,7 @@ class VehicleSeeder extends Seeder
                 'plate_number' => 'B 1234 XYZ',
                 'year' => 2022,
                 'color' => 'Hitam',
-                'seats' => 1,
+                'jumlah_bagasi' => 1,
                 'is_active' => true,
             ],
             [
@@ -44,7 +44,7 @@ class VehicleSeeder extends Seeder
                 'plate_number' => 'B 5678 ABC',
                 'year' => 2023,
                 'color' => 'Putih',
-                'seats' => 1,
+                'jumlah_bagasi' => 1,
                 'is_active' => true,
             ],
             [
@@ -56,7 +56,7 @@ class VehicleSeeder extends Seeder
                 'plate_number' => 'B 9012 DEF',
                 'year' => 2024,
                 'color' => 'Merah',
-                'seats' => 1,
+                'jumlah_bagasi' => 1,
                 'is_active' => true,
             ],
             
@@ -70,7 +70,7 @@ class VehicleSeeder extends Seeder
                 'plate_number' => 'B 1342 XYZ',
                 'year' => 2021,
                 'color' => 'Silver',
-                'seats' => 6,
+                'jumlah_bagasi' => 3,
                 'is_active' => true,
             ],
             [
@@ -82,7 +82,7 @@ class VehicleSeeder extends Seeder
                 'plate_number' => 'B 7890 GHI',
                 'year' => 2022,
                 'color' => 'Hitam',
-                'seats' => 6,
+                'jumlah_bagasi' => 3,
                 'is_active' => true,
             ],
             [
@@ -94,7 +94,7 @@ class VehicleSeeder extends Seeder
                 'plate_number' => 'B 3456 JKL',
                 'year' => 2023,
                 'color' => 'Putih',
-                'seats' => 4,
+                'jumlah_bagasi' => 2,
                 'is_active' => true,
             ],
             
@@ -108,7 +108,7 @@ class VehicleSeeder extends Seeder
                 'plate_number' => 'B 6543 MNO',
                 'year' => 2020,
                 'color' => 'Putih',
-                'seats' => 2,
+                'jumlah_bagasi' => 5,
                 'is_active' => true,
             ],
             [
@@ -120,7 +120,7 @@ class VehicleSeeder extends Seeder
                 'plate_number' => 'B 8765 PQR',
                 'year' => 2021,
                 'color' => 'Biru',
-                'seats' => 3,
+                'jumlah_bagasi' => 6,
                 'is_active' => true,
             ],
         ];

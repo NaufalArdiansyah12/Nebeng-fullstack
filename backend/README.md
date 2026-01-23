@@ -57,3 +57,9 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+## Realtime / WebSockets
+
+Realtime/WebSocket setup was removed from this repository. The backend currently uses polling/log broadcasting by default (`BROADCAST_DRIVER=log`).
+
+If you need realtime later, prefer a dedicated Pusher-compatible server (Soketi) or hosted Pusher and re-add instructions accordingly.

@@ -1,7 +1,7 @@
 [
     {
         "merged": "io.flutter.plugins.firebase.messaging.firebase_messaging-merged_res-16:/drawable/common_google_signin_btn_icon_light_focused.xml",
-        "source": "io.flutter.plugins.firebase.messaging.firebase_messaging-jetified-play-services-base-18.0.1-5:/drawable/common_google_signin_btn_icon_light_focused.xml"
+        "source": "io.flutter.plugins.firebase.messaging.firebase_messaging-jetified-play-services-base-18.0.1-8:/drawable/common_google_signin_btn_icon_light_focused.xml"
     },
     {
         "merged": "io.flutter.plugins.firebase.messaging.firebase_messaging-merged_res-16:/drawable/notification_tile_bg.xml",
@@ -9,11 +9,11 @@
     },
     {
         "merged": "io.flutter.plugins.firebase.messaging.firebase_messaging-merged_res-16:/drawable/common_google_signin_btn_icon_disabled.xml",
-        "source": "io.flutter.plugins.firebase.messaging.firebase_messaging-jetified-play-services-base-18.0.1-5:/drawable/common_google_signin_btn_icon_disabled.xml"
+        "source": "io.flutter.plugins.firebase.messaging.firebase_messaging-jetified-play-services-base-18.0.1-8:/drawable/common_google_signin_btn_icon_disabled.xml"
     },
     {
         "merged": "io.flutter.plugins.firebase.messaging.firebase_messaging-merged_res-16:/drawable/common_google_signin_btn_icon_dark_normal.xml",
-        "source": "io.flutter.plugins.firebase.messaging.firebase_messaging-jetified-play-services-base-18.0.1-5:/drawable/common_google_signin_btn_icon_dark_normal.xml"
+        "source": "io.flutter.plugins.firebase.messaging.firebase_messaging-jetified-play-services-base-18.0.1-8:/drawable/common_google_signin_btn_icon_dark_normal.xml"
     },
     {
         "merged": "io.flutter.plugins.firebase.messaging.firebase_messaging-merged_res-16:/drawable/notification_bg.xml",
@@ -21,15 +21,15 @@
     },
     {
         "merged": "io.flutter.plugins.firebase.messaging.firebase_messaging-merged_res-16:/drawable/common_google_signin_btn_text_dark_focused.xml",
-        "source": "io.flutter.plugins.firebase.messaging.firebase_messaging-jetified-play-services-base-18.0.1-5:/drawable/common_google_signin_btn_text_dark_focused.xml"
+        "source": "io.flutter.plugins.firebase.messaging.firebase_messaging-jetified-play-services-base-18.0.1-8:/drawable/common_google_signin_btn_text_dark_focused.xml"
     },
     {
         "merged": "io.flutter.plugins.firebase.messaging.firebase_messaging-merged_res-16:/drawable/common_google_signin_btn_text_light_normal.xml",
-        "source": "io.flutter.plugins.firebase.messaging.firebase_messaging-jetified-play-services-base-18.0.1-5:/drawable/common_google_signin_btn_text_light_normal.xml"
+        "source": "io.flutter.plugins.firebase.messaging.firebase_messaging-jetified-play-services-base-18.0.1-8:/drawable/common_google_signin_btn_text_light_normal.xml"
     },
     {
         "merged": "io.flutter.plugins.firebase.messaging.firebase_messaging-merged_res-16:/drawable/common_google_signin_btn_icon_dark.xml",
-        "source": "io.flutter.plugins.firebase.messaging.firebase_messaging-jetified-play-services-base-18.0.1-5:/drawable/common_google_signin_btn_icon_dark.xml"
+        "source": "io.flutter.plugins.firebase.messaging.firebase_messaging-jetified-play-services-base-18.0.1-8:/drawable/common_google_signin_btn_icon_dark.xml"
     },
     {
         "merged": "io.flutter.plugins.firebase.messaging.firebase_messaging-merged_res-16:/drawable/notification_icon_background.xml",
@@ -37,19 +37,19 @@
     },
     {
         "merged": "io.flutter.plugins.firebase.messaging.firebase_messaging-merged_res-16:/drawable/common_google_signin_btn_text_light_focused.xml",
-        "source": "io.flutter.plugins.firebase.messaging.firebase_messaging-jetified-play-services-base-18.0.1-5:/drawable/common_google_signin_btn_text_light_focused.xml"
+        "source": "io.flutter.plugins.firebase.messaging.firebase_messaging-jetified-play-services-base-18.0.1-8:/drawable/common_google_signin_btn_text_light_focused.xml"
     },
     {
         "merged": "io.flutter.plugins.firebase.messaging.firebase_messaging-merged_res-16:/drawable/common_google_signin_btn_text_dark.xml",
-        "source": "io.flutter.plugins.firebase.messaging.firebase_messaging-jetified-play-services-base-18.0.1-5:/drawable/common_google_signin_btn_text_dark.xml"
+        "source": "io.flutter.plugins.firebase.messaging.firebase_messaging-jetified-play-services-base-18.0.1-8:/drawable/common_google_signin_btn_text_dark.xml"
     },
     {
         "merged": "io.flutter.plugins.firebase.messaging.firebase_messaging-merged_res-16:/drawable/common_google_signin_btn_text_disabled.xml",
-        "source": "io.flutter.plugins.firebase.messaging.firebase_messaging-jetified-play-services-base-18.0.1-5:/drawable/common_google_signin_btn_text_disabled.xml"
+        "source": "io.flutter.plugins.firebase.messaging.firebase_messaging-jetified-play-services-base-18.0.1-8:/drawable/common_google_signin_btn_text_disabled.xml"
     },
     {
         "merged": "io.flutter.plugins.firebase.messaging.firebase_messaging-merged_res-16:/drawable/common_google_signin_btn_icon_light.xml",
-        "source": "io.flutter.plugins.firebase.messaging.firebase_messaging-jetified-play-services-base-18.0.1-5:/drawable/common_google_signin_btn_icon_light.xml"
+        "source": "io.flutter.plugins.firebase.messaging.firebase_messaging-jetified-play-services-base-18.0.1-8:/drawable/common_google_signin_btn_icon_light.xml"
     },
     {
         "merged": "io.flutter.plugins.firebase.messaging.firebase_messaging-merged_res-16:/drawable/notification_bg_low.xml",
@@ -57,18 +57,18 @@
     },
     {
         "merged": "io.flutter.plugins.firebase.messaging.firebase_messaging-merged_res-16:/drawable/common_google_signin_btn_text_light.xml",
-        "source": "io.flutter.plugins.firebase.messaging.firebase_messaging-jetified-play-services-base-18.0.1-5:/drawable/common_google_signin_btn_text_light.xml"
+        "source": "io.flutter.plugins.firebase.messaging.firebase_messaging-jetified-play-services-base-18.0.1-8:/drawable/common_google_signin_btn_text_light.xml"
     },
     {
         "merged": "io.flutter.plugins.firebase.messaging.firebase_messaging-merged_res-16:/drawable/common_google_signin_btn_icon_dark_focused.xml",
-        "source": "io.flutter.plugins.firebase.messaging.firebase_messaging-jetified-play-services-base-18.0.1-5:/drawable/common_google_signin_btn_icon_dark_focused.xml"
+        "source": "io.flutter.plugins.firebase.messaging.firebase_messaging-jetified-play-services-base-18.0.1-8:/drawable/common_google_signin_btn_icon_dark_focused.xml"
     },
     {
         "merged": "io.flutter.plugins.firebase.messaging.firebase_messaging-merged_res-16:/drawable/common_google_signin_btn_text_dark_normal.xml",
-        "source": "io.flutter.plugins.firebase.messaging.firebase_messaging-jetified-play-services-base-18.0.1-5:/drawable/common_google_signin_btn_text_dark_normal.xml"
+        "source": "io.flutter.plugins.firebase.messaging.firebase_messaging-jetified-play-services-base-18.0.1-8:/drawable/common_google_signin_btn_text_dark_normal.xml"
     },
     {
         "merged": "io.flutter.plugins.firebase.messaging.firebase_messaging-merged_res-16:/drawable/common_google_signin_btn_icon_light_normal.xml",
-        "source": "io.flutter.plugins.firebase.messaging.firebase_messaging-jetified-play-services-base-18.0.1-5:/drawable/common_google_signin_btn_icon_light_normal.xml"
+        "source": "io.flutter.plugins.firebase.messaging.firebase_messaging-jetified-play-services-base-18.0.1-8:/drawable/common_google_signin_btn_icon_light_normal.xml"
     }
 ]

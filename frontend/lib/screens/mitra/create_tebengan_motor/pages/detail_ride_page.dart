@@ -21,6 +21,7 @@ class DetailRidePage extends StatelessWidget {
   final int availableSeats;
   final int? kendaraanMitraId;
   final int? bagasiCapacity;
+  final int? jumlahBagasi;
 
   const DetailRidePage({
     Key? key,
@@ -41,6 +42,7 @@ class DetailRidePage extends StatelessWidget {
     required this.availableSeats,
     this.kendaraanMitraId,
     this.bagasiCapacity,
+    this.jumlahBagasi,
   }) : super(key: key);
 
   String _getMonthName(int month) {
@@ -104,6 +106,7 @@ class DetailRidePage extends StatelessWidget {
         price: price,
         kendaraanMitraId: kendaraanMitraId,
         bagasiCapacity: bagasiCapacity,
+        jumlahBagasi: jumlahBagasi,
         vehicleName: vehicleName,
         vehiclePlate: vehiclePlate,
         vehicleBrand: vehicleBrand,

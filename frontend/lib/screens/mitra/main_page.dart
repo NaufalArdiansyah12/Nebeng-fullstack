@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../services/api_service.dart';
 import 'home_page.dart';
+import 'riwayat_page.dart';
 import 'profile/profile_page.dart';
 
 class MitraMainPage extends StatefulWidget {
@@ -9,15 +13,63 @@ class MitraMainPage extends StatefulWidget {
   State<MitraMainPage> createState() => _MitraMainPageState();
 }
 
-class _MitraMainPageState extends State<MitraMainPage> {
+class _MitraMainPageState extends State<MitraMainPage>
+    with WidgetsBindingObserver {
   int _currentIndex = 0;
 
   final List<Widget> _pages = [
     const MitraHomePage(),
-    const Center(child: Text('Riwayat')), // TODO: Create RiwayatPage
+    const MitraRiwayatPage(),
     const Center(child: Text('Pesan')), // TODO: Create PesanPage
     const MitraProfilePage(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // report location once on page init
+    _reportCurrentLocation();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _reportCurrentLocation();
+    }
+  }
+
+  Future<void> _reportCurrentLocation() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) return;
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) return;
+      }
+      if (permission == LocationPermission.deniedForever) return;
+
+      final pos = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.best);
+
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('api_token');
+      if (token == null || token.isEmpty) return;
+
+      await ApiService.reportMitraLocation(
+          token: token, lat: pos.latitude, lng: pos.longitude);
+    } catch (e) {
+      // ignore errors for now
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

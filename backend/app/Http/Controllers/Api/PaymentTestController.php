@@ -79,50 +79,21 @@ class PaymentTestController extends Controller
     private function updateBookingStatus($payment)
     {
         try {
-            // Prefer updating by booking_id if available
-            if (!empty($payment->booking_id)) {
-                // Try by booking id across motor, mobil, barang, titip_barang tables
-                $bookingModel = \App\Models\Booking::find($payment->booking_id);
-                if ($bookingModel) {
-                    $bookingModel->update(['status' => 'paid']);
-                    Log::info('Booking status updated to paid (by id, motor)', ['booking_id' => $bookingModel->id]);
-                    return;
-                }
-
-                $bookingMobil = \App\Models\BookingMobil::find($payment->booking_id);
-                if ($bookingMobil) {
-                    $bookingMobil->update(['status' => 'paid']);
-                    Log::info('Booking status updated to paid (by id, mobil)', ['booking_id' => $bookingMobil->id]);
-                    return;
-                }
-
-                $bookingBarang = \App\Models\BookingBarang::find($payment->booking_id);
-                if ($bookingBarang) {
-                    $bookingBarang->update(['status' => 'paid']);
-                    Log::info('Booking status updated to paid (by id, barang)', ['booking_id' => $bookingBarang->id]);
-                    return;
-                }
-
-                $bookingTitip = \App\Models\BookingTitipBarang::find($payment->booking_id);
-                if ($bookingTitip) {
-                    $bookingTitip->update(['status' => 'paid']);
-                    Log::info('Booking status updated to paid (by id, titip)', ['booking_id' => $bookingTitip->id]);
-                    return;
-                }
-            }
-
-            // Fallback: Try by booking_number
+            // IMPORTANT: booking_id can overlap across tables (motor id=1, titip id=1 are different records)
+            // So we ALWAYS try by booking_number first (most reliable unique identifier)
+            
             $bookingNumber = $payment->booking_number ?? null;
+            
+            // Strategy 1: Try by booking_number (HIGHEST PRIORITY - unique across all tables)
             if ($bookingNumber) {
-                // Try booking_motor first
-                $bookingModel = \App\Models\Booking::where('booking_number', $bookingNumber)->first();
-                if ($bookingModel) {
-                    $bookingModel->update(['status' => 'paid']);
-                    Log::info('Booking status updated to paid (by number, motor)', ['booking_number' => $bookingNumber, 'booking_id' => $bookingModel->id]);
+                // Try all booking tables by booking_number
+                $bookingMotor = \App\Models\Booking::where('booking_number', $bookingNumber)->first();
+                if ($bookingMotor) {
+                    $bookingMotor->update(['status' => 'paid']);
+                    Log::info('Booking status updated to paid (by number, motor)', ['booking_number' => $bookingNumber, 'booking_id' => $bookingMotor->id]);
                     return;
                 }
 
-                // Try booking_mobil
                 $bookingMobil = \App\Models\BookingMobil::where('booking_number', $bookingNumber)->first();
                 if ($bookingMobil) {
                     $bookingMobil->update(['status' => 'paid']);
@@ -130,7 +101,6 @@ class PaymentTestController extends Controller
                     return;
                 }
 
-                // Try booking_barang
                 $bookingBarang = \App\Models\BookingBarang::where('booking_number', $bookingNumber)->first();
                 if ($bookingBarang) {
                     $bookingBarang->update(['status' => 'paid']);
@@ -138,7 +108,6 @@ class PaymentTestController extends Controller
                     return;
                 }
 
-                // Try booking_titip_barang
                 $bookingTitip = \App\Models\BookingTitipBarang::where('booking_number', $bookingNumber)->first();
                 if ($bookingTitip) {
                     $bookingTitip->update(['status' => 'paid']);
@@ -146,42 +115,76 @@ class PaymentTestController extends Controller
                     return;
                 }
             }
-
-            // Last resort: Try by ride_id + user_id (for pending bookings)
-            if ($payment->ride_id && $payment->user_id) {
-                $bookingModel = \App\Models\Booking::where('ride_id', $payment->ride_id)
-                    ->where('user_id', $payment->user_id)
-                    ->where('status', 'pending')
-                    ->orderBy('created_at', 'desc')
+            
+            // Strategy 2: Try by booking_id + ride_id combination (safer than ID alone)
+            if (!empty($payment->booking_id) && !empty($payment->ride_id)) {
+                $bookingModel = \App\Models\Booking::where('id', $payment->booking_id)
+                    ->where('ride_id', $payment->ride_id)
                     ->first();
-
                 if ($bookingModel) {
                     $bookingModel->update(['status' => 'paid']);
-                    Log::info('Booking status updated to paid (by ride+user, motor)', ['booking_id' => $bookingModel->id]);
+                    Log::info('Booking status updated to paid (by id+ride, motor)', ['booking_id' => $bookingModel->id]);
                     return;
                 }
 
-                $bookingMobil = \App\Models\BookingMobil::where('ride_id', $payment->ride_id)
-                    ->where('user_id', $payment->user_id)
-                    ->where('status', 'pending')
-                    ->orderBy('created_at', 'desc')
+                $bookingMobil = \App\Models\BookingMobil::where('id', $payment->booking_id)
+                    ->where('ride_id', $payment->ride_id)
                     ->first();
-
                 if ($bookingMobil) {
                     $bookingMobil->update(['status' => 'paid']);
-                    Log::info('Booking status updated to paid (by ride+user, mobil)', ['booking_id' => $bookingMobil->id]);
+                    Log::info('Booking status updated to paid (by id+ride, mobil)', ['booking_id' => $bookingMobil->id]);
                     return;
                 }
 
-                $bookingBarang = \App\Models\BookingBarang::where('ride_id', $payment->ride_id)
-                    ->where('user_id', $payment->user_id)
-                    ->where('status', 'pending')
-                    ->orderBy('created_at', 'desc')
+                $bookingBarang = \App\Models\BookingBarang::where('id', $payment->booking_id)
+                    ->where('ride_id', $payment->ride_id)
                     ->first();
-
                 if ($bookingBarang) {
                     $bookingBarang->update(['status' => 'paid']);
-                    Log::info('Booking status updated to paid (by ride+user, barang)', ['booking_id' => $bookingBarang->id]);
+                    Log::info('Booking status updated to paid (by id+ride, barang)', ['booking_id' => $bookingBarang->id]);
+                    return;
+                }
+
+                $bookingTitip = \App\Models\BookingTitipBarang::where('id', $payment->booking_id)
+                    ->where('ride_id', $payment->ride_id)
+                    ->first();
+                if ($bookingTitip) {
+                    $bookingTitip->update(['status' => 'paid']);
+                    Log::info('Booking status updated to paid (by id+ride, titip)', ['booking_id' => $bookingTitip->id]);
+                    return;
+                }
+            }
+            
+            // Strategy 3: Try by booking_id if available (but risky due to ID overlap)
+            // Only use this as last resort because booking IDs can overlap across tables
+            if (!empty($payment->booking_id)) {
+                Log::warning('Using booking_id fallback (risky due to ID overlap)', ['booking_id' => $payment->booking_id]);
+                
+                $bookingMotor = \App\Models\Booking::find($payment->booking_id);
+                if ($bookingMotor && $bookingMotor->status === 'pending') {
+                    $bookingMotor->update(['status' => 'paid']);
+                    Log::info('Booking status updated to paid (by id only, motor)', ['booking_id' => $bookingMotor->id]);
+                    return;
+                }
+
+                $bookingMobil = \App\Models\BookingMobil::find($payment->booking_id);
+                if ($bookingMobil && $bookingMobil->status === 'pending') {
+                    $bookingMobil->update(['status' => 'paid']);
+                    Log::info('Booking status updated to paid (by id only, mobil)', ['booking_id' => $bookingMobil->id]);
+                    return;
+                }
+
+                $bookingBarang = \App\Models\BookingBarang::find($payment->booking_id);
+                if ($bookingBarang && $bookingBarang->status === 'pending') {
+                    $bookingBarang->update(['status' => 'paid']);
+                    Log::info('Booking status updated to paid (by id only, barang)', ['booking_id' => $bookingBarang->id]);
+                    return;
+                }
+
+                $bookingTitip = \App\Models\BookingTitipBarang::find($payment->booking_id);
+                if ($bookingTitip && $bookingTitip->status === 'pending') {
+                    $bookingTitip->update(['status' => 'paid']);
+                    Log::info('Booking status updated to paid (by id only, titip)', ['booking_id' => $bookingTitip->id]);
                     return;
                 }
             }

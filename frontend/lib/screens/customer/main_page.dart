@@ -3,7 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'beranda_page.dart';
 import 'profile/profile_page.dart';
 import 'messages/chats_page.dart';
-import 'riwayat_page.dart';
+import 'riwayat/riwayat_page.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({Key? key}) : super(key: key);

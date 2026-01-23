@@ -1,9 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/trip_model.dart';
 import '../../nebeng_motor/utils/theme.dart';
 import 'payment_selection_page.dart';
+import '../../../../services/api_service.dart';
 
 class BookingDetailPage extends StatefulWidget {
   final TripModel trip;
@@ -37,6 +39,7 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
   void initState() {
     super.initState();
     _generateBookingNumber();
+    _loadUserData();
     _nameController.addListener(() => setState(() {}));
     _phoneController.addListener(() => setState(() {}));
 
@@ -49,6 +52,25 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
     }
     if (widget.photoFile != null) {
       selectedImage = widget.photoFile;
+    }
+  }
+
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('api_token');
+    if (token == null) return;
+
+    try {
+      final resp = await ApiService.getProfile(token: token);
+      if (resp['success'] == true && resp['data'] != null) {
+        final user = resp['data']['user'];
+        setState(() {
+          _nameController.text = user['name'] as String? ?? '';
+          _phoneController.text = user['phone'] as String? ?? '';
+        });
+      }
+    } catch (e) {
+      // ignore, keep defaults
     }
   }
 

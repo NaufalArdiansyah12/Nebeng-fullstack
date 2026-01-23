@@ -8,6 +8,8 @@ use App\Models\Ride;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 class BookingController extends Controller
 {
@@ -20,9 +22,11 @@ class BookingController extends Controller
             'user_id' => 'required|integer',
             'ride_type' => 'nullable|string|in:motor,mobil,barang,titip',
             'seats' => 'nullable|integer|min:1',
+            'jumlah_bagasi' => 'nullable|integer|min:0',
             'photo' => 'nullable|image|mimes:jpeg,jpg,png|max:5120',
             'weight' => 'nullable|string|max:50',
             'description' => 'nullable|string|max:1000',
+            'penerima' => 'nullable|string|max:255',
             'penumpang' => 'nullable|array', // Array of passenger data
             'penumpang.*.nama' => 'required|string|max:255',
             'penumpang.*.nik' => 'nullable|string|max:20',
@@ -101,6 +105,14 @@ class BookingController extends Controller
         }
 
         $seats = $request->seats ?? 1;
+        $bagasiRequested = intval($request->jumlah_bagasi ?? 0);
+
+        // If frontend did not provide jumlah_bagasi but the ride has bagasi available,
+        // assume a default of 1 bagasi for bookings on rides that support bagasi.
+        $effectiveBagasiRequested = $bagasiRequested;
+        if ($effectiveBagasiRequested <= 0 && intval($ride->jumlah_bagasi ?? 0) > 0) {
+            $effectiveBagasiRequested = 1;
+        }
 
         // If this is a car ride, ensure there are enough available seats
         if ($isCar) {
@@ -114,123 +126,43 @@ class BookingController extends Controller
             }
         }
 
-        // Handle photo upload for barang bookings (including titip barang)
-        $photoPath = null;
-        if (($isBarang || $isTitipBarang) && $request->hasFile('photo')) {
-            $photo = $request->file('photo');
-            $filename = time() . '_' . uniqid() . '.' . $photo->getClientOriginalExtension();
-            $photo->storeAs('public/uploads', $filename);
-            $photoPath = '/storage/uploads/' . $filename;
+        // For any ride that supports bagasi, ensure there's enough remaining bagasi
+        if ($effectiveBagasiRequested > 0) {
+            $availableBagasi = intval($ride->jumlah_bagasi ?? 0);
+            if ($availableBagasi < $effectiveBagasiRequested) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Not enough bagasi available',
+                    'available_bagasi' => $availableBagasi,
+                ], 409);
+            }
+            // If the original request didn't include jumlah_bagasi, merge the effective value
+            if ($bagasiRequested <= 0) {
+                try {
+                    $request->merge(['jumlah_bagasi' => $effectiveBagasiRequested]);
+                    $bagasiRequested = $effectiveBagasiRequested;
+                } catch (\Exception $e) {
+                    // ignore merge failures; controllers can still read $effectiveBagasiRequested via variable
+                    Log::debug('Failed to merge jumlah_bagasi into request: ' . $e->getMessage());
+                }
+            }
         }
 
-        // Create booking number
-        $bookingNumber = 'FR-' . time() . '-' . rand(100, 999);
-
-        // Create booking into appropriate bookings table depending on detected ride type.
-        // Prioritize car -> titip barang -> barang -> motor
+        // Delegate to specific controllers based on detected type (Option A)
         if ($isCar) {
-            $booking = \App\Models\BookingMobil::create([
-                'ride_id' => $ride->id,
-                'user_id' => $request->user_id,
-                'booking_number' => $bookingNumber,
-                'seats' => $seats,
-                'status' => 'pending',
-                'meta' => null,
-            ]);
-
-            // Save passengers if provided
-            if ($request->has('penumpang') && is_array($request->penumpang)) {
-                foreach ($request->penumpang as $penumpangData) {
-                    \App\Models\PenumpangBookingMobil::create([
-                        'booking_mobil_id' => $booking->id,
-                        'nama' => $penumpangData['nama'],
-                        'nik' => $penumpangData['nik'] ?? null,
-                        'no_telepon' => $penumpangData['no_telepon'] ?? null,
-                        'jenis_kelamin' => $penumpangData['jenis_kelamin'] ?? null,
-                    ]);
-                }
-            }
-
-            // decrement available seats atomically
-            try {
-                $ride->refresh();
-                $ride->decrement('available_seats', $seats);
-                // reload to check remaining seats
-                $ride->refresh();
-                if (intval($ride->available_seats ?? 0) <= 0) {
-                    $ride->status = 'inactive';
-                    $ride->save();
-                }
-            } catch (\Exception $e) {
-                Log::warning('Failed to decrement available_seats', ['error' => $e->getMessage(), 'ride_id' => $ride->id]);
-            }
-        } elseif ($isTitipBarang) {
-            $booking = \App\Models\BookingTitipBarang::create([
-                'ride_id' => $ride->id,
-                'user_id' => $request->user_id,
-                'booking_number' => $bookingNumber,
-                'seats' => $seats,
-                'status' => 'pending',
-                'meta' => null,
-                'photo' => $photoPath,
-                'weight' => $request->weight,
-                'description' => $request->description,
-            ]);
-        } elseif ($isBarang) {
-            $booking = \App\Models\BookingBarang::create([
-                'ride_id' => $ride->id,
-                'user_id' => $request->user_id,
-                'booking_number' => $bookingNumber,
-                'seats' => $seats,
-                'status' => 'pending',
-                'meta' => null,
-                'photo' => $photoPath,
-                'weight' => $request->weight,
-                'description' => $request->description,
-            ]);
-        } else {
-            $booking = Booking::create([
-                'ride_id' => $ride->id,
-                'user_id' => $request->user_id,
-                'booking_number' => $bookingNumber,
-                'seats' => $seats,
-                'status' => 'pending',
-                'meta' => null,
-            ]);
+            return app()->call(\App\Http\Controllers\Api\BookingMobilController::class . '@store', ['request' => $request, 'ride' => $ride]);
         }
 
-        Log::info('Booking created', ['booking_id' => $booking->id, 'booking_number' => $bookingNumber]);
-
-        return response()->json([
-            'success' => true,
-            'data' => $booking,
-        ], 201);
-    }
-
-    public function show($id)
-    {
-        // Try booking_motor first, then booking_mobil, then booking_barang, then booking_titip_barang
-        $b = Booking::with(['ride', 'user'])->find($id);
-        if ($b) {
-            return response()->json(['success' => true, 'data' => $b]);
+        if ($isTitipBarang) {
+            return app()->call(\App\Http\Controllers\Api\BookingTitipBarangController::class . '@store', ['request' => $request, 'ride' => $ride]);
         }
 
-        $bm = \App\Models\BookingMobil::with(['ride', 'user', 'penumpang'])->find($id);
-        if ($bm) {
-            return response()->json(['success' => true, 'data' => $bm]);
+        if ($isBarang) {
+            return app()->call(\App\Http\Controllers\Api\BookingBarangController::class . '@store', ['request' => $request, 'ride' => $ride]);
         }
 
-        $bb = \App\Models\BookingBarang::with(['ride', 'user'])->find($id);
-        if ($bb) {
-            return response()->json(['success' => true, 'data' => $bb]);
-        }
-
-        $bt = \App\Models\BookingTitipBarang::with(['ride', 'user'])->find($id);
-        if ($bt) {
-            return response()->json(['success' => true, 'data' => $bt]);
-        }
-
-        return response()->json(['success' => false, 'message' => 'Booking not found'], 404);
+        // default -> motor
+        return app()->call(\App\Http\Controllers\Api\BookingMotorController::class . '@store', ['request' => $request, 'ride' => $ride]);
     }
 
     /**
@@ -339,5 +271,207 @@ class BookingController extends Controller
         });
 
         return response()->json(['success' => true, 'data' => $results]);
+    }
+
+    /**
+     * Get single booking with tracking status
+     */
+    public function show(Request $request, $id)
+    {
+        // Optional authentication - if token provided, verify it
+        $user = null;
+        $bearer = $request->bearerToken();
+        
+        if ($bearer) {
+            $hashed = hash('sha256', $bearer);
+            $apiToken = \App\Models\ApiToken::where('token', $hashed)
+                ->where('expires_at', '>', now())
+                ->first();
+
+            if ($apiToken) {
+                $user = \App\Models\User::find($apiToken->user_id);
+            }
+        }
+
+        // Try to find booking in all tables
+        $booking = null;
+        $bookingType = null;
+
+        // Try motor booking
+        $booking = \App\Models\Booking::with([
+            'ride.originLocation',
+            'ride.destinationLocation',
+            'ride.kendaraanMitra',
+            'ride.user',
+            'user'
+        ])->find($id);
+        if ($booking) {
+            // If user is authenticated, verify ownership
+            if ($user && $booking->user_id !== $user->id) {
+                $booking = null;
+            } else {
+                $bookingType = 'motor';
+            }
+        }
+
+        // Try mobil booking
+        if (!$booking) {
+            $booking = \App\Models\BookingMobil::with([
+                'ride.originLocation',
+                'ride.destinationLocation',
+                'ride.kendaraanMitra',
+                'ride.user',
+                'user'
+            ])->find($id);
+            if ($booking) {
+                if ($user && $booking->user_id !== $user->id) {
+                    $booking = null;
+                } else {
+                    $bookingType = 'mobil';
+                }
+            }
+        }
+
+        // Try barang booking
+        if (!$booking) {
+            $booking = \App\Models\BookingBarang::with([
+                'ride.originLocation',
+                'ride.destinationLocation',
+                'ride.kendaraanMitra',
+                'ride.user',
+                'user'
+            ])->find($id);
+            if ($booking) {
+                if ($user && $booking->user_id !== $user->id) {
+                    $booking = null;
+                } else {
+                    $bookingType = 'barang';
+                }
+            }
+        }
+
+        // Try titip booking
+        if (!$booking) {
+            $booking = \App\Models\BookingTitipBarang::with([
+                'ride.originLocation',
+                'ride.destinationLocation',
+                'ride.kendaraanMitra',
+                'ride.user',
+                'user'
+            ])->find($id);
+            if ($booking) {
+                if ($user && $booking->user_id !== $user->id) {
+                    $booking = null;
+                } else {
+                    $bookingType = 'titip';
+                }
+            }
+        }
+
+        if (!$booking) {
+            return response()->json(['success' => false, 'message' => 'Booking tidak ditemukan'], 404);
+        }
+
+        $data = $booking->toArray();
+        $data['booking_type'] = $bookingType;
+        
+        // Add tracking status based on ride departure time
+        if ($booking->ride && $booking->ride->departure_date && $booking->ride->departure_time) {
+            try {
+                $departureDateTime = \Carbon\Carbon::parse($booking->ride->departure_date . ' ' . $booking->ride->departure_time);
+                $now = \Carbon\Carbon::now();
+                
+                // Determine tracking status
+                if ($departureDateTime->isPast()) {
+                    $data['tracking_status'] = 'in_progress';
+                } elseif ($departureDateTime->diffInHours($now) <= 1) {
+                    $data['tracking_status'] = 'waiting';
+                    $data['countdown'] = [
+                        'days' => $departureDateTime->diffInDays($now),
+                        'hours' => $departureDateTime->diffInHours($now) % 24,
+                        'minutes' => $departureDateTime->diffInMinutes($now) % 60,
+                        'total_seconds' => $departureDateTime->diffInSeconds($now)
+                    ];
+                } else {
+                    $data['tracking_status'] = 'scheduled';
+                }
+            } catch (\Exception $e) {
+                $data['tracking_status'] = 'unknown';
+            }
+        }
+        
+        // Add location data if available
+        if ($booking->last_lat && $booking->last_lng) {
+            $data['last_location'] = [
+                'lat' => (float) $booking->last_lat,
+                'lng' => (float) $booking->last_lng,
+                'timestamp' => $booking->last_location_at,
+            ];
+        }
+
+        return response()->json(['success' => true, 'data' => $data]);
+    }
+
+    /**
+     * Update booking status
+     */
+    public function updateStatus(Request $request, $id)
+    {
+        $bearer = $request->bearerToken();
+        if (!$bearer) {
+            return response()->json(['success' => false, 'message' => 'Token tidak ditemukan'], 401);
+        }
+
+        $hashed = hash('sha256', $bearer);
+        $apiToken = \App\Models\ApiToken::where('token', $hashed)
+            ->where('expires_at', '>', now())
+            ->first();
+
+        if (!$apiToken) {
+            return response()->json(['success' => false, 'message' => 'Token tidak valid atau sudah kadaluarsa'], 401);
+        }
+
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'status' => 'required|string|in:pending,paid,confirmed,in_progress,completed,cancelled',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        // Try to find and update booking in all tables
+        $booking = \App\Models\Booking::find($id);
+        if ($booking && ($booking->user_id === $apiToken->user_id || ($booking->ride && $booking->ride->user_id === $apiToken->user_id))) {
+            $booking->status = $request->status;
+            $booking->save();
+            return response()->json(['success' => true, 'data' => $booking]);
+        }
+
+        $booking = \App\Models\BookingMobil::find($id);
+        if ($booking && ($booking->user_id === $apiToken->user_id || ($booking->ride && $booking->ride->user_id === $apiToken->user_id))) {
+            $booking->status = $request->status;
+            $booking->save();
+            return response()->json(['success' => true, 'data' => $booking]);
+        }
+
+        $booking = \App\Models\BookingBarang::find($id);
+        if ($booking && ($booking->user_id === $apiToken->user_id || ($booking->ride && $booking->ride->user_id === $apiToken->user_id))) {
+            $booking->status = $request->status;
+            $booking->save();
+            return response()->json(['success' => true, 'data' => $booking]);
+        }
+
+        $booking = \App\Models\BookingTitipBarang::find($id);
+        if ($booking && ($booking->user_id === $apiToken->user_id || ($booking->ride && $booking->ride->user_id === $apiToken->user_id))) {
+            $booking->status = $request->status;
+            $booking->save();
+            return response()->json(['success' => true, 'data' => $booking]);
+        }
+
+        return response()->json(['success' => false, 'message' => 'Booking tidak ditemukan atau tidak memiliki akses'], 404);
     }
 }

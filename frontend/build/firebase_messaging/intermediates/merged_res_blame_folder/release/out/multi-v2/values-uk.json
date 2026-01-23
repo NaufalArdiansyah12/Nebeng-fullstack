@@ -4,24 +4,7 @@
             "outputFile": "io.flutter.plugins.firebase.messaging.firebase_messaging-mergeReleaseResources-14:/values-uk/values-uk.xml",
             "map": [
                 {
-                    "source": "/home/naufal/.gradle/caches/transforms-3/c3e05c9fbf3e6c63974105ad6d97e1f5/transformed/jetified-play-services-basement-18.3.0/res/values-uk/values.xml",
-                    "from": {
-                        "startLines": "4",
-                        "startColumns": "0",
-                        "startOffsets": "195",
-                        "endColumns": "141",
-                        "endOffsets": "336"
-                    },
-                    "to": {
-                        "startLines": "10",
-                        "startColumns": "4",
-                        "startOffsets": "1066",
-                        "endColumns": "145",
-                        "endOffsets": "1207"
-                    }
-                },
-                {
-                    "source": "/home/naufal/.gradle/caches/transforms-3/2579a7de00054bf46a8dbc332552f622/transformed/core-1.6.0/res/values-uk/values-uk.xml",
+                    "source": "/home/naufal/.gradle/caches/transforms-3/5f92c4a6594b81c424ac630f41d1540f/transformed/core-1.6.0/res/values-uk/values-uk.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",
@@ -38,7 +21,24 @@
                     }
                 },
                 {
-                    "source": "/home/naufal/.gradle/caches/transforms-3/456feef7530341a2c919967cc4dde951/transformed/jetified-play-services-base-18.0.1/res/values-uk/values.xml",
+                    "source": "/home/naufal/.gradle/caches/transforms-3/958cb211f1ea886007a6251f88872e9a/transformed/jetified-play-services-basement-18.3.0/res/values-uk/values.xml",
+                    "from": {
+                        "startLines": "4",
+                        "startColumns": "0",
+                        "startOffsets": "195",
+                        "endColumns": "141",
+                        "endOffsets": "336"
+                    },
+                    "to": {
+                        "startLines": "10",
+                        "startColumns": "4",
+                        "startOffsets": "1066",
+                        "endColumns": "145",
+                        "endOffsets": "1207"
+                    }
+                },
+                {
+                    "source": "/home/naufal/.gradle/caches/transforms-3/ff51a66bbe5d3f9eb5356715064c388e/transformed/jetified-play-services-base-18.0.1/res/values-uk/values.xml",
                     "from": {
                         "startLines": "4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20",
                         "startColumns": "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
@@ -60,24 +60,7 @@
             "outputFile": "io.flutter.plugins.firebase.messaging.firebase_messaging-merged_res-16:/values-uk/values-uk.xml",
             "map": [
                 {
-                    "source": "/home/naufal/.gradle/caches/transforms-3/c3e05c9fbf3e6c63974105ad6d97e1f5/transformed/jetified-play-services-basement-18.3.0/res/values-uk/values.xml",
-                    "from": {
-                        "startLines": "4",
-                        "startColumns": "0",
-                        "startOffsets": "195",
-                        "endColumns": "141",
-                        "endOffsets": "336"
-                    },
-                    "to": {
-                        "startLines": "10",
-                        "startColumns": "4",
-                        "startOffsets": "1066",
-                        "endColumns": "145",
-                        "endOffsets": "1207"
-                    }
-                },
-                {
-                    "source": "/home/naufal/.gradle/caches/transforms-3/2579a7de00054bf46a8dbc332552f622/transformed/core-1.6.0/res/values-uk/values-uk.xml",
+                    "source": "/home/naufal/.gradle/caches/transforms-3/5f92c4a6594b81c424ac630f41d1540f/transformed/core-1.6.0/res/values-uk/values-uk.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",
@@ -94,7 +77,24 @@
                     }
                 },
                 {
-                    "source": "/home/naufal/.gradle/caches/transforms-3/456feef7530341a2c919967cc4dde951/transformed/jetified-play-services-base-18.0.1/res/values-uk/values.xml",
+                    "source": "/home/naufal/.gradle/caches/transforms-3/958cb211f1ea886007a6251f88872e9a/transformed/jetified-play-services-basement-18.3.0/res/values-uk/values.xml",
+                    "from": {
+                        "startLines": "4",
+                        "startColumns": "0",
+                        "startOffsets": "195",
+                        "endColumns": "141",
+                        "endOffsets": "336"
+                    },
+                    "to": {
+                        "startLines": "10",
+                        "startColumns": "4",
+                        "startOffsets": "1066",
+                        "endColumns": "145",
+                        "endOffsets": "1207"
+                    }
+                },
+                {
+                    "source": "/home/naufal/.gradle/caches/transforms-3/ff51a66bbe5d3f9eb5356715064c388e/transformed/jetified-play-services-base-18.0.1/res/values-uk/values.xml",
                     "from": {
                         "startLines": "4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20",
                         "startColumns": "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",

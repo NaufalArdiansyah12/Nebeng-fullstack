@@ -1,7 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/trip_model.dart';
 import '../utils/theme.dart';
 import 'payment_selection_page.dart';
+import '../../../../services/api_service.dart';
 
 class BookingDetailPage extends StatefulWidget {
   final TripModel trip;
@@ -34,6 +38,13 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
   bool _agreedToTerms = false;
   String bookingNumber = '';
   final TextEditingController _searchController = TextEditingController();
+  String _userName = '';
+  String _userPhone = '';
+  bool _isLoadingUser = true;
+  final TextEditingController _weightController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  File? selectedImage;
+  final ImagePicker _picker = ImagePicker();
 
   // Dummy data for saved passengers
   final List<SavedPassenger> savedPassengers = [
@@ -45,6 +56,34 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
   void initState() {
     super.initState();
     _generateBookingNumber();
+    _loadUserData();
+    _weightController.addListener(() => setState(() {}));
+    _descriptionController.addListener(() => setState(() {}));
+  }
+
+  Future<void> _loadUserData() async {
+    setState(() => _isLoadingUser = true);
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('api_token');
+    if (token == null) {
+      setState(() => _isLoadingUser = false);
+      return;
+    }
+
+    try {
+      final resp = await ApiService.getProfile(token: token);
+      if (resp['success'] == true && resp['data'] != null) {
+        final user = resp['data']['user'];
+        setState(() {
+          _userName = user['name'] as String? ?? '';
+          _userPhone = user['phone'] as String? ?? '';
+        });
+      }
+    } catch (e) {
+      // ignore, keep defaults
+    } finally {
+      setState(() => _isLoadingUser = false);
+    }
   }
 
   void _generateBookingNumber() {
@@ -89,6 +128,8 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
   @override
   void dispose() {
     _searchController.dispose();
+    _weightController.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 
@@ -141,6 +182,11 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
                     const SizedBox(height: 20),
                     _buildPassengerSection(),
                     const SizedBox(height: 20),
+                    if (widget.trip.serviceType == 'barang' ||
+                        widget.trip.serviceType == 'both') ...[
+                      _buildBarangDetailsForm(),
+                      const SizedBox(height: 20),
+                    ],
                     _buildTotalPayment(),
                     const SizedBox(height: 16),
                     _buildTermsCheckbox(),
@@ -312,46 +358,47 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
           return _buildPassengerCard(index);
         }),
         const SizedBox(height: 8),
-        OutlinedButton(
-          onPressed: passengers.length < widget.trip.maxPassengers
-              ? _showPassengerInfoModal
-              : null,
-          style: OutlinedButton.styleFrom(
-            foregroundColor: NebengMobilTheme.primaryBlue,
-            side: BorderSide(
-              color: passengers.length < widget.trip.maxPassengers
-                  ? NebengMobilTheme.primaryBlue
-                  : Colors.grey[300]!,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            minimumSize: const Size(double.infinity, 48),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.add_circle_outline,
-                size: 20,
+        if (widget.trip.serviceType == 'both')
+          OutlinedButton(
+            onPressed: passengers.length < widget.trip.maxPassengers
+                ? _showPassengerInfoModal
+                : null,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: NebengMobilTheme.primaryBlue,
+              side: BorderSide(
                 color: passengers.length < widget.trip.maxPassengers
                     ? NebengMobilTheme.primaryBlue
-                    : Colors.grey,
+                    : Colors.grey[300]!,
               ),
-              const SizedBox(width: 8),
-              Text(
-                'Tambah Penumpang',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              minimumSize: const Size(double.infinity, 48),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.add_circle_outline,
+                  size: 20,
                   color: passengers.length < widget.trip.maxPassengers
                       ? NebengMobilTheme.primaryBlue
                       : Colors.grey,
                 ),
-              ),
-            ],
+                const SizedBox(width: 8),
+                Text(
+                  'Tambah Penumpang',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: passengers.length < widget.trip.maxPassengers
+                        ? NebengMobilTheme.primaryBlue
+                        : Colors.grey,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
       ],
     );
   }
@@ -587,8 +634,242 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
           penumpang: passengers
               .map((p) => {'nama': p.name, 'no_telepon': p.phone})
               .toList(),
+          photoFile: selectedImage,
+          weight:
+              _weightController.text.isNotEmpty ? _weightController.text : null,
+          description: _descriptionController.text.isNotEmpty
+              ? _descriptionController.text
+              : null,
         ),
       ),
+    );
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1920,
+        maxHeight: 1080,
+        imageQuality: 85,
+      );
+      if (image != null) {
+        setState(() {
+          selectedImage = File(image.path);
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal memilih foto: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Widget _buildBarangDetailsForm() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Detail Barang Anda',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildBarangInput(
+            Icons.scale_outlined,
+            'Berat Barang',
+            _weightController,
+            'Contoh: 2KG',
+          ),
+          const SizedBox(height: 16),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.description_outlined,
+                      size: 20, color: Colors.grey[600]),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Deskripsi Barang',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _descriptionController,
+                maxLines: 3,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.black87,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Contoh: Dokumen penting, kemasan bubble wrap',
+                  hintStyle: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[400],
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Foto Barang (Opsional)',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              InkWell(
+                onTap: _pickImage,
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: double.infinity,
+                  height: selectedImage != null ? 200 : 120,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.grey.withOpacity(0.2),
+                      width: 1.5,
+                      style: BorderStyle.solid,
+                    ),
+                  ),
+                  child: selectedImage != null
+                      ? Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(11),
+                              child: Image.file(
+                                selectedImage!,
+                                width: double.infinity,
+                                height: double.infinity,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    selectedImage = null;
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.6),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.close,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: Colors.blue[50],
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.add_photo_alternate_rounded,
+                                color: Colors.blue[700],
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              'Tap untuk tambah foto',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Format: JPG, PNG (Max 5MB)',
+                              style: TextStyle(
+                                color: Colors.grey[400],
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBarangInput(IconData icon, String label,
+      TextEditingController controller, String hint) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 20, color: Colors.grey[600]),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          style: const TextStyle(fontSize: 14, color: Colors.black87),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(fontSize: 14, color: Colors.grey[400]),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey[300]!)),
+            enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey[300]!)),
+          ),
+        ),
+      ],
     );
   }
 
@@ -722,8 +1003,10 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
   }
 
   Widget _buildAddPassengerModal() {
-    final TextEditingController nameController = TextEditingController();
-    final TextEditingController phoneController = TextEditingController();
+    final TextEditingController nameController =
+        TextEditingController(text: _userName);
+    final TextEditingController phoneController =
+        TextEditingController(text: _userPhone);
     bool saveToList = false;
 
     return StatefulBuilder(

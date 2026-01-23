@@ -13,6 +13,7 @@ class DetailTitipBarangPage extends StatelessWidget {
   final TimeOfDay departureTime;
   final String transportationType;
   final int bagasiCapacity;
+  final int? jumlahBagasi;
   final double price;
 
   const DetailTitipBarangPage({
@@ -25,6 +26,7 @@ class DetailTitipBarangPage extends StatelessWidget {
     required this.departureTime,
     required this.transportationType,
     required this.bagasiCapacity,
+    this.jumlahBagasi,
     required this.price,
   }) : super(key: key);
 
@@ -106,6 +108,10 @@ class DetailTitipBarangPage extends StatelessWidget {
         'bagasi_capacity': bagasiCapacity,
         'price': price,
       };
+
+      if (jumlahBagasi != null) {
+        requestBody['jumlah_bagasi'] = jumlahBagasi!;
+      }
 
       print('DEBUG: Request body = $requestBody');
 

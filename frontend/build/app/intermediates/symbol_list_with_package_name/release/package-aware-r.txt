@@ -118,6 +118,7 @@ drawable notification_bg_low_pressed
 drawable notification_bg_normal
 drawable notification_bg_normal_pressed
 drawable notification_icon_background
+drawable notification_oversize_large_icon_bg
 drawable notification_template_icon_bg
 drawable notification_template_icon_low_bg
 drawable notification_tile_bg
@@ -171,8 +172,10 @@ id cancel_action
 id chronometer
 id dark
 id dialog_button
+id edit_text_id
 id end_padder
 id forever
+id hide_ime_id
 id icon
 id icon_group
 id icon_only
@@ -221,6 +224,8 @@ integer cancel_button_image_alpha
 integer google_play_services_version
 integer status_bar_notification_info_maxnum
 layout custom_dialog
+layout ime_base_split_test_activity
+layout ime_secondary_split_test_activity
 layout notification_action
 layout notification_action_tombstone
 layout notification_media_action

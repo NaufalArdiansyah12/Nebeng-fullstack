@@ -119,14 +119,14 @@ class VerifikasiCustomerController extends Controller
             // Upload photo
             $photo = $request->file('photo');
             $filename = 'verifikasi/wajah/' . $user->id . '_' . time() . '.' . $photo->getClientOriginalExtension();
-            $path = $photo->storeAs('public', $filename);
+            Storage::disk('public')->put($filename, file_get_contents($photo));
             
             // Get or create verification record
             $verifikasi = VerifikasiKtpCustomer::firstOrNew(['user_id' => $user->id]);
             
             // Delete old photo if exists
             if ($verifikasi->photo_wajah) {
-                Storage::delete('public/' . $verifikasi->photo_wajah);
+                Storage::disk('public')->delete($verifikasi->photo_wajah);
             }
             
             $verifikasi->photo_wajah = $filename;
@@ -188,14 +188,14 @@ class VerifikasiCustomerController extends Controller
             // Upload photo
             $photo = $request->file('photo');
             $filename = 'verifikasi/ktp/' . $user->id . '_' . time() . '.' . $photo->getClientOriginalExtension();
-            $path = $photo->storeAs('public', $filename);
+            Storage::disk('public')->put($filename, file_get_contents($photo));
             
             // Get or create verification record
             $verifikasi = VerifikasiKtpCustomer::firstOrNew(['user_id' => $user->id]);
             
             // Delete old photo if exists
             if ($verifikasi->photo_ktp) {
-                Storage::delete('public/' . $verifikasi->photo_ktp);
+                Storage::disk('public')->delete($verifikasi->photo_ktp);
             }
             
             $verifikasi->photo_ktp = $filename;
@@ -261,14 +261,14 @@ class VerifikasiCustomerController extends Controller
             // Upload photo
             $photo = $request->file('photo');
             $filename = 'verifikasi/wajah_ktp/' . $user->id . '_' . time() . '.' . $photo->getClientOriginalExtension();
-            $path = $photo->storeAs('public', $filename);
+            Storage::disk('public')->put($filename, file_get_contents($photo));
             
             // Get or create verification record
             $verifikasi = VerifikasiKtpCustomer::firstOrNew(['user_id' => $user->id]);
             
             // Delete old photo if exists
             if ($verifikasi->photo_ktp_wajah) {
-                Storage::delete('public/' . $verifikasi->photo_ktp_wajah);
+                Storage::disk('public')->delete($verifikasi->photo_ktp_wajah);
             }
             
             $verifikasi->photo_ktp_wajah = $filename;

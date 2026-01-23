@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -15,6 +16,9 @@ class PaymentMethodPage extends StatefulWidget {
   final String phoneNumber;
   final String paymentMethod;
   final int totalPassengers;
+  final File? photoFile;
+  final String? weight;
+  final String? description;
 
   const PaymentMethodPage({
     Key? key,
@@ -24,6 +28,9 @@ class PaymentMethodPage extends StatefulWidget {
     required this.phoneNumber,
     required this.paymentMethod,
     this.totalPassengers = 1,
+    this.photoFile,
+    this.weight,
+    this.description,
   }) : super(key: key);
 
   @override
@@ -617,6 +624,9 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
             seats: widget.totalPassengers,
             bookingNumber: widget.bookingNumber,
             rideType: 'motor',
+            photoFilePath: widget.photoFile?.path,
+            weight: widget.weight,
+            description: widget.description,
           );
           print(
               'Booking created for cash payment: ${booking['id']}, booking_number: ${booking['booking_number']}');
@@ -716,6 +726,9 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
           seats: widget.totalPassengers,
           bookingNumber: widget.bookingNumber,
           rideType: 'motor',
+          photoFilePath: widget.photoFile?.path,
+          weight: widget.weight,
+          description: widget.description,
         );
         print('Booking created: ${booking['id']}');
         createdBookingId = booking['id'];

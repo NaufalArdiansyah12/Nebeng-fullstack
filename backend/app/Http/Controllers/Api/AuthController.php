@@ -180,10 +180,9 @@ class AuthController extends Controller
         // Handle photo upload if provided
         if ($request->hasFile('profile_photo')) {
             $file = $request->file('profile_photo');
-            $path = $file->store('public/profile_photos');
-            // store returns something like public/profile_photos/xxxx.jpg
-            // we save the relative path without the 'public/' prefix
-            $user->profile_photo = Storage::url($path);
+            $filename = 'profile_photos/' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+            Storage::disk('public')->put($filename, file_get_contents($file));
+            $user->profile_photo = Storage::url($filename);
         }
 
         $user->save();

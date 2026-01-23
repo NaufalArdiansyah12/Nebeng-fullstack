@@ -6,6 +6,7 @@ import 'security_page.dart';
 import 'edit_profile_page.dart';
 import '../help/help_center_page.dart';
 import '../../pin/create_pin_page.dart';
+import 'package:nebeng/screens/mitra/riwayat_page.dart';
 
 class MitraProfilePage extends StatefulWidget {
   const MitraProfilePage({Key? key}) : super(key: key);
@@ -185,8 +186,8 @@ class _MitraProfilePageState extends State<MitraProfilePage> {
             icon: Icons.person_outline,
             iconColor: Colors.black87,
             title: 'Edit Profile',
-            onTap: () {
-              Navigator.push(
+            onTap: () async {
+              await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => const MitraEditProfilePage(),
@@ -198,7 +199,12 @@ class _MitraProfilePageState extends State<MitraProfilePage> {
             icon: Icons.receipt_long_outlined,
             iconColor: Colors.black87,
             title: 'Riwayat Transaksi',
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const MitraRiwayatPage()),
+              );
+            },
           ),
           _buildMenuItem(
             icon: Icons.language,

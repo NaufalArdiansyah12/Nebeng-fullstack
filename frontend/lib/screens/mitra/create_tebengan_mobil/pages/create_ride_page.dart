@@ -327,7 +327,97 @@ class _CreateCarRidePageState extends State<CreateCarRidePage> {
     }
   }
 
+  Future<void> _selectSeats() async {
+    final controller = TextEditingController(text: _seatsController.text);
+    final result = await showDialog<int?>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Jumlah Kursi'),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(hintText: 'Masukkan jumlah kursi'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(null),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final v = int.tryParse(controller.text) ??
+                  int.tryParse(_seatsController.text) ??
+                  4;
+              Navigator.of(context).pop(v);
+            },
+            child: const Text('Simpan'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && mounted) {
+      _seatsController.text = result.toString();
+      setState(() {});
+    }
+  }
+
+  Widget _buildSeatsCard() {
+    return InkWell(
+      onTap: _selectSeats,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 4,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.event_seat, color: Colors.grey, size: 20),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Jumlah Kursi',
+                      style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w500)),
+                  const SizedBox(height: 6),
+                  Text(
+                    '${_seatsController.text} kursi',
+                    style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.chevron_right, color: Colors.grey),
+          ],
+        ),
+      ),
+    );
+  }
+
   int? _selectedBagasiCapacity;
+  int? _jumlahBagasi;
 
   Future<void> _selectBagasiCapacity() async {
     final selected = await showDialog<int?>(
@@ -338,6 +428,134 @@ class _CreateCarRidePageState extends State<CreateCarRidePage> {
     if (selected != null && mounted) {
       setState(() => _selectedBagasiCapacity = selected);
     }
+  }
+
+  Future<void> _selectJumlahBagasi() async {
+    final controller =
+        TextEditingController(text: _jumlahBagasi?.toString() ?? '');
+    final result = await showDialog<int?>(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          padding: const EdgeInsets.all(18.0),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF7F9FC),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Jumlah Bagasi',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  hintText: 'Masukkan jumlah bagasi',
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    style:
+                        TextButton.styleFrom(foregroundColor: Colors.grey[700]),
+                    onPressed: () => Navigator.of(context).pop(null),
+                    child: const Text('Batal'),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1E40AF),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      minimumSize: const Size(92, 40),
+                      elevation: 2,
+                    ),
+                    onPressed: () {
+                      final v = int.tryParse(controller.text) ?? 0;
+                      Navigator.of(context).pop(v);
+                    },
+                    child: const Text('Simpan',
+                        style: TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w600)),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (result != null && mounted) {
+      setState(() => _jumlahBagasi = result);
+    }
+  }
+
+  Widget _buildJumlahBagasiCard() {
+    return InkWell(
+      onTap: _selectJumlahBagasi,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 4,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.backpack, color: Colors.grey, size: 20),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Jumlah Bagasi',
+                      style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w500)),
+                  const SizedBox(height: 6),
+                  Text(
+                    _jumlahBagasi != null
+                        ? '${_jumlahBagasi.toString()} buah'
+                        : 'Belum ditentukan',
+                    style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.chevron_right, color: Colors.grey),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _goToDetailPage() async {
@@ -385,6 +603,7 @@ class _CreateCarRidePageState extends State<CreateCarRidePage> {
           price: double.tryParse(_priceController.text) ?? 0,
           availableSeats: int.tryParse(_seatsController.text) ?? 4,
           bagasiCapacity: _selectedBagasiCapacity,
+          jumlahBagasi: _jumlahBagasi,
         ),
       ),
     );
@@ -445,13 +664,11 @@ class _CreateCarRidePageState extends State<CreateCarRidePage> {
               icon: Icons.airport_shuttle,
               iconColor: const Color(0xFF1E40AF),
               title: 'Pilih Tebengan',
-              subtitle: _serviceType != 'tebengan'
-                  ? MobilHelpers.getServiceTypeLabel(_serviceType)
-                  : null,
+              subtitle: MobilHelpers.getServiceTypeLabel(_serviceType),
               onTap: _selectServiceType,
             ),
             const SizedBox(height: 12),
-            if (_serviceType == 'barang') ...[
+            if (_serviceType == 'barang' || _serviceType == 'both') ...[
               MobilSelectionCard(
                 icon: Icons.luggage,
                 iconColor: const Color(0xFF1E40AF),
@@ -459,6 +676,12 @@ class _CreateCarRidePageState extends State<CreateCarRidePage> {
                 subtitle: MobilHelpers.getBagasiLabel(_selectedBagasiCapacity),
                 onTap: _selectBagasiCapacity,
               ),
+              const SizedBox(height: 12),
+              _buildJumlahBagasiCard(),
+              const SizedBox(height: 12),
+            ],
+            if (_serviceType == 'tebengan' || _serviceType == 'both') ...[
+              _buildSeatsCard(),
               const SizedBox(height: 12),
             ],
             MobilVehicleCard(

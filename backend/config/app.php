@@ -105,6 +105,13 @@ return [
         ),
     ],
 
+    // 'providers' => array_merge(
+    //     (array) env('APP_PROVIDERS', []),
+    //     [
+    //         App\Providers\BroadcastServiceProvider::class,
+    //     ]
+    // ),
+
     /*
     |--------------------------------------------------------------------------
     | Maintenance Mode Driver

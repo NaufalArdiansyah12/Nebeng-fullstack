@@ -22,6 +22,14 @@ class _MitraEditProfilePageState extends State<MitraEditProfilePage> {
   final ImagePicker _picker = ImagePicker();
   XFile? _pickedImage;
   bool _isSaving = false;
+  bool _isLoading = true;
+  String? _currentProfilePhotoUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
 
   @override
   void dispose() {
@@ -30,6 +38,55 @@ class _MitraEditProfilePageState extends State<MitraEditProfilePage> {
     _addressController.dispose();
     _phoneController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadUserProfile() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('api_token');
+
+      if (token == null) {
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      final response = await ApiService.getProfile(token: token);
+
+      if (response['success'] == true && response['data'] != null) {
+        final userData = response['data']['user'];
+
+        // Get profile photo URL and ensure it's a full URL
+        String? photoUrl = userData['profile_photo'];
+        if (photoUrl != null && photoUrl.isNotEmpty) {
+          // If it's a relative path, make it absolute
+          if (!photoUrl.startsWith('http')) {
+            final baseUrl = ApiService.baseUrl;
+            photoUrl = photoUrl.startsWith('/')
+                ? '$baseUrl$photoUrl'
+                : '$baseUrl/$photoUrl';
+          }
+        }
+
+        setState(() {
+          _emailController.text = userData['email'] ?? '';
+          _nameController.text = userData['name'] ?? '';
+          _addressController.text = userData['address'] ?? '';
+          _phoneController.text = userData['phone'] ?? '';
+          _gender = userData['gender'];
+          _currentProfilePhotoUrl = photoUrl;
+          _isLoading = false;
+        });
+
+        // Debug: print photo URL
+        print('Profile photo URL: $photoUrl');
+      } else {
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      print('Error loading profile: $e');
+      setState(() => _isLoading = false);
+      // Silently fail, user can still fill form manually
+    }
   }
 
   void _save() {
@@ -141,108 +198,157 @@ class _MitraEditProfilePageState extends State<MitraEditProfilePage> {
         ),
         centerTitle: false,
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            const SizedBox(height: 8),
-            Center(
-              child: Stack(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Form(
+              key: _formKey,
+              child: ListView(
+                padding: const EdgeInsets.all(20),
                 children: [
-                  CircleAvatar(
-                    radius: 40,
-                    backgroundImage: _pickedImage != null
-                        ? FileImage(File(_pickedImage!.path)) as ImageProvider
-                        : const AssetImage('assets/avatar_placeholder.png'),
-                    backgroundColor: Colors.grey[200],
-                  ),
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: InkWell(
-                      onTap: _showImageOptions,
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                                color: Colors.black.withOpacity(0.12),
-                                blurRadius: 4),
-                          ],
+                  const SizedBox(height: 8),
+                  Center(
+                    child: Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 40,
+                          backgroundColor: Colors.grey[200],
+                          child: _pickedImage != null
+                              ? ClipOval(
+                                  child: Image.file(
+                                    File(_pickedImage!.path),
+                                    width: 80,
+                                    height: 80,
+                                    fit: BoxFit.cover,
+                                  ),
+                                )
+                              : (_currentProfilePhotoUrl != null &&
+                                      _currentProfilePhotoUrl!.isNotEmpty)
+                                  ? ClipOval(
+                                      child: Image.network(
+                                        _currentProfilePhotoUrl!,
+                                        width: 80,
+                                        height: 80,
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                          print('Error loading image: $error');
+                                          return Icon(
+                                            Icons.person,
+                                            size: 40,
+                                            color: Colors.grey[400],
+                                          );
+                                        },
+                                        loadingBuilder:
+                                            (context, child, loadingProgress) {
+                                          if (loadingProgress == null)
+                                            return child;
+                                          return Center(
+                                            child: CircularProgressIndicator(
+                                              value: loadingProgress
+                                                          .expectedTotalBytes !=
+                                                      null
+                                                  ? loadingProgress
+                                                          .cumulativeBytesLoaded /
+                                                      loadingProgress
+                                                          .expectedTotalBytes!
+                                                  : null,
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    )
+                                  : Icon(
+                                      Icons.person,
+                                      size: 40,
+                                      color: Colors.grey[400],
+                                    ),
                         ),
-                        child: const Icon(Icons.camera_alt,
-                            size: 18, color: Colors.black54),
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: InkWell(
+                            onTap: _showImageOptions,
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                      color: Colors.black.withOpacity(0.12),
+                                      blurRadius: 4),
+                                ],
+                              ),
+                              child: const Icon(Icons.camera_alt,
+                                  size: 18, color: Colors.black54),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  _buildField(
+                    controller: _emailController,
+                    hint: 'Email',
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (v) =>
+                        (v == null || v.isEmpty) ? 'Email harus diisi' : null,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildField(
+                    controller: _nameController,
+                    hint: 'Nama Lengkap',
+                    validator: (v) =>
+                        (v == null || v.isEmpty) ? 'Nama harus diisi' : null,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildField(
+                    controller: _addressController,
+                    hint: 'Alamat',
+                    validator: (v) =>
+                        (v == null || v.isEmpty) ? 'Alamat harus diisi' : null,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildField(
+                    controller: _phoneController,
+                    hint: 'No Telp',
+                    keyboardType: TextInputType.phone,
+                    validator: (v) =>
+                        (v == null || v.isEmpty) ? 'No Telp harus diisi' : null,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildGenderField(),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _isSaving ? null : _save,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1E3A8A),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
                       ),
+                      child: _isSaving
+                          ? const SizedBox(
+                              height: 18,
+                              width: 18,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white))
+                          : const Text(
+                              'Save',
+                              style: TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.w600),
+                            ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
-            _buildField(
-              controller: _emailController,
-              hint: 'Email',
-              keyboardType: TextInputType.emailAddress,
-              validator: (v) =>
-                  (v == null || v.isEmpty) ? 'Email harus diisi' : null,
-            ),
-            const SizedBox(height: 16),
-            _buildField(
-              controller: _nameController,
-              hint: 'Nama Lengkap',
-              validator: (v) =>
-                  (v == null || v.isEmpty) ? 'Nama harus diisi' : null,
-            ),
-            const SizedBox(height: 16),
-            _buildField(
-              controller: _addressController,
-              hint: 'Alamat',
-              validator: (v) =>
-                  (v == null || v.isEmpty) ? 'Alamat harus diisi' : null,
-            ),
-            const SizedBox(height: 16),
-            _buildField(
-              controller: _phoneController,
-              hint: 'No Telp',
-              keyboardType: TextInputType.phone,
-              validator: (v) =>
-                  (v == null || v.isEmpty) ? 'No Telp harus diisi' : null,
-            ),
-            const SizedBox(height: 16),
-            _buildGenderField(),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _isSaving ? null : _save,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1E3A8A),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  elevation: 0,
-                ),
-                child: _isSaving
-                    ? const SizedBox(
-                        height: 18,
-                        width: 18,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white))
-                    : const Text(
-                        'Save',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w600),
-                      ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 

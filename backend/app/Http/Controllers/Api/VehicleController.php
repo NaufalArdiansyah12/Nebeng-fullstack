@@ -75,7 +75,6 @@ class VehicleController extends Controller
             'model' => 'required|string|max:255',
             'color' => 'required|string|max:255',
             'year' => 'nullable|integer|min:1900|max:' . (date('Y') + 1),
-            'seats' => 'required|integer|min:1',
         ]);
 
         if ($validator->fails()) {
@@ -95,7 +94,6 @@ class VehicleController extends Controller
             'model' => $request->model,
             'color' => $request->color,
             'year' => $request->year,
-            'seats' => $request->seats,
             'is_active' => true,
         ]);
 
@@ -163,7 +161,6 @@ class VehicleController extends Controller
             'model' => 'sometimes|string|max:255',
             'color' => 'sometimes|string|max:255',
             'year' => 'nullable|integer|min:1900|max:' . (date('Y') + 1),
-            'seats' => 'sometimes|integer|min:1',
             'is_active' => 'sometimes|boolean',
         ]);
 

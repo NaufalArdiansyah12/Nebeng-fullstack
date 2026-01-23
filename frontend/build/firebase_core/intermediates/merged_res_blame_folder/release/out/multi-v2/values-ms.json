@@ -4,24 +4,7 @@
             "outputFile": "io.flutter.plugins.firebase.core.firebase_core-merged_res-12:/values-ms/values-ms.xml",
             "map": [
                 {
-                    "source": "/home/naufal/.gradle/caches/transforms-3/c3e05c9fbf3e6c63974105ad6d97e1f5/transformed/jetified-play-services-basement-18.3.0/res/values-ms/values.xml",
-                    "from": {
-                        "startLines": "4",
-                        "startColumns": "0",
-                        "startOffsets": "195",
-                        "endColumns": "141",
-                        "endOffsets": "336"
-                    },
-                    "to": {
-                        "startLines": "2",
-                        "startColumns": "4",
-                        "startOffsets": "55",
-                        "endColumns": "145",
-                        "endOffsets": "196"
-                    }
-                },
-                {
-                    "source": "/home/naufal/.gradle/caches/transforms-3/2579a7de00054bf46a8dbc332552f622/transformed/core-1.6.0/res/values-ms/values-ms.xml",
+                    "source": "/home/naufal/.gradle/caches/transforms-3/5f92c4a6594b81c424ac630f41d1540f/transformed/core-1.6.0/res/values-ms/values-ms.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",
@@ -35,6 +18,23 @@
                         "startOffsets": "201",
                         "endColumns": "100",
                         "endOffsets": "297"
+                    }
+                },
+                {
+                    "source": "/home/naufal/.gradle/caches/transforms-3/958cb211f1ea886007a6251f88872e9a/transformed/jetified-play-services-basement-18.3.0/res/values-ms/values.xml",
+                    "from": {
+                        "startLines": "4",
+                        "startColumns": "0",
+                        "startOffsets": "195",
+                        "endColumns": "141",
+                        "endOffsets": "336"
+                    },
+                    "to": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "145",
+                        "endOffsets": "196"
                     }
                 }
             ]
@@ -43,24 +43,7 @@
             "outputFile": "io.flutter.plugins.firebase.core.firebase_core-mergeReleaseResources-10:/values-ms/values-ms.xml",
             "map": [
                 {
-                    "source": "/home/naufal/.gradle/caches/transforms-3/c3e05c9fbf3e6c63974105ad6d97e1f5/transformed/jetified-play-services-basement-18.3.0/res/values-ms/values.xml",
-                    "from": {
-                        "startLines": "4",
-                        "startColumns": "0",
-                        "startOffsets": "195",
-                        "endColumns": "141",
-                        "endOffsets": "336"
-                    },
-                    "to": {
-                        "startLines": "2",
-                        "startColumns": "4",
-                        "startOffsets": "55",
-                        "endColumns": "145",
-                        "endOffsets": "196"
-                    }
-                },
-                {
-                    "source": "/home/naufal/.gradle/caches/transforms-3/2579a7de00054bf46a8dbc332552f622/transformed/core-1.6.0/res/values-ms/values-ms.xml",
+                    "source": "/home/naufal/.gradle/caches/transforms-3/5f92c4a6594b81c424ac630f41d1540f/transformed/core-1.6.0/res/values-ms/values-ms.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",
@@ -74,6 +57,23 @@
                         "startOffsets": "201",
                         "endColumns": "100",
                         "endOffsets": "297"
+                    }
+                },
+                {
+                    "source": "/home/naufal/.gradle/caches/transforms-3/958cb211f1ea886007a6251f88872e9a/transformed/jetified-play-services-basement-18.3.0/res/values-ms/values.xml",
+                    "from": {
+                        "startLines": "4",
+                        "startColumns": "0",
+                        "startOffsets": "195",
+                        "endColumns": "141",
+                        "endOffsets": "336"
+                    },
+                    "to": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "145",
+                        "endOffsets": "196"
                     }
                 }
             ]

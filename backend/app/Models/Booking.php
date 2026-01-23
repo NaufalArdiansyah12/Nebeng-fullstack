@@ -12,13 +12,23 @@ class Booking extends Model
         'ride_id',
         'user_id',
         'booking_number',
+        'tracking_window_hours',
+        'driver_id',
         'seats',
         'status',
         'meta',
+        'photo',
+        'weight',
+        'description',
     ];
 
     protected $casts = [
         'meta' => 'array',
+        'scheduled_at' => 'datetime',
+        'waiting_start_at' => 'datetime',
+        'arrived_at' => 'datetime',
+        'last_location_at' => 'datetime',
+        'tracking_window_hours' => 'integer',
     ];
 
     public function ride(): BelongsTo

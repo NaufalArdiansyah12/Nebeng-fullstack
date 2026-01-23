@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/trip_model.dart';
 import '../utils/theme.dart';
@@ -11,6 +12,9 @@ class PaymentSelectionPage extends StatefulWidget {
   final String phoneNumber;
   final int totalPassengers;
   final List<Map<String, dynamic>>? penumpang;
+  final File? photoFile;
+  final String? weight;
+  final String? description;
 
   const PaymentSelectionPage({
     Key? key,
@@ -20,6 +24,9 @@ class PaymentSelectionPage extends StatefulWidget {
     required this.phoneNumber,
     this.totalPassengers = 1,
     this.penumpang,
+    this.photoFile,
+    this.weight,
+    this.description,
   }) : super(key: key);
 
   @override
@@ -306,6 +313,9 @@ class _PaymentSelectionPageState extends State<PaymentSelectionPage> {
           paymentMethod: selectedPaymentMethod!,
           totalPassengers: widget.totalPassengers,
           penumpang: widget.penumpang,
+          photoFile: widget.photoFile,
+          weight: widget.weight,
+          description: widget.description,
         ),
       ),
     );

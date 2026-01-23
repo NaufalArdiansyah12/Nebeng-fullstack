@@ -1,9 +1,9 @@
-io.flutter.plugins.firebase.core.firebase_core-jetified-window-1.0.0-beta04-0 /home/naufal/.gradle/caches/transforms-3/032f4dff274e516110d9363a9793a3e3/transformed/jetified-window-1.0.0-beta04/res
-io.flutter.plugins.firebase.core.firebase_core-jetified-window-java-1.0.0-beta04-1 /home/naufal/.gradle/caches/transforms-3/142c24f2530665bb6deb4123ab140714/transformed/jetified-window-java-1.0.0-beta04/res
-io.flutter.plugins.firebase.core.firebase_core-core-1.6.0-2 /home/naufal/.gradle/caches/transforms-3/2579a7de00054bf46a8dbc332552f622/transformed/core-1.6.0/res
-io.flutter.plugins.firebase.core.firebase_core-jetified-annotation-experimental-1.1.0-3 /home/naufal/.gradle/caches/transforms-3/3f96ca76068ab400b494bc7d541ee256/transformed/jetified-annotation-experimental-1.1.0/res
-io.flutter.plugins.firebase.core.firebase_core-jetified-firebase-common-20.4.3-4 /home/naufal/.gradle/caches/transforms-3/8d4ee856b0501bd4e2deb987ae70e355/transformed/jetified-firebase-common-20.4.3/res
-io.flutter.plugins.firebase.core.firebase_core-jetified-play-services-basement-18.3.0-5 /home/naufal/.gradle/caches/transforms-3/c3e05c9fbf3e6c63974105ad6d97e1f5/transformed/jetified-play-services-basement-18.3.0/res
+io.flutter.plugins.firebase.core.firebase_core-jetified-window-1.0.0-beta04-0 /home/naufal/.gradle/caches/transforms-3/3b0e9f5aa3ca69e666209fa59588d5cd/transformed/jetified-window-1.0.0-beta04/res
+io.flutter.plugins.firebase.core.firebase_core-jetified-window-java-1.0.0-beta04-1 /home/naufal/.gradle/caches/transforms-3/3cbeccf1ec9fc42d2f9329293d00dfde/transformed/jetified-window-java-1.0.0-beta04/res
+io.flutter.plugins.firebase.core.firebase_core-core-1.6.0-2 /home/naufal/.gradle/caches/transforms-3/5f92c4a6594b81c424ac630f41d1540f/transformed/core-1.6.0/res
+io.flutter.plugins.firebase.core.firebase_core-jetified-annotation-experimental-1.1.0-3 /home/naufal/.gradle/caches/transforms-3/6cb86f2c8c0b3f9647dc84e9f416c242/transformed/jetified-annotation-experimental-1.1.0/res
+io.flutter.plugins.firebase.core.firebase_core-jetified-play-services-basement-18.3.0-4 /home/naufal/.gradle/caches/transforms-3/958cb211f1ea886007a6251f88872e9a/transformed/jetified-play-services-basement-18.3.0/res
+io.flutter.plugins.firebase.core.firebase_core-jetified-firebase-common-20.4.3-5 /home/naufal/.gradle/caches/transforms-3/987b53b4ea02211bc94054a1c7feee70/transformed/jetified-firebase-common-20.4.3/res
 io.flutter.plugins.firebase.core.firebase_core-main-6 /home/naufal/.pub-cache/hosted/pub.dev/firebase_core-2.32.0/android/src/main/res
 io.flutter.plugins.firebase.core.firebase_core-release-7 /home/naufal/.pub-cache/hosted/pub.dev/firebase_core-2.32.0/android/src/release/res
 io.flutter.plugins.firebase.core.firebase_core-pngs-8 /home/naufal/project/nebeng-fullstack/frontend/build/firebase_core/generated/res/pngs/release

@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\VehicleController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PaymentTestController;
 use App\Http\Controllers\TebenganTitipBarangController;
+use App\Http\Controllers\Api\MitraHistoryController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -72,6 +73,17 @@ Route::prefix('api/v1')->group(function () {
     // Note: use bearer token lookup inside controller (project uses custom ApiToken table)
     Route::get('/bookings/my', [\App\Http\Controllers\Api\BookingController::class, 'myBookings']);
     Route::get('/bookings/{id}', [\App\Http\Controllers\Api\BookingController::class, 'show']);
+    // Update booking status (customer or driver can update)
+    Route::put('/bookings/{id}/status', [\App\Http\Controllers\Api\BookingController::class, 'updateStatus']);
+    // Get comprehensive tracking info
+    Route::get('/bookings/{id}/tracking', [\App\Http\Controllers\Api\BookingTrackingController::class, 'show']);
+    // Driver actions for trip
+    Route::post('/bookings/{id}/start-trip', [\App\Http\Controllers\Api\BookingTrackingController::class, 'startTrip']);
+    Route::post('/bookings/{id}/complete-trip', [\App\Http\Controllers\Api\BookingTrackingController::class, 'completeTrip']);
+    // Accept location updates from drivers for a booking (expects bearer token)
+    Route::post('/bookings/{id}/location', [\App\Http\Controllers\Api\BookingLocationController::class, 'store']);
+    // Get latest location for a booking (requires bearer token). Supports If-Modified-Since and If-None-Match.
+    Route::get('/bookings/{id}/location', [\App\Http\Controllers\Api\BookingLocationController::class, 'show']);
 
     // Vehicles (requires auth via bearer token)
     Route::get('/vehicles', [VehicleController::class, 'index']);
@@ -107,6 +119,9 @@ Route::prefix('api/v1')->group(function () {
     Route::put('/tebengan-titip-barang/{id}', [TebenganTitipBarangController::class, 'update']);
     Route::delete('/tebengan-titip-barang/{id}', [TebenganTitipBarangController::class, 'destroy']);
     Route::get('/tebengan-titip-barang/my/list', [TebenganTitipBarangController::class, 'myTebengan']);
+
+    // Mitra: riwayat tebengan (partner history)
+    Route::get('/mitra/riwayat', [MitraHistoryController::class, 'index']);
 
     // Rewards (points / merchandise)
     Route::get('/rewards', [\App\Http\Controllers\Api\RewardController::class, 'index']);

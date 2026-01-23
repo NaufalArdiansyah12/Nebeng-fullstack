@@ -218,6 +218,13 @@ class _CreateRidePageState extends State<CreateRidePage> {
     if (selected != null) {
       setState(() {
         _serviceType = selected;
+        // If mitra chooses cargo-only or cargo+tebengan, jumlah bagasi is fixed to 1
+        if (_serviceType == 'barang' || _serviceType == 'both') {
+          _jumlahBagasi = 1;
+        } else {
+          // reset to null for pure tebengan so mitra can choose
+          _jumlahBagasi = null;
+        }
       });
     }
   }
@@ -337,6 +344,7 @@ class _CreateRidePageState extends State<CreateRidePage> {
   }
 
   int? _selectedBagasiCapacity;
+  int? _jumlahBagasi;
 
   Future<void> _selectBagasiCapacity() async {
     final selected = await showDialog<int?>(
@@ -347,6 +355,141 @@ class _CreateRidePageState extends State<CreateRidePage> {
     if (selected != null && mounted) {
       setState(() => _selectedBagasiCapacity = selected);
     }
+  }
+
+  Future<void> _selectJumlahBagasi() async {
+    final controller =
+        TextEditingController(text: _jumlahBagasi?.toString() ?? '');
+    final result = await showDialog<int?>(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          padding: const EdgeInsets.all(18.0),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF7F9FC),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Jumlah Bagasi',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  hintText: 'Masukkan jumlah bagasi',
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    style:
+                        TextButton.styleFrom(foregroundColor: Colors.grey[700]),
+                    onPressed: () => Navigator.of(context).pop(null),
+                    child: const Text('Batal'),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1E40AF),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      minimumSize: const Size(92, 40),
+                      elevation: 2,
+                    ),
+                    onPressed: () {
+                      final v = int.tryParse(controller.text) ?? 0;
+                      Navigator.of(context).pop(v);
+                    },
+                    child: const Text('Simpan',
+                        style: TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w600)),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (result != null && mounted) {
+      setState(() => _jumlahBagasi = result);
+    }
+  }
+
+  Widget _buildJumlahBagasiCard() {
+    final isEditable = _serviceType == 'tebengan';
+
+    return InkWell(
+      onTap: isEditable ? _selectJumlahBagasi : null,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 4,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.backpack, color: Colors.grey, size: 20),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Jumlah Bagasi',
+                      style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w500)),
+                  const SizedBox(height: 6),
+                  Text(
+                    _jumlahBagasi != null
+                        ? '${_jumlahBagasi.toString()} buah'
+                        : (isEditable
+                            ? 'Belum ditentukan'
+                            : '1 buah (otomatis)'),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            if (isEditable)
+              const Icon(Icons.chevron_right, color: Colors.grey)
+            else
+              const SizedBox.shrink(),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _goToDetailPage() async {
@@ -394,6 +537,7 @@ class _CreateRidePageState extends State<CreateRidePage> {
           price: double.tryParse(_priceController.text) ?? 0,
           availableSeats: int.tryParse(_seatsController.text) ?? 1,
           bagasiCapacity: _selectedBagasiCapacity,
+          jumlahBagasi: _jumlahBagasi,
         ),
       ),
     );
@@ -586,6 +730,58 @@ class _CreateRidePageState extends State<CreateRidePage> {
       ),
     );
   }
+
+  Widget _buildDisabledInfoCard({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    String? subtitle,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: iconColor.withOpacity(0.8), size: 20),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey[700],
+                      fontWeight: FontWeight.w500),
+                ),
+                if (subtitle != null && subtitle.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    subtitle,
+                    style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Seats selection removed for motor: seats fixed to 1
 
   Widget _buildPriceField() {
     return InkWell(
@@ -792,14 +988,40 @@ class _CreateRidePageState extends State<CreateRidePage> {
               icon: Icons.airport_shuttle,
               iconColor: const Color(0xFF1E40AF),
               title: 'Pilih Tebengan',
-              subtitle:
-                  _serviceType != 'tebengan' ? _getServiceTypeLabel() : null,
+              subtitle: _getServiceTypeLabel(),
               onTap: _selectServiceType,
             ),
 
             const SizedBox(height: 12),
 
+            // Render service-specific rows
+            if (_serviceType == 'tebengan') ...[
+              // For Hanya Tebengan we only show the seats form (no extra label card)
+              _buildSeatsCard(),
+              const SizedBox(height: 12),
+            ],
+
+            if (_serviceType == 'both') ...[
+              _buildSelectionCard(
+                icon: Icons.luggage,
+                iconColor: const Color(0xFF1E40AF),
+                title: 'Kapasitas Bagasi',
+                subtitle: _selectedBagasiCapacity != null
+                    ? (_selectedBagasiCapacity == 5
+                        ? 'Kecil - Maksimal 5 kg'
+                        : _selectedBagasiCapacity == 10
+                            ? 'Sedang - Maksimal 10 kg'
+                            : 'Besar - Maksimal 20 kg')
+                    : null,
+                onTap: _selectBagasiCapacity,
+              ),
+              const SizedBox(height: 12),
+              _buildSeatsCard(),
+              const SizedBox(height: 12),
+            ],
+
             if (_serviceType == 'barang') ...[
+              // For 'barang' we only show bagasi selection (no repeated label)
               _buildSelectionCard(
                 icon: Icons.luggage,
                 iconColor: const Color(0xFF1E40AF),
@@ -815,8 +1037,6 @@ class _CreateRidePageState extends State<CreateRidePage> {
               ),
               const SizedBox(height: 12),
             ],
-
-            const SizedBox(height: 12),
             _buildVehicleCard(),
             const SizedBox(height: 12),
             _buildPriceField(),
@@ -862,6 +1082,56 @@ class _CreateRidePageState extends State<CreateRidePage> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  // Non-interactive seats card: seats fixed to 1 for motor rides
+  Widget _buildSeatsCard() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.event_seat, color: Colors.grey, size: 20),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text('Jumlah Kursi',
+                    style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w500)),
+                SizedBox(height: 6),
+                Text(
+                  '1 kursi',
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
     );
   }

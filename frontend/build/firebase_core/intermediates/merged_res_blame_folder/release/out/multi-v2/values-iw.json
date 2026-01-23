@@ -4,24 +4,7 @@
             "outputFile": "io.flutter.plugins.firebase.core.firebase_core-merged_res-12:/values-iw/values-iw.xml",
             "map": [
                 {
-                    "source": "/home/naufal/.gradle/caches/transforms-3/2579a7de00054bf46a8dbc332552f622/transformed/core-1.6.0/res/values-iw/values-iw.xml",
-                    "from": {
-                        "startLines": "2",
-                        "startColumns": "4",
-                        "startOffsets": "55",
-                        "endColumns": "100",
-                        "endOffsets": "151"
-                    },
-                    "to": {
-                        "startLines": "3",
-                        "startColumns": "4",
-                        "startOffsets": "173",
-                        "endColumns": "100",
-                        "endOffsets": "269"
-                    }
-                },
-                {
-                    "source": "/home/naufal/.gradle/caches/transforms-3/c3e05c9fbf3e6c63974105ad6d97e1f5/transformed/jetified-play-services-basement-18.3.0/res/values-iw/values.xml",
+                    "source": "/home/naufal/.gradle/caches/transforms-3/958cb211f1ea886007a6251f88872e9a/transformed/jetified-play-services-basement-18.3.0/res/values-iw/values.xml",
                     "from": {
                         "startLines": "4",
                         "startColumns": "0",
@@ -35,6 +18,23 @@
                         "startOffsets": "55",
                         "endColumns": "117",
                         "endOffsets": "168"
+                    }
+                },
+                {
+                    "source": "/home/naufal/.gradle/caches/transforms-3/5f92c4a6594b81c424ac630f41d1540f/transformed/core-1.6.0/res/values-iw/values-iw.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "100",
+                        "endOffsets": "151"
+                    },
+                    "to": {
+                        "startLines": "3",
+                        "startColumns": "4",
+                        "startOffsets": "173",
+                        "endColumns": "100",
+                        "endOffsets": "269"
                     }
                 }
             ]
@@ -43,24 +43,7 @@
             "outputFile": "io.flutter.plugins.firebase.core.firebase_core-mergeReleaseResources-10:/values-iw/values-iw.xml",
             "map": [
                 {
-                    "source": "/home/naufal/.gradle/caches/transforms-3/2579a7de00054bf46a8dbc332552f622/transformed/core-1.6.0/res/values-iw/values-iw.xml",
-                    "from": {
-                        "startLines": "2",
-                        "startColumns": "4",
-                        "startOffsets": "55",
-                        "endColumns": "100",
-                        "endOffsets": "151"
-                    },
-                    "to": {
-                        "startLines": "3",
-                        "startColumns": "4",
-                        "startOffsets": "173",
-                        "endColumns": "100",
-                        "endOffsets": "269"
-                    }
-                },
-                {
-                    "source": "/home/naufal/.gradle/caches/transforms-3/c3e05c9fbf3e6c63974105ad6d97e1f5/transformed/jetified-play-services-basement-18.3.0/res/values-iw/values.xml",
+                    "source": "/home/naufal/.gradle/caches/transforms-3/958cb211f1ea886007a6251f88872e9a/transformed/jetified-play-services-basement-18.3.0/res/values-iw/values.xml",
                     "from": {
                         "startLines": "4",
                         "startColumns": "0",
@@ -74,6 +57,23 @@
                         "startOffsets": "55",
                         "endColumns": "117",
                         "endOffsets": "168"
+                    }
+                },
+                {
+                    "source": "/home/naufal/.gradle/caches/transforms-3/5f92c4a6594b81c424ac630f41d1540f/transformed/core-1.6.0/res/values-iw/values-iw.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "100",
+                        "endOffsets": "151"
+                    },
+                    "to": {
+                        "startLines": "3",
+                        "startColumns": "4",
+                        "startOffsets": "173",
+                        "endColumns": "100",
+                        "endOffsets": "269"
                     }
                 }
             ]

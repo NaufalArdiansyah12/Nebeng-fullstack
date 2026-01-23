@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -18,6 +19,9 @@ class PaymentMethodPage extends StatefulWidget {
   final String paymentMethod;
   final int totalPassengers;
   final List<Map<String, dynamic>>? penumpang;
+  final File? photoFile;
+  final String? weight;
+  final String? description;
 
   const PaymentMethodPage({
     Key? key,
@@ -28,6 +32,9 @@ class PaymentMethodPage extends StatefulWidget {
     required this.paymentMethod,
     this.totalPassengers = 1,
     this.penumpang,
+    this.photoFile,
+    this.weight,
+    this.description,
   }) : super(key: key);
 
   @override
@@ -551,6 +558,9 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
         bookingNumber: bookingNumber,
         rideType: 'mobil',
         penumpang: widget.penumpang,
+        photoFilePath: widget.photoFile?.path,
+        weight: widget.weight,
+        description: widget.description,
       );
       print('Booking created successfully: ${booking['id']}');
 

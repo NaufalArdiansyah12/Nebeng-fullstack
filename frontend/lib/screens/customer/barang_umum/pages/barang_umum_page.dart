@@ -181,7 +181,7 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
       return;
     }
 
-    if (_keteranganController.text.trim().isEmpty) {
+    if (keteranganBarang == null || keteranganBarang!.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Mohon isi keterangan barang'),
@@ -202,7 +202,7 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
           lokasiTujuan: lokasiTujuan ?? '',
           tanggalBerangkat: tanggalBerangkat!,
           ukuranBarang: ukuranBarang!,
-          keteranganBarang: _keteranganController.text.trim(),
+          keteranganBarang: keteranganBarang ?? '',
           fotoBarang: fotoBarang,
           dataPenerima: dataPenerima,
           penerimaPhone: penerimaPhone,

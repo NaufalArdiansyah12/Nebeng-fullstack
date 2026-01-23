@@ -516,6 +516,33 @@ class _TripListBarangUmumPageState extends State<TripListBarangUmumPage> {
   }
 
   Widget _buildTripCard(Map<String, dynamic> trip) {
+    // Map helper getters
+    String departureDate = _formatDate(trip['departure_date'] ?? '');
+    String departureTime = _formatTime(trip['departure_time'] ?? '');
+    final origin = trip['origin_location'] ?? {};
+    final dest = trip['destination_location'] ?? {};
+    final int? bagasiCapacity = (() {
+      final b = trip['max_bagasi'] ?? trip['bagasi_capacity'] ?? trip['bagasi'];
+      if (b == null) return null;
+      if (b is num) return b.toInt();
+      return int.tryParse(b.toString());
+    })();
+    final int? jumlahBagasi = (() {
+      final j = trip['remaining_bagasi'] ??
+          trip['jumlah_bagasi'] ??
+          trip['sisa_bagasi'];
+      if (j == null) return null;
+      if (j is num) return j.toInt();
+      return int.tryParse(j.toString());
+    })();
+    final String transportation = (trip['transportation'] ??
+            trip['transportation_type'] ??
+            trip['vehicle_type'] ??
+            '')
+        .toString();
+    final String serviceType =
+        (trip['service_type'] ?? trip['service'] ?? '').toString();
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -533,12 +560,11 @@ class _TripListBarangUmumPageState extends State<TripListBarangUmumPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Date and Time
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                _formatDate(trip['departure_date'] ?? ''),
+                departureDate,
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
@@ -546,7 +572,7 @@ class _TripListBarangUmumPageState extends State<TripListBarangUmumPage> {
                 ),
               ),
               Text(
-                _formatTime(trip['departure_time'] ?? ''),
+                departureTime,
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
@@ -556,72 +582,123 @@ class _TripListBarangUmumPageState extends State<TripListBarangUmumPage> {
             ],
           ),
           const SizedBox(height: 16),
-
-          // Departure Location
+          if (serviceType.isNotEmpty)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF3B82F6).withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Text(
+                  _serviceLabel(serviceType),
+                  style: const TextStyle(
+                    color: Color(0xFF3B82F6),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          if (transportation.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0, bottom: 6.0),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    _transportLabel(transportation),
+                    style: const TextStyle(
+                      color: Color(0xFF3B82F6),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           _buildLocationRow(
             icon: Icons.arrow_upward,
             iconColor: const Color(0xFF10B981),
-            title: trip['origin_location']?['name'] ?? '-',
-            subtitle: trip['origin_location']?['address'] ?? '',
+            title: origin?['name'] ?? '-',
+            subtitle: origin?['address'] ?? '',
           ),
           const SizedBox(height: 12),
-
-          // Arrival Location
           _buildLocationRow(
             icon: Icons.location_on,
             iconColor: const Color(0xFFF97316),
-            title: trip['destination_location']?['name'] ?? '-',
-            subtitle: trip['destination_location']?['address'] ?? '',
+            title: dest?['name'] ?? '-',
+            subtitle: dest?['address'] ?? '',
           ),
           const SizedBox(height: 16),
-
-          // Price
+          if ((jumlahBagasi ?? 0) > 0)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12.0),
+              child: Row(
+                children: [
+                  Icon(Icons.card_travel, size: 14, color: Colors.grey[700]),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Sisa ${jumlahBagasi} Bagasi',
+                    style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                  ),
+                ],
+              ),
+            ),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Text(
-                'Total Biaya',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black87,
-                ),
-              ),
-              Text(
-                'Rp. ${_formatPrice(trip['price'])}',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.black87,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Select Button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () => _navigateToBookingDetail(trip),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF3B82F6),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  side: const BorderSide(
-                    color: Color(0xFF3B82F6),
-                    width: 1.5,
+              Expanded(
+                child: Text(
+                  departureTime,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.black87,
                   ),
                 ),
-                elevation: 0,
               ),
-              child: const Text(
-                'Selanjutnya',
-                style: TextStyle(
+              if ((bagasiCapacity ?? 0) > 0)
+                Row(
+                  children: [
+                    Icon(Icons.card_travel, color: Colors.grey[700], size: 18),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Maks. ${bagasiCapacity} Bagasi',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey[800],
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            height: 1,
+            color: Colors.grey[300],
+          ),
+          const SizedBox(height: 10),
+          Center(
+            child: TextButton(
+              onPressed: () => _navigateToBookingDetail(trip),
+              child: Text(
+                'Selengkapnya',
+                style: const TextStyle(
+                  color: Color(0xFF3B82F6),
                   fontSize: 14,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -682,6 +759,45 @@ class _TripListBarangUmumPageState extends State<TripListBarangUmumPage> {
         ),
       ],
     );
+  }
+
+  String _serviceLabel(String? s) {
+    final v = (s ?? '').toString().toLowerCase();
+    switch (v) {
+      case 'tebengan':
+        return 'Hanya Tebengan';
+      case 'barang':
+        return 'Hanya Titip Barang';
+      case 'both':
+        return 'Barang dan Tebengan';
+      default:
+        return v.isNotEmpty ? _titleCase(v) : '';
+    }
+  }
+
+  String _transportLabel(String? t) {
+    final v = (t ?? '').toString().toLowerCase();
+    switch (v) {
+      case 'bus':
+        return 'Bus';
+      case 'kereta':
+      case 'train':
+      case 'rail':
+        return 'Kereta';
+      case 'pesawat':
+      case 'plane':
+      case 'flight':
+        return 'Pesawat';
+      default:
+        return v.isNotEmpty ? _titleCase(v) : '';
+    }
+  }
+
+  String _titleCase(String s) {
+    return s.split(RegExp(r'\s+')).map((w) {
+      if (w.isEmpty) return w;
+      return w[0].toUpperCase() + (w.length > 1 ? w.substring(1) : '');
+    }).join(' ');
   }
 
   void _navigateToBookingDetail(Map<String, dynamic> trip) {

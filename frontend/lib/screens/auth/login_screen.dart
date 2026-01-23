@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:http/http.dart' as http;
+import 'package:geolocator/geolocator.dart';
 import '../../services/api_service.dart';
 import '../customer/main_page.dart';
 import '../mitra/main_page.dart';
@@ -112,22 +113,45 @@ class _LoginScreenState extends State<LoginScreen> {
           icon: Icons.check_circle_outline,
           iconColor: Colors.green,
           onClose: () {
-            // Redirect based on role
-            if (role == 'mitra') {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const MitraMainPage(),
-                ),
-              );
-            } else {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const MainPage(),
-                ),
-              );
+            // Redirect based on role and request location permission for mitra
+            Future<void> _maybeRequestLocation() async {
+              if (role == 'mitra') {
+                try {
+                  bool serviceEnabled =
+                      await Geolocator.isLocationServiceEnabled();
+                  if (!serviceEnabled) {
+                    // try to open location settings; do not block navigation
+                    await Geolocator.openLocationSettings();
+                  }
+
+                  LocationPermission permission =
+                      await Geolocator.checkPermission();
+                  if (permission == LocationPermission.denied) {
+                    await Geolocator.requestPermission();
+                  } else if (permission == LocationPermission.deniedForever) {
+                    // can't request; optionally inform user later
+                  }
+                } catch (_) {
+                  // ignore permission errors
+                }
+
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MitraMainPage(),
+                  ),
+                );
+              } else {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MainPage(),
+                  ),
+                );
+              }
             }
+
+            _maybeRequestLocation();
           },
         );
       }
@@ -642,4 +666,3 @@ class GoogleLogoPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-

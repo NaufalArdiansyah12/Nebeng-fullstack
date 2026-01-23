@@ -9,6 +9,9 @@ class TripModel {
   final int price;
   final int availableSeats;
   final int maxPassengers;
+  final int? bagasiCapacity;
+  final int? jumlahBagasi;
+  final String? serviceType;
 
   TripModel({
     required this.id,
@@ -21,6 +24,9 @@ class TripModel {
     required this.price,
     this.availableSeats = 3,
     this.maxPassengers = 4,
+    this.bagasiCapacity,
+    this.jumlahBagasi,
+    this.serviceType,
   });
 
   factory TripModel.fromApi(Map<String, dynamic> json) {
@@ -100,6 +106,28 @@ class TripModel {
       price: parsedPrice,
       availableSeats: parsedSeats,
       maxPassengers: parsedSeats,
+      bagasiCapacity: () {
+        final b = json['bagasi_capacity'] ??
+            json['bagasiCapacity'] ??
+            json['max_bagasi'] ??
+            json['bagasi'];
+        if (b == null) return null;
+        if (b is num) return b.toInt();
+        if (b is String) return int.tryParse(b) ?? null;
+        return null;
+      }(),
+      jumlahBagasi: () {
+        final j = json['jumlah_bagasi'] ??
+            json['jumlahBagasi'] ??
+            json['remaining_bagasi'] ??
+            json['sisa_bagasi'];
+        if (j == null) return null;
+        if (j is num) return j.toInt();
+        if (j is String) return int.tryParse(j) ?? null;
+        return null;
+      }(),
+      serviceType:
+          (json['service_type'] ?? json['serviceType'] ?? '').toString(),
     );
   }
 }

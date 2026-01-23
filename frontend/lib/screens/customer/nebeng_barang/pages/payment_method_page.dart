@@ -20,6 +20,7 @@ class PaymentMethodPage extends StatefulWidget {
   final String? weight;
   final String? description;
   final String rideType;
+  final String? receiverInfo;
 
   const PaymentMethodPage({
     Key? key,
@@ -33,6 +34,7 @@ class PaymentMethodPage extends StatefulWidget {
     this.weight,
     this.description,
     this.rideType = 'barang',
+    this.receiverInfo,
   }) : super(key: key);
 
   @override
@@ -618,6 +620,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
             photoFilePath: widget.photoFile?.path,
             weight: widget.weight,
             description: widget.description,
+            penerima: widget.receiverInfo,
           );
           createdBookingId = booking['id'];
           createdBookingNumber =
@@ -703,6 +706,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
           photoFilePath: widget.photoFile?.path,
           weight: widget.weight,
           description: widget.description,
+          penerima: widget.receiverInfo,
         );
         createdBookingId = booking['id'];
         createdBookingNumber =

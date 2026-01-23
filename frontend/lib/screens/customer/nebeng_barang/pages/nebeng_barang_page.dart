@@ -641,6 +641,8 @@ class _NebengBarangPageState extends State<NebengBarangPage> {
               CustomCalendarWidget(
                 initialDate: tanggalKeberangkatan ?? DateTime.now(),
                 selectedDate: tanggalKeberangkatan,
+                disablePast: true,
+                minDate: DateTime.now(),
               ),
             ],
           ),

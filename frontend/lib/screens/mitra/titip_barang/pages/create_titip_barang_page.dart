@@ -27,6 +27,7 @@ class _CreateTitipBarangPageState extends State<CreateTitipBarangPage> {
   TimeOfDay? _selectedTime;
   int? _selectedBagasiCapacity;
   String _selectedTransportation = '';
+  int? _jumlahBagasi;
   final _priceController = TextEditingController();
 
   @override
@@ -205,6 +206,80 @@ class _CreateTitipBarangPageState extends State<CreateTitipBarangPage> {
     }
   }
 
+  Future<void> _selectJumlahBagasi() async {
+    final controller =
+        TextEditingController(text: _jumlahBagasi?.toString() ?? '');
+    final result = await showDialog<int?>(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          padding: const EdgeInsets.all(18.0),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF7F9FC),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Jumlah Bagasi',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  hintText: 'Masukkan jumlah bagasi',
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.grey[700],
+                      textStyle: const TextStyle(fontSize: 14),
+                    ),
+                    onPressed: () => Navigator.of(context).pop(null),
+                    child: const Text('Batal'),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1E40AF),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      minimumSize: const Size(92, 40),
+                      elevation: 2,
+                    ),
+                    onPressed: () {
+                      final v = int.tryParse(controller.text) ?? 0;
+                      Navigator.of(context).pop(v);
+                    },
+                    child: const Text('Simpan',
+                        style: TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w600)),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (result != null && mounted) {
+      setState(() => _jumlahBagasi = result);
+    }
+  }
+
   Future<void> _selectTransportation() async {
     final selected = await TransportationDialog.show(
       context,
@@ -244,7 +319,6 @@ class _CreateTitipBarangPageState extends State<CreateTitipBarangPage> {
       return;
     }
 
-    // Navigate to detail page
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -257,6 +331,7 @@ class _CreateTitipBarangPageState extends State<CreateTitipBarangPage> {
           departureTime: _selectedTime!,
           transportationType: _selectedTransportation,
           bagasiCapacity: _selectedBagasiCapacity!,
+          jumlahBagasi: _jumlahBagasi,
           price: price,
         ),
       ),
@@ -343,6 +418,66 @@ class _CreateTitipBarangPageState extends State<CreateTitipBarangPage> {
               subtitle: TitipBarangHelpers.getTransportationLabel(
                   _selectedTransportation),
               onTap: _selectTransportation,
+            ),
+
+            const SizedBox(height: 12),
+
+            // Jumlah Bagasi Card
+            InkWell(
+              onTap: _selectJumlahBagasi,
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.backpack,
+                          color: Colors.grey, size: 20),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Jumlah Bagasi',
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.black87,
+                                  fontWeight: FontWeight.w500)),
+                          const SizedBox(height: 6),
+                          Text(
+                            _jumlahBagasi != null
+                                ? '${_jumlahBagasi.toString()} buah'
+                                : 'Belum ditentukan',
+                            style: TextStyle(
+                                fontSize: 14, color: Colors.grey[700]),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.chevron_right, color: Colors.grey),
+                  ],
+                ),
+              ),
             ),
 
             const SizedBox(height: 12),

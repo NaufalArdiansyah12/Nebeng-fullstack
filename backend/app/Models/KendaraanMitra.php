@@ -19,8 +19,12 @@ class KendaraanMitra extends Model
         'model',
         'color',
         'year',
-        'seats',
         'is_active',
+    ];
+
+    protected $casts = [
+        'year' => 'integer',
+        'is_active' => 'boolean',
     ];
 
     public function user(): BelongsTo

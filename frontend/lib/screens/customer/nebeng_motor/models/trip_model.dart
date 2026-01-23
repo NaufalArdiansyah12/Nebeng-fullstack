@@ -12,6 +12,9 @@ class TripModel {
   final String? vehicleBrand;
   final String? vehicleType;
   final int availableSeats;
+  final int? bagasiCapacity;
+  final int? jumlahBagasi;
+  final String? serviceType;
 
   TripModel({
     required this.id,
@@ -27,6 +30,9 @@ class TripModel {
     this.vehicleBrand,
     this.vehicleType,
     this.availableSeats = 1,
+    this.bagasiCapacity,
+    this.jumlahBagasi,
+    this.serviceType,
   });
 
   // Factory constructor untuk convert dari API response
@@ -109,6 +115,28 @@ class TripModel {
       vehicleBrand: json['vehicle_brand'],
       vehicleType: json['vehicle_type'],
       availableSeats: parsedSeats,
+      bagasiCapacity: () {
+        final b = json['bagasi_capacity'] ??
+            json['bagasiCapacity'] ??
+            json['max_bagasi'] ??
+            json['bagasi'];
+        if (b == null) return null;
+        if (b is num) return b.toInt();
+        if (b is String) return int.tryParse(b) ?? null;
+        return null;
+      }(),
+      jumlahBagasi: () {
+        final j = json['jumlah_bagasi'] ??
+            json['jumlahBagasi'] ??
+            json['remaining_bagasi'] ??
+            json['sisa_bagasi'];
+        if (j == null) return null;
+        if (j is num) return j.toInt();
+        if (j is String) return int.tryParse(j) ?? null;
+        return null;
+      }(),
+      serviceType:
+          (json['service_type'] ?? json['serviceType'] ?? '').toString(),
     );
   }
 }

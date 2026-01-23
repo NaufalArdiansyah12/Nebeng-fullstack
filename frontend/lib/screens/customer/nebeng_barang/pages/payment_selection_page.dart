@@ -13,6 +13,7 @@ class PaymentSelectionPage extends StatefulWidget {
   final String? weight;
   final String? description;
   final String? rideType;
+  final String? receiverInfo;
 
   const PaymentSelectionPage({
     Key? key,
@@ -24,6 +25,7 @@ class PaymentSelectionPage extends StatefulWidget {
     this.weight,
     this.description,
     this.rideType,
+    this.receiverInfo,
   }) : super(key: key);
 
   @override
@@ -306,6 +308,7 @@ class _PaymentSelectionPageState extends State<PaymentSelectionPage> {
           weight: widget.weight,
           description: widget.description,
           rideType: widget.rideType ?? 'barang',
+          receiverInfo: widget.receiverInfo,
         ),
       ),
     );

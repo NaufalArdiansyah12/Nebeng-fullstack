@@ -252,116 +252,163 @@ class PaymentService
                     $payment->ride->update(['payment_status' => 'paid']);
                 }
 
-                    // Update booking status if booking exists (match by booking_number or ride_id + user_id)
+                    // Update booking status if booking exists
+                    // CRITICAL: Use booking_number first (unique), then fallback to booking_id (non-unique)
                     try {
-                        // Prefer updating by booking_id if available
-                        if (!empty($payment->booking_id)) {
-                            // Try by booking id across motor, mobil, barang tables
+                        $bookingNumber = $payment->booking_number ?? null;
+                        $bookingFound = false;
+                        
+                        // Strategy 1: Try by booking_number first (HIGHEST PRIORITY - UNIQUE ACROSS ALL TABLES)
+                        if (!empty($bookingNumber)) {
+                            // Try booking_motor first
+                            $bookingModel = \App\Models\Booking::where('booking_number', $bookingNumber)->first();
+                            if ($bookingModel) {
+                                $bookingModel->update(['status' => 'paid']);
+                                
+                                // Decrease available_seats on the ride
+                                if ($bookingModel->ride_id) {
+                                    $ride = \App\Models\Ride::find($bookingModel->ride_id);
+                                    if ($ride && $ride->available_seats > 0) {
+                                        $seatsBooked = $bookingModel->seats ?? 1;
+                                        $ride->decrement('available_seats', $seatsBooked);
+                                        Log::info('Decreased available_seats for motor ride', [
+                                            'ride_id' => $ride->id,
+                                            'seats_booked' => $seatsBooked,
+                                            'remaining_seats' => $ride->fresh()->available_seats
+                                        ]);
+                                    }
+                                }
+                                
+                                Log::info('Booking status updated to paid (by number, motor)', ['booking_number' => $bookingNumber, 'booking_id' => $bookingModel->id]);
+                                $bookingFound = true;
+                            } else {
+                                // Fallback: check booking_mobil
+                                $bookingMobil = \App\Models\BookingMobil::where('booking_number', $bookingNumber)->first();
+                                if ($bookingMobil) {
+                                    $bookingMobil->update(['status' => 'paid']);
+                                    Log::info('Booking status updated to paid (by number, mobil)', ['booking_number' => $bookingNumber, 'booking_id' => $bookingMobil->id]);
+                                    $bookingFound = true;
+                                } else {
+                                    // Fallback: check booking_barang
+                                    $bookingBarang = \App\Models\BookingBarang::where('booking_number', $bookingNumber)->first();
+                                    if ($bookingBarang) {
+                                        $bookingBarang->update(['status' => 'paid']);
+                                        Log::info('Booking status updated to paid (by number, barang)', ['booking_number' => $bookingNumber, 'booking_id' => $bookingBarang->id]);
+                                        $bookingFound = true;
+                                    } else {
+                                        // Fallback: check booking_titip_barang
+                                        $bookingTitip = \App\Models\BookingTitipBarang::where('booking_number', $bookingNumber)->first();
+                                        if ($bookingTitip) {
+                                            $bookingTitip->update(['status' => 'paid']);
+                                            Log::info('Booking status updated to paid (by number, titip)', ['booking_number' => $bookingNumber, 'booking_id' => $bookingTitip->id]);
+                                            $bookingFound = true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Strategy 2: If booking not found by number, try by booking_id (CAUTION: non-unique)
+                        if (!$bookingFound && !empty($payment->booking_id)) {
+                            Log::info('Booking not found by number, trying by booking_id', ['booking_id' => $payment->booking_id]);
+                            
+                            // Try by booking id across motor, mobil, barang, titip tables
                             $bookingModel = \App\Models\Booking::find($payment->booking_id);
                             if ($bookingModel) {
                                 $bookingModel->update(['status' => 'paid']);
                                 Log::info('Booking status updated to paid (by id, motor)', ['booking_id' => $bookingModel->id]);
+                                $bookingFound = true;
                             } else {
                                 $bookingMobil = \App\Models\BookingMobil::find($payment->booking_id);
                                 if ($bookingMobil) {
                                     $bookingMobil->update(['status' => 'paid']);
                                     Log::info('Booking status updated to paid (by id, mobil)', ['booking_id' => $bookingMobil->id]);
+                                    $bookingFound = true;
                                 } else {
                                     $bookingBarang = \App\Models\BookingBarang::find($payment->booking_id);
                                     if ($bookingBarang) {
                                         $bookingBarang->update(['status' => 'paid']);
                                         Log::info('Booking status updated to paid (by id, barang)', ['booking_id' => $bookingBarang->id]);
-                                    } else {
-                                        Log::warning('Booking id provided but not found', ['booking_id' => $payment->booking_id, 'payment_id' => $payment->id]);
-                                    }
-                                }
-                            }
-                        } else {
-                            $bookingNumber = $payment->booking_number ?? null;
-                            $bookingFound = false;
-                            
-                            // Strategy 1: Try by booking_number first
-                            if ($bookingNumber) {
-                                // Try booking_motor first
-                                $bookingModel = \App\Models\Booking::where('booking_number', $bookingNumber)->first();
-                                if ($bookingModel) {
-                                    $bookingModel->update(['status' => 'paid']);
-                                    Log::info('Booking status updated to paid (by number, motor)', ['booking_number' => $bookingNumber, 'booking_id' => $bookingModel->id]);
-                                    $bookingFound = true;
-                                } else {
-                                    // Fallback: check booking_mobil
-                                    $bookingMobil = \App\Models\BookingMobil::where('booking_number', $bookingNumber)->first();
-                                    if ($bookingMobil) {
-                                        $bookingMobil->update(['status' => 'paid']);
-                                        Log::info('Booking status updated to paid (by number, mobil)', ['booking_number' => $bookingNumber, 'booking_id' => $bookingMobil->id]);
                                         $bookingFound = true;
                                     } else {
-                                        // Fallback: check booking_barang
-                                        $bookingBarang = \App\Models\BookingBarang::where('booking_number', $bookingNumber)->first();
-                                        if ($bookingBarang) {
-                                            $bookingBarang->update(['status' => 'paid']);
-                                            Log::info('Booking status updated to paid (by number, barang)', ['booking_number' => $bookingNumber, 'booking_id' => $bookingBarang->id]);
+                                        $bookingTitip = \App\Models\BookingTitipBarang::find($payment->booking_id);
+                                        if ($bookingTitip) {
+                                            $bookingTitip->update(['status' => 'paid']);
+                                            Log::info('Booking status updated to paid (by id, titip)', ['booking_id' => $bookingTitip->id]);
                                             $bookingFound = true;
                                         }
                                     }
                                 }
                             }
+                        }
                             
-                            // Strategy 2: If booking not found by number, try by ride_id + user_id (for latest pending booking)
-                            if (!$bookingFound && !empty($payment->ride_id) && !empty($payment->user_id)) {
-                                Log::info('Booking not found by number, trying by ride_id + user_id', [
-                                    'ride_id' => $payment->ride_id, 
-                                    'user_id' => $payment->user_id
-                                ]);
+                        // Strategy 3: If booking not found by number or id, try by ride_id + user_id (for latest pending booking)
+                        if (!$bookingFound && !empty($payment->ride_id) && !empty($payment->user_id)) {
+                            Log::info('Booking not found by number, trying by ride_id + user_id', [
+                                'ride_id' => $payment->ride_id, 
+                                'user_id' => $payment->user_id
+                            ]);
+                            
+                            // Try booking_motor
+                            $bookingModel = \App\Models\Booking::where('ride_id', $payment->ride_id)
+                                ->where('user_id', $payment->user_id)
+                                ->where('status', 'pending')
+                                ->orderBy('created_at', 'desc')
+                                ->first();
                                 
-                                // Try booking_motor
-                                $bookingModel = \App\Models\Booking::where('ride_id', $payment->ride_id)
+                            if ($bookingModel) {
+                                $bookingModel->update(['status' => 'paid']);
+                                Log::info('Booking status updated to paid (by ride+user, motor)', ['booking_id' => $bookingModel->id]);
+                                $bookingFound = true;
+                            } else {
+                                // Try booking_mobil
+                                $bookingMobil = \App\Models\BookingMobil::where('ride_id', $payment->ride_id)
                                     ->where('user_id', $payment->user_id)
                                     ->where('status', 'pending')
                                     ->orderBy('created_at', 'desc')
                                     ->first();
                                     
-                                if ($bookingModel) {
-                                    $bookingModel->update(['status' => 'paid']);
-                                    Log::info('Booking status updated to paid (by ride+user, motor)', ['booking_id' => $bookingModel->id]);
+                                if ($bookingMobil) {
+                                    $bookingMobil->update(['status' => 'paid']);
+                                    Log::info('Booking status updated to paid (by ride+user, mobil)', ['booking_id' => $bookingMobil->id]);
                                     $bookingFound = true;
                                 } else {
-                                    // Try booking_mobil
-                                    $bookingMobil = \App\Models\BookingMobil::where('ride_id', $payment->ride_id)
+                                    // Try booking_barang
+                                    $bookingBarang = \App\Models\BookingBarang::where('ride_id', $payment->ride_id)
                                         ->where('user_id', $payment->user_id)
                                         ->where('status', 'pending')
                                         ->orderBy('created_at', 'desc')
                                         ->first();
                                         
-                                    if ($bookingMobil) {
-                                        $bookingMobil->update(['status' => 'paid']);
-                                        Log::info('Booking status updated to paid (by ride+user, mobil)', ['booking_id' => $bookingMobil->id]);
+                                    if ($bookingBarang) {
+                                        $bookingBarang->update(['status' => 'paid']);
+                                        Log::info('Booking status updated to paid (by ride+user, barang)', ['booking_id' => $bookingBarang->id]);
                                         $bookingFound = true;
                                     } else {
-                                        // Try booking_barang
-                                        $bookingBarang = \App\Models\BookingBarang::where('ride_id', $payment->ride_id)
+                                        // Try booking_titip_barang
+                                        $bookingTitip = \App\Models\BookingTitipBarang::where('ride_id', $payment->ride_id)
                                             ->where('user_id', $payment->user_id)
                                             ->where('status', 'pending')
                                             ->orderBy('created_at', 'desc')
                                             ->first();
                                             
-                                        if ($bookingBarang) {
-                                            $bookingBarang->update(['status' => 'paid']);
-                                            Log::info('Booking status updated to paid (by ride+user, barang)', ['booking_id' => $bookingBarang->id]);
+                                        if ($bookingTitip) {
+                                            $bookingTitip->update(['status' => 'paid']);
+                                            Log::info('Booking status updated to paid (by ride+user, titip)', ['booking_id' => $bookingTitip->id]);
                                             $bookingFound = true;
                                         }
                                     }
                                 }
                             }
+                        }
                             
-                            if (!$bookingFound) {
-                                Log::warning('Booking not found to update status', [
-                                    'booking_number' => $bookingNumber, 
-                                    'ride_id' => $payment->ride_id,
-                                    'user_id' => $payment->user_id,
-                                    'payment_id' => $payment->id
-                                ]);
-                            }
+                        if (!$bookingFound) {
+                            Log::warning('Booking not found to update status', [
+                                'booking_number' => $bookingNumber, 
+                                'ride_id' => $payment->ride_id,
+                                'user_id' => $payment->user_id,
+                                'payment_id' => $payment->id
+                            ]);
                         }
                     } catch (\Exception $e) {
                         Log::error('Failed to update booking status: ' . $e->getMessage());

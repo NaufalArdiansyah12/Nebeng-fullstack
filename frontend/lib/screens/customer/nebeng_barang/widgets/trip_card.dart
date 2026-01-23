@@ -15,7 +15,6 @@ class TripCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -42,132 +41,113 @@ class TripCard extends StatelessWidget {
                   color: Colors.black87,
                 ),
               ),
-              Text(
-                trip.time,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black87,
+              if ((trip.serviceType ?? '').isNotEmpty)
+                Row(
+                  children: [
+                    Icon(
+                      _serviceIcon(trip.serviceType),
+                      size: 16,
+                      color: Colors.black87,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      _serviceLabel(trip.serviceType),
+                      style: const TextStyle(
+                        color: Colors.black87,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           _buildLocationRow(
             icon: Icons.arrow_upward,
             iconColor: NebengMotorTheme.greenIcon,
             title: trip.departureLocation,
             subtitle: trip.departureAddress,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           _buildLocationRow(
             icon: Icons.location_on,
             iconColor: NebengMotorTheme.orangeIcon,
             title: trip.arrivalLocation,
             subtitle: trip.arrivalAddress,
           ),
-          const SizedBox(height: 16),
-          if (trip.photoUrl != null && trip.photoUrl!.isNotEmpty) ...[
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey[300]!),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Foto Barang',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      trip.photoUrl!,
-                      width: double.infinity,
-                      height: 150,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          width: double.infinity,
-                          height: 150,
-                          color: Colors.grey[300],
-                          child: const Icon(
-                            Icons.image_not_supported,
-                            size: 50,
-                            color: Colors.grey,
-                          ),
-                        );
-                      },
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Container(
-                          width: double.infinity,
-                          height: 150,
-                          color: Colors.grey[200],
-                          child: const Center(
-                            child: CircularProgressIndicator(),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
+          const SizedBox(height: 12),
+          if ((trip.serviceType ?? '').toLowerCase() != 'barang')
+            Row(
+              children: [
+                const Icon(Icons.event_seat, size: 16, color: Colors.grey),
+                const SizedBox(width: 8),
+                Text(
+                  'Sisa kursi: ${trip.availableSeats}',
+                  style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
+          if ((trip.jumlahBagasi ?? 0) > 0) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.card_travel, size: 14, color: Colors.grey[700]),
+                const SizedBox(width: 8),
+                Text(
+                  'Sisa ${trip.jumlahBagasi} Bagasi',
+                  style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                ),
+              ],
+            ),
           ],
+          const SizedBox(height: 8),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Text(
-                'Total Biaya',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black87,
+              Expanded(
+                child: Text(
+                  trip.time,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.black87,
+                  ),
                 ),
               ),
-              Text(
-                'Rp. ${_formatPrice(trip.price)}',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.black87,
+              if ((trip.bagasiCapacity ?? 0) > 0)
+                Row(
+                  children: [
+                    Icon(
+                      Icons.card_travel,
+                      color: Colors.grey[700],
+                      size: 18,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Maks. ${trip.bagasiCapacity} Bagasi',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey[800],
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
             ],
           ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
+          const SizedBox(height: 12),
+          Container(width: double.infinity, height: 1, color: Colors.grey[300]),
+          const SizedBox(height: 6),
+          Center(
+            child: TextButton(
               onPressed: onTap,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: NebengMotorTheme.primaryBlue,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  side: const BorderSide(
-                    color: NebengMotorTheme.primaryBlue,
-                    width: 1.5,
-                  ),
-                ),
-                elevation: 0,
-              ),
-              child: const Text(
-                'Selanjutnya',
+              child: Text(
+                'Selengkapnya',
                 style: TextStyle(
+                  color: NebengMotorTheme.primaryBlue,
                   fontSize: 14,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -230,10 +210,38 @@ class TripCard extends StatelessWidget {
     );
   }
 
-  String _formatPrice(int price) {
-    return price.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]}.',
-        );
+  String _serviceLabel(String? s) {
+    final v = (s ?? '').toString().toLowerCase();
+    switch (v) {
+      case 'tebengan':
+        return 'Hanya Tebengan';
+      case 'barang':
+        return 'Hanya Titip Barang';
+      case 'both':
+        return 'Barang dan Tebengan';
+      default:
+        return v.isNotEmpty ? _titleCase(v) : '';
+    }
+  }
+
+  IconData _serviceIcon(String? s) {
+    final v = (s ?? '').toString().toLowerCase();
+    switch (v) {
+      case 'tebengan':
+        return Icons.person;
+      case 'barang':
+        return Icons.local_shipping;
+      case 'both':
+        return Icons.layers;
+      default:
+        return Icons.info_outline;
+    }
+  }
+
+  String _titleCase(String s) {
+    return s.split(RegExp(r'\s+')).map((w) {
+      if (w.isEmpty) return w;
+      return w[0].toUpperCase() + (w.length > 1 ? w.substring(1) : '');
+    }).join(' ');
   }
 }

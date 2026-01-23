@@ -45,50 +45,61 @@ Future<void> main() async {
   } else {
     await Firebase.initializeApp();
   }
-  await NotificationService.init();
-
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-  final messaging = FirebaseMessaging.instance;
-
-  // Request permission (iOS)
-  await messaging.requestPermission(alert: true, badge: true, sound: true);
-
-  // Get token and (optionally) send to backend
-  final token = await messaging.getToken();
-  print('FCM token: $token');
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final apiToken = prefs.getString('api_token');
-    if (token != null && apiToken != null && apiToken.isNotEmpty) {
-      // Replace BASE_URL with your backend base URL if needed
-      final uri = Uri.parse(
-          '${const String.fromEnvironment('API_BASE_URL', defaultValue: 'http://10.0.2.2:8000')}/api/v1/user/fcm-token');
-      await http.post(uri,
-          headers: {
-            'Authorization': 'Bearer $apiToken',
-            'Content-Type': 'application/json'
-          },
-          body: '{"fcm_token":"$token"}');
+  // Initialize notifications and FCM only on mobile platforms.
+  if (!kIsWeb) {
+    try {
+      await NotificationService.init();
+    } catch (e, st) {
+      print('NotificationService.init error: $e\n$st');
     }
-  } catch (e) {
-    // ignore errors
+
+    try {
+      FirebaseMessaging.onBackgroundMessage(
+          _firebaseMessagingBackgroundHandler);
+
+      final messaging = FirebaseMessaging.instance;
+
+      // Request permission (iOS)
+      await messaging.requestPermission(alert: true, badge: true, sound: true);
+
+      // Get token and (optionally) send to backend
+      final token = await messaging.getToken();
+      print('FCM token: $token');
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final apiToken = prefs.getString('api_token');
+        if (token != null && apiToken != null && apiToken.isNotEmpty) {
+          // Replace BASE_URL with your backend base URL if needed
+          final uri = Uri.parse(
+              '${const String.fromEnvironment('API_BASE_URL', defaultValue: 'http://10.0.2.2:8000')}/api/v1/user/fcm-token');
+          await http.post(uri,
+              headers: {
+                'Authorization': 'Bearer $apiToken',
+                'Content-Type': 'application/json'
+              },
+              body: '{"fcm_token":"$token"}');
+        }
+      } catch (e) {
+        // ignore errors
+      }
+
+      // Foreground message handler
+      FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
+        final n = message.notification;
+        final msgId = message.messageId ??
+            message.data['message_id'] ??
+            message.data['id'];
+        if (n != null) {
+          await NotificationService.showIfNotDuplicate(
+              messageId: (msgId is String && msgId.isNotEmpty) ? msgId : null,
+              title: n.title ?? 'Nebeng',
+              body: n.body ?? '');
+        }
+      });
+    } catch (e, st) {
+      print('Firebase messaging init error: $e\n$st');
+    }
   }
-  // TODO: send token to backend associated with logged-in user
-  // print('FCM token: $token');
-
-  // Foreground message handler
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
-    final n = message.notification;
-    final msgId =
-        message.messageId ?? message.data['message_id'] ?? message.data['id'];
-    if (n != null) {
-      await NotificationService.showIfNotDuplicate(
-          messageId: (msgId is String && msgId.isNotEmpty) ? msgId : null,
-          title: n.title ?? 'Nebeng',
-          body: n.body ?? '');
-    }
-  });
 
   runApp(const MyApp());
 }
@@ -104,6 +115,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1E3A8A)),
         useMaterial3: true,
         fontFamily: 'Roboto',
+        scaffoldBackgroundColor: Colors.white,
       ),
       locale: const Locale('id', 'ID'),
       home: const AuthChecker(),

@@ -73,7 +73,8 @@ class RideController extends Controller
         }
 
         $query = Ride::with(['user', 'originLocation', 'destinationLocation', 'carRide'])
-            ->where('status', 'active');
+            ->where('status', 'active')
+            ->where('available_seats', '>', 0); // Only show rides with available seats
 
         // Filter by origin location
         if ($request->has('origin_location_id')) {
@@ -189,6 +190,17 @@ class RideController extends Controller
 
                     $r = Ride::create($data);
 
+                    // If mitra provided kendaraan_mitra_id and jumlah_bagasi, persist jumlah_bagasi into kendaraan_mitra
+                    try {
+                        $kmId = $request->kendaraan_mitra_id ?? null;
+                        if ($kmId && $bagasi !== null && Schema::hasColumn('kendaraan_mitra', 'jumlah_bagasi')) {
+                            \App\Models\KendaraanMitra::where('id', $kmId)->update(['jumlah_bagasi' => intval($bagasi)]);
+                        }
+                    } catch (\Throwable $__e) {
+                        // ignore update failures but log
+                        Log::warning('Failed to update kendaraan_mitra.jumlah_bagasi', ['error' => $__e->getMessage()]);
+                    }
+
                     return $r;
                 }
                 // For mobil rides, persist into tebengan_mobil via CarRide model.
@@ -196,6 +208,10 @@ class RideController extends Controller
                 // to avoid duplicated data (we store vehicle info in `kendaraan_mitra`).
                 // Do NOT attempt to insert vehicle_name/plate/brand/type/color here.
                 if ($request->ride_type === 'mobil') {
+                    // For mobil rides, if mitra selects 'barang' (titip barang) as service_type,
+                    // this should be treated as cargo-only: there are no passenger seats.
+                    $availableSeats = ($request->service_type === 'barang') ? 0 : ($request->available_seats ?? 1);
+
                     $data = [
                         'user_id' => $apiToken->user_id,
                         'origin_location_id' => $request->origin_location_id,
@@ -206,7 +222,7 @@ class RideController extends Controller
                         'service_type' => $request->service_type,
                         'price' => $request->price,
                         'kendaraan_mitra_id' => $request->kendaraan_mitra_id ?? null,
-                        'available_seats' => $request->available_seats ?? 1,
+                        'available_seats' => $availableSeats,
                         'status' => 'active',
                     ];
 
@@ -221,6 +237,16 @@ class RideController extends Controller
                     }
 
                     $car = \App\Models\CarRide::create($data);
+
+                        // persist jumlah_bagasi into kendaraan_mitra if provided
+                        try {
+                            $kmId = $request->kendaraan_mitra_id ?? null;
+                            if ($kmId && $bagasi !== null && Schema::hasColumn('kendaraan_mitra', 'jumlah_bagasi')) {
+                                \App\Models\KendaraanMitra::where('id', $kmId)->update(['jumlah_bagasi' => intval($bagasi)]);
+                            }
+                        } catch (\Throwable $__e) {
+                            Log::warning('Failed to update kendaraan_mitra.jumlah_bagasi', ['error' => $__e->getMessage()]);
+                        }
 
                     return $car;
                 }
@@ -253,12 +279,23 @@ class RideController extends Controller
 
                     $barang = \App\Models\BarangRide::create($data);
 
+                        // persist jumlah_bagasi into kendaraan_mitra if provided
+                        try {
+                            $kmId = $request->kendaraan_mitra_id ?? null;
+                            if ($kmId && $bagasi !== null && Schema::hasColumn('kendaraan_mitra', 'jumlah_bagasi')) {
+                                \App\Models\KendaraanMitra::where('id', $kmId)->update(['jumlah_bagasi' => intval($bagasi)]);
+                            }
+                        } catch (\Throwable $__e) {
+                            Log::warning('Failed to update kendaraan_mitra.jumlah_bagasi', ['error' => $__e->getMessage()]);
+                        }
+
                     // If a photo was uploaded as part of the request, store it and save into extra
                     if ($request->hasFile('photo')) {
                         try {
                             $file = $request->file('photo');
-                            $path = $file->store('uploads', 'public');
-                            $url = '/storage/' . $path;
+                            $filename = 'uploads/' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                            Storage::disk('public')->put($filename, file_get_contents($file));
+                            $url = '/storage/' . $filename;
                             $barang->extra = array_merge($barang->extra ?? [], ['photo' => $url]);
                             $barang->save();
                         } catch (\Exception $e) {
@@ -339,12 +376,12 @@ class RideController extends Controller
                 break;
             case 'barang':
                 $bookings = \App\Models\BookingBarang::with(['user'])
-                    ->where('barang_ride_id', $rideId)
+                    ->where('ride_id', $rideId)
                     ->get();
                 break;
             case 'titip':
                 $bookings = \App\Models\BookingTitipBarang::with(['user'])
-                    ->where('tebengan_titip_barang_id', $rideId)
+                    ->where('ride_id', $rideId)
                     ->get();
                 break;
         }

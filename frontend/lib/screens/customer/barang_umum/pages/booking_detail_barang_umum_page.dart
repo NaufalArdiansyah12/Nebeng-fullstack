@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../nebeng_motor/utils/theme.dart';
 import '../../nebeng_barang/models/trip_model.dart';
 import '../../nebeng_barang/pages/payment_selection_page.dart';
+import '../../../../services/api_service.dart';
 
 class BookingDetailBarangUmumPage extends StatefulWidget {
   final Map<String, dynamic> trip;
@@ -47,8 +49,28 @@ class _BookingDetailBarangUmumPageState
   void initState() {
     super.initState();
     _generateBookingNumber();
+    _loadUserData();
     namaPenerima = widget.dataPenerima;
     phonePenerima = widget.penerimaPhone;
+  }
+
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('api_token');
+    if (token == null) return;
+
+    try {
+      final resp = await ApiService.getProfile(token: token);
+      if (resp['success'] == true && resp['data'] != null) {
+        final user = resp['data']['user'];
+        setState(() {
+          _namaPengirimController.text = user['name'] as String? ?? '';
+          _phonePengirimController.text = user['phone'] as String? ?? '';
+        });
+      }
+    } catch (e) {
+      // ignore, keep defaults
+    }
   }
 
   void _generateBookingNumber() {
@@ -87,6 +109,56 @@ class _BookingDetailBarangUmumPageState
       return int.parse(digits);
     } catch (e) {
       return 0;
+    }
+  }
+
+  String _formatDateTime() {
+    try {
+      final dateStr = widget.trip['departure_date'];
+      final timeStr = widget.trip['departure_time'];
+
+      if (dateStr == null) return '';
+
+      // Parse date (handle ISO format like "2026-01-21T00:00:00.000000Z")
+      DateTime date;
+      if (dateStr.toString().contains('T')) {
+        date = DateTime.parse(dateStr.toString());
+      } else {
+        date = DateTime.parse(dateStr.toString());
+      }
+
+      final List<String> months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'Mei',
+        'Jun',
+        'Jul',
+        'Agu',
+        'Sep',
+        'Okt',
+        'Nov',
+        'Des'
+      ];
+
+      final formattedDate =
+          '${date.day} ${months[date.month - 1]} ${date.year}';
+
+      // Format time (handle "10:30:00" or "HH:mm:ss")
+      String formattedTime = '';
+      if (timeStr != null && timeStr.toString().isNotEmpty) {
+        final timeParts = timeStr.toString().split(':');
+        if (timeParts.length >= 2) {
+          formattedTime = '${timeParts[0]}:${timeParts[1]}';
+        }
+      }
+
+      return formattedTime.isNotEmpty
+          ? '$formattedDate | $formattedTime'
+          : formattedDate;
+    } catch (e) {
+      return '${widget.trip['departure_date'] ?? ''}';
     }
   }
 
@@ -188,7 +260,7 @@ class _BookingDetailBarangUmumPageState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '${widget.trip['departure_date']} | ${widget.trip['departure_time']}',
+            _formatDateTime(),
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
@@ -268,7 +340,7 @@ class _BookingDetailBarangUmumPageState
           ),
           const SizedBox(width: 12),
           Text(
-            widget.trip['departure_date'] ?? '',
+            _formatDateTime(),
             style: const TextStyle(
               fontSize: 14,
               color: Colors.black87,
@@ -738,6 +810,13 @@ class _BookingDetailBarangUmumPageState
         ? _phonePengirimController.text
         : (phonePenerima ?? '');
 
+    // Format receiver info: "Name|Phone"
+    final receiverData = (namaPenerima != null &&
+            phonePenerima != null &&
+            namaPenerima!.isNotEmpty)
+        ? '$namaPenerima|$phonePenerima'
+        : null;
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -750,6 +829,7 @@ class _BookingDetailBarangUmumPageState
           weight: widget.ukuranBarang,
           description: widget.keteranganBarang,
           rideType: 'titip',
+          receiverInfo: receiverData,
         ),
       ),
     );

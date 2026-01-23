@@ -58,24 +58,24 @@
 37-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:12:5-79
 37-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:12:22-76
 38    <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
-38-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/6da6dea2f303825e096a56d1a70f3f70/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:26:5-82
-38-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/6da6dea2f303825e096a56d1a70f3f70/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:26:22-79
+38-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/a197a881aca6d0ef24797bbb920c6df4/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:26:5-82
+38-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/a197a881aca6d0ef24797bbb920c6df4/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:26:22-79
 39
 40    <permission
-40-->[androidx.core:core:1.10.1] /home/naufal/.gradle/caches/transforms-3/0b9c903fef8d2eb2a269c36999ef4a74/transformed/core-1.10.1/AndroidManifest.xml:22:5-24:47
+40-->[androidx.core:core:1.13.0] /home/naufal/.gradle/caches/transforms-3/b98fd5f30fa463963ba406c822aff787/transformed/core-1.13.0/AndroidManifest.xml:22:5-24:47
 41        android:name="com.example.nebeng.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
-41-->[androidx.core:core:1.10.1] /home/naufal/.gradle/caches/transforms-3/0b9c903fef8d2eb2a269c36999ef4a74/transformed/core-1.10.1/AndroidManifest.xml:23:9-81
+41-->[androidx.core:core:1.13.0] /home/naufal/.gradle/caches/transforms-3/b98fd5f30fa463963ba406c822aff787/transformed/core-1.13.0/AndroidManifest.xml:23:9-81
 42        android:protectionLevel="signature" />
-42-->[androidx.core:core:1.10.1] /home/naufal/.gradle/caches/transforms-3/0b9c903fef8d2eb2a269c36999ef4a74/transformed/core-1.10.1/AndroidManifest.xml:24:9-44
+42-->[androidx.core:core:1.13.0] /home/naufal/.gradle/caches/transforms-3/b98fd5f30fa463963ba406c822aff787/transformed/core-1.13.0/AndroidManifest.xml:24:9-44
 43
 44    <uses-permission android:name="com.example.nebeng.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
-44-->[androidx.core:core:1.10.1] /home/naufal/.gradle/caches/transforms-3/0b9c903fef8d2eb2a269c36999ef4a74/transformed/core-1.10.1/AndroidManifest.xml:26:5-97
-44-->[androidx.core:core:1.10.1] /home/naufal/.gradle/caches/transforms-3/0b9c903fef8d2eb2a269c36999ef4a74/transformed/core-1.10.1/AndroidManifest.xml:26:22-94
+44-->[androidx.core:core:1.13.0] /home/naufal/.gradle/caches/transforms-3/b98fd5f30fa463963ba406c822aff787/transformed/core-1.13.0/AndroidManifest.xml:26:5-97
+44-->[androidx.core:core:1.13.0] /home/naufal/.gradle/caches/transforms-3/b98fd5f30fa463963ba406c822aff787/transformed/core-1.13.0/AndroidManifest.xml:26:22-94
 45
 46    <application
 47        android:name="android.app.Application"
 48        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
-48-->[androidx.core:core:1.10.1] /home/naufal/.gradle/caches/transforms-3/0b9c903fef8d2eb2a269c36999ef4a74/transformed/core-1.10.1/AndroidManifest.xml:28:18-86
+48-->[androidx.core:core:1.13.0] /home/naufal/.gradle/caches/transforms-3/b98fd5f30fa463963ba406c822aff787/transformed/core-1.13.0/AndroidManifest.xml:28:18-86
 49        android:debuggable="true"
 50        android:icon="@mipmap/ic_launcher"
 51        android:label="nebeng" >
@@ -155,9 +155,9 @@
 107            android:name="com.google.firebase.components.ComponentDiscoveryService"
 107-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:37:18-89
 108            android:directBootAware="true"
-108-->[com.google.firebase:firebase-common:20.4.3] /home/naufal/.gradle/caches/transforms-3/8d4ee856b0501bd4e2deb987ae70e355/transformed/jetified-firebase-common-20.4.3/AndroidManifest.xml:32:13-43
+108-->[com.google.firebase:firebase-common:20.4.3] /home/naufal/.gradle/caches/transforms-3/987b53b4ea02211bc94054a1c7feee70/transformed/jetified-firebase-common-20.4.3/AndroidManifest.xml:32:13-43
 109            android:exported="false" >
-109-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/6da6dea2f303825e096a56d1a70f3f70/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:56:13-37
+109-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/a197a881aca6d0ef24797bbb920c6df4/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:56:13-37
 110            <meta-data
 110-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:38:13-40:85
 111                android:name="com.google.firebase.components:io.flutter.plugins.firebase.messaging.FlutterFirebaseAppRegistrar"
@@ -171,47 +171,47 @@
 115                android:value="com.google.firebase.components.ComponentRegistrar" />
 115-->[:firebase_core] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_core/intermediates/merged_manifest/debug/AndroidManifest.xml:13:17-82
 116            <meta-data
-116-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/6da6dea2f303825e096a56d1a70f3f70/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:57:13-59:85
+116-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/a197a881aca6d0ef24797bbb920c6df4/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:57:13-59:85
 117                android:name="com.google.firebase.components:com.google.firebase.messaging.FirebaseMessagingKtxRegistrar"
-117-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/6da6dea2f303825e096a56d1a70f3f70/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:58:17-122
+117-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/a197a881aca6d0ef24797bbb920c6df4/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:58:17-122
 118                android:value="com.google.firebase.components.ComponentRegistrar" />
-118-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/6da6dea2f303825e096a56d1a70f3f70/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:59:17-82
+118-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/a197a881aca6d0ef24797bbb920c6df4/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:59:17-82
 119            <meta-data
-119-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/6da6dea2f303825e096a56d1a70f3f70/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:60:13-62:85
+119-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/a197a881aca6d0ef24797bbb920c6df4/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:60:13-62:85
 120                android:name="com.google.firebase.components:com.google.firebase.messaging.FirebaseMessagingRegistrar"
-120-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/6da6dea2f303825e096a56d1a70f3f70/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:61:17-119
+120-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/a197a881aca6d0ef24797bbb920c6df4/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:61:17-119
 121                android:value="com.google.firebase.components.ComponentRegistrar" />
-121-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/6da6dea2f303825e096a56d1a70f3f70/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:62:17-82
+121-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/a197a881aca6d0ef24797bbb920c6df4/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:62:17-82
 122            <meta-data
-122-->[com.google.firebase:firebase-installations:17.2.0] /home/naufal/.gradle/caches/transforms-3/f6abc83b05941d4736e94a9e27c1a813/transformed/jetified-firebase-installations-17.2.0/AndroidManifest.xml:15:13-17:85
+122-->[com.google.firebase:firebase-installations:17.2.0] /home/naufal/.gradle/caches/transforms-3/3374b087706c42f3e916b537f1395160/transformed/jetified-firebase-installations-17.2.0/AndroidManifest.xml:15:13-17:85
 123                android:name="com.google.firebase.components:com.google.firebase.installations.FirebaseInstallationsKtxRegistrar"
-123-->[com.google.firebase:firebase-installations:17.2.0] /home/naufal/.gradle/caches/transforms-3/f6abc83b05941d4736e94a9e27c1a813/transformed/jetified-firebase-installations-17.2.0/AndroidManifest.xml:16:17-130
+123-->[com.google.firebase:firebase-installations:17.2.0] /home/naufal/.gradle/caches/transforms-3/3374b087706c42f3e916b537f1395160/transformed/jetified-firebase-installations-17.2.0/AndroidManifest.xml:16:17-130
 124                android:value="com.google.firebase.components.ComponentRegistrar" />
-124-->[com.google.firebase:firebase-installations:17.2.0] /home/naufal/.gradle/caches/transforms-3/f6abc83b05941d4736e94a9e27c1a813/transformed/jetified-firebase-installations-17.2.0/AndroidManifest.xml:17:17-82
+124-->[com.google.firebase:firebase-installations:17.2.0] /home/naufal/.gradle/caches/transforms-3/3374b087706c42f3e916b537f1395160/transformed/jetified-firebase-installations-17.2.0/AndroidManifest.xml:17:17-82
 125            <meta-data
-125-->[com.google.firebase:firebase-installations:17.2.0] /home/naufal/.gradle/caches/transforms-3/f6abc83b05941d4736e94a9e27c1a813/transformed/jetified-firebase-installations-17.2.0/AndroidManifest.xml:18:13-20:85
+125-->[com.google.firebase:firebase-installations:17.2.0] /home/naufal/.gradle/caches/transforms-3/3374b087706c42f3e916b537f1395160/transformed/jetified-firebase-installations-17.2.0/AndroidManifest.xml:18:13-20:85
 126                android:name="com.google.firebase.components:com.google.firebase.installations.FirebaseInstallationsRegistrar"
-126-->[com.google.firebase:firebase-installations:17.2.0] /home/naufal/.gradle/caches/transforms-3/f6abc83b05941d4736e94a9e27c1a813/transformed/jetified-firebase-installations-17.2.0/AndroidManifest.xml:19:17-127
+126-->[com.google.firebase:firebase-installations:17.2.0] /home/naufal/.gradle/caches/transforms-3/3374b087706c42f3e916b537f1395160/transformed/jetified-firebase-installations-17.2.0/AndroidManifest.xml:19:17-127
 127                android:value="com.google.firebase.components.ComponentRegistrar" />
-127-->[com.google.firebase:firebase-installations:17.2.0] /home/naufal/.gradle/caches/transforms-3/f6abc83b05941d4736e94a9e27c1a813/transformed/jetified-firebase-installations-17.2.0/AndroidManifest.xml:20:17-82
+127-->[com.google.firebase:firebase-installations:17.2.0] /home/naufal/.gradle/caches/transforms-3/3374b087706c42f3e916b537f1395160/transformed/jetified-firebase-installations-17.2.0/AndroidManifest.xml:20:17-82
 128            <meta-data
-128-->[com.google.firebase:firebase-common-ktx:20.4.3] /home/naufal/.gradle/caches/transforms-3/2acaae8c7b458348fda3ee338b8132e2/transformed/jetified-firebase-common-ktx-20.4.3/AndroidManifest.xml:12:13-14:85
+128-->[com.google.firebase:firebase-common-ktx:20.4.3] /home/naufal/.gradle/caches/transforms-3/2d9a140e577584439aec4f8d0656e44e/transformed/jetified-firebase-common-ktx-20.4.3/AndroidManifest.xml:12:13-14:85
 129                android:name="com.google.firebase.components:com.google.firebase.ktx.FirebaseCommonLegacyRegistrar"
-129-->[com.google.firebase:firebase-common-ktx:20.4.3] /home/naufal/.gradle/caches/transforms-3/2acaae8c7b458348fda3ee338b8132e2/transformed/jetified-firebase-common-ktx-20.4.3/AndroidManifest.xml:13:17-116
+129-->[com.google.firebase:firebase-common-ktx:20.4.3] /home/naufal/.gradle/caches/transforms-3/2d9a140e577584439aec4f8d0656e44e/transformed/jetified-firebase-common-ktx-20.4.3/AndroidManifest.xml:13:17-116
 130                android:value="com.google.firebase.components.ComponentRegistrar" />
-130-->[com.google.firebase:firebase-common-ktx:20.4.3] /home/naufal/.gradle/caches/transforms-3/2acaae8c7b458348fda3ee338b8132e2/transformed/jetified-firebase-common-ktx-20.4.3/AndroidManifest.xml:14:17-82
+130-->[com.google.firebase:firebase-common-ktx:20.4.3] /home/naufal/.gradle/caches/transforms-3/2d9a140e577584439aec4f8d0656e44e/transformed/jetified-firebase-common-ktx-20.4.3/AndroidManifest.xml:14:17-82
 131            <meta-data
-131-->[com.google.firebase:firebase-common:20.4.3] /home/naufal/.gradle/caches/transforms-3/8d4ee856b0501bd4e2deb987ae70e355/transformed/jetified-firebase-common-20.4.3/AndroidManifest.xml:35:13-37:85
+131-->[com.google.firebase:firebase-common:20.4.3] /home/naufal/.gradle/caches/transforms-3/987b53b4ea02211bc94054a1c7feee70/transformed/jetified-firebase-common-20.4.3/AndroidManifest.xml:35:13-37:85
 132                android:name="com.google.firebase.components:com.google.firebase.FirebaseCommonKtxRegistrar"
-132-->[com.google.firebase:firebase-common:20.4.3] /home/naufal/.gradle/caches/transforms-3/8d4ee856b0501bd4e2deb987ae70e355/transformed/jetified-firebase-common-20.4.3/AndroidManifest.xml:36:17-109
+132-->[com.google.firebase:firebase-common:20.4.3] /home/naufal/.gradle/caches/transforms-3/987b53b4ea02211bc94054a1c7feee70/transformed/jetified-firebase-common-20.4.3/AndroidManifest.xml:36:17-109
 133                android:value="com.google.firebase.components.ComponentRegistrar" />
-133-->[com.google.firebase:firebase-common:20.4.3] /home/naufal/.gradle/caches/transforms-3/8d4ee856b0501bd4e2deb987ae70e355/transformed/jetified-firebase-common-20.4.3/AndroidManifest.xml:37:17-82
+133-->[com.google.firebase:firebase-common:20.4.3] /home/naufal/.gradle/caches/transforms-3/987b53b4ea02211bc94054a1c7feee70/transformed/jetified-firebase-common-20.4.3/AndroidManifest.xml:37:17-82
 134            <meta-data
-134-->[com.google.firebase:firebase-datatransport:18.1.7] /home/naufal/.gradle/caches/transforms-3/ed00c8c1e57b625569439525e3d45c4f/transformed/jetified-firebase-datatransport-18.1.7/AndroidManifest.xml:27:13-29:85
+134-->[com.google.firebase:firebase-datatransport:18.1.7] /home/naufal/.gradle/caches/transforms-3/03f3645c631b9eb089a52c6c8108ec14/transformed/jetified-firebase-datatransport-18.1.7/AndroidManifest.xml:27:13-29:85
 135                android:name="com.google.firebase.components:com.google.firebase.datatransport.TransportRegistrar"
-135-->[com.google.firebase:firebase-datatransport:18.1.7] /home/naufal/.gradle/caches/transforms-3/ed00c8c1e57b625569439525e3d45c4f/transformed/jetified-firebase-datatransport-18.1.7/AndroidManifest.xml:28:17-115
+135-->[com.google.firebase:firebase-datatransport:18.1.7] /home/naufal/.gradle/caches/transforms-3/03f3645c631b9eb089a52c6c8108ec14/transformed/jetified-firebase-datatransport-18.1.7/AndroidManifest.xml:28:17-115
 136                android:value="com.google.firebase.components.ComponentRegistrar" />
-136-->[com.google.firebase:firebase-datatransport:18.1.7] /home/naufal/.gradle/caches/transforms-3/ed00c8c1e57b625569439525e3d45c4f/transformed/jetified-firebase-datatransport-18.1.7/AndroidManifest.xml:29:17-82
+136-->[com.google.firebase:firebase-datatransport:18.1.7] /home/naufal/.gradle/caches/transforms-3/03f3645c631b9eb089a52c6c8108ec14/transformed/jetified-firebase-datatransport-18.1.7/AndroidManifest.xml:29:17-82
 137        </service>
 138
 139        <provider
@@ -224,247 +224,259 @@
 142-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:46:13-37
 143            android:initOrder="99" />
 143-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:47:13-35
-144        <provider
-144-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:11:9-19:20
-145            android:name="io.flutter.plugins.imagepicker.ImagePickerFileProvider"
-145-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:12:13-82
-146            android:authorities="com.example.nebeng.flutter.image_provider"
-146-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:13:13-74
-147            android:exported="false"
-147-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:14:13-37
-148            android:grantUriPermissions="true" >
-148-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:15:13-47
-149            <meta-data
-149-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:16:13-18:75
-150                android:name="android.support.FILE_PROVIDER_PATHS"
-150-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:17:17-67
-151                android:resource="@xml/flutter_image_picker_file_paths" />
-151-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:18:17-72
-152        </provider> <!-- Trigger Google Play services to install the backported photo picker module. -->
-153        <service
-153-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:21:9-33:19
-154            android:name="com.google.android.gms.metadata.ModuleDependencies"
-154-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:22:13-78
-155            android:enabled="false"
-155-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:23:13-36
-156            android:exported="false" >
-156-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:24:13-37
-157            <intent-filter>
-157-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:26:13-28:29
-158                <action android:name="com.google.android.gms.metadata.MODULE_DEPENDENCIES" />
-158-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:27:17-94
-158-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:27:25-91
-159            </intent-filter>
-160
-161            <meta-data
-161-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:30:13-32:36
-162                android:name="photopicker_activity:0:required"
-162-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:31:17-63
-163                android:value="" />
-163-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:32:17-33
-164        </service>
-165
-166        <receiver
-166-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:16:9-18:40
-167            android:name="com.dexterous.flutterlocalnotifications.ActionBroadcastReceiver"
-167-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:17:13-91
-168            android:exported="false" />
-168-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:18:13-37
-169        <receiver
-169-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:19:9-21:40
-170            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
-170-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:20:13-97
-171            android:exported="false" />
-171-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:21:13-37
-172        <receiver
-172-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:22:9-31:20
-173            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
-173-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:23:13-101
-174            android:exported="false" >
-174-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:24:13-37
-175            <intent-filter>
-175-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:25:13-30:29
-176                <action android:name="android.intent.action.BOOT_COMPLETED" />
-176-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:26:17-79
-176-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:26:25-76
-177                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
-177-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:27:17-84
-177-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:27:25-81
-178                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
-178-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:28:17-82
-178-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:28:25-79
-179                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
-179-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:29:17-82
-179-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:29:25-79
-180            </intent-filter>
-181        </receiver>
-182        <receiver
-182-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/6da6dea2f303825e096a56d1a70f3f70/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:29:9-40:20
-183            android:name="com.google.firebase.iid.FirebaseInstanceIdReceiver"
-183-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/6da6dea2f303825e096a56d1a70f3f70/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:30:13-78
-184            android:exported="true"
-184-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/6da6dea2f303825e096a56d1a70f3f70/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:31:13-36
-185            android:permission="com.google.android.c2dm.permission.SEND" >
-185-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/6da6dea2f303825e096a56d1a70f3f70/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:32:13-73
-186            <intent-filter>
-186-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:32:13-34:29
-187                <action android:name="com.google.android.c2dm.intent.RECEIVE" />
-187-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:33:17-81
-187-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:33:25-78
-188            </intent-filter>
-189
-190            <meta-data
-190-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/6da6dea2f303825e096a56d1a70f3f70/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:37:13-39:40
-191                android:name="com.google.android.gms.cloudmessaging.FINISHED_AFTER_HANDLED"
-191-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/6da6dea2f303825e096a56d1a70f3f70/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:38:17-92
-192                android:value="true" />
-192-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/6da6dea2f303825e096a56d1a70f3f70/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:39:17-37
-193        </receiver>
-194        <!--
-195             FirebaseMessagingService performs security checks at runtime,
-196             but set to not exported to explicitly avoid allowing another app to call it.
-197        -->
-198        <service
-198-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/6da6dea2f303825e096a56d1a70f3f70/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:46:9-53:19
-199            android:name="com.google.firebase.messaging.FirebaseMessagingService"
-199-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/6da6dea2f303825e096a56d1a70f3f70/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:47:13-82
-200            android:directBootAware="true"
-200-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/6da6dea2f303825e096a56d1a70f3f70/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:48:13-43
-201            android:exported="false" >
-201-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/6da6dea2f303825e096a56d1a70f3f70/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:49:13-37
-202            <intent-filter android:priority="-500" >
-202-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:23:13-25:29
-203                <action android:name="com.google.firebase.MESSAGING_EVENT" />
-203-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:24:17-78
-203-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:24:25-75
-204            </intent-filter>
-205        </service>
-206
-207        <provider
-207-->[com.google.firebase:firebase-common:20.4.3] /home/naufal/.gradle/caches/transforms-3/8d4ee856b0501bd4e2deb987ae70e355/transformed/jetified-firebase-common-20.4.3/AndroidManifest.xml:23:9-28:39
-208            android:name="com.google.firebase.provider.FirebaseInitProvider"
-208-->[com.google.firebase:firebase-common:20.4.3] /home/naufal/.gradle/caches/transforms-3/8d4ee856b0501bd4e2deb987ae70e355/transformed/jetified-firebase-common-20.4.3/AndroidManifest.xml:24:13-77
-209            android:authorities="com.example.nebeng.firebaseinitprovider"
-209-->[com.google.firebase:firebase-common:20.4.3] /home/naufal/.gradle/caches/transforms-3/8d4ee856b0501bd4e2deb987ae70e355/transformed/jetified-firebase-common-20.4.3/AndroidManifest.xml:25:13-72
-210            android:directBootAware="true"
-210-->[com.google.firebase:firebase-common:20.4.3] /home/naufal/.gradle/caches/transforms-3/8d4ee856b0501bd4e2deb987ae70e355/transformed/jetified-firebase-common-20.4.3/AndroidManifest.xml:26:13-43
-211            android:exported="false"
-211-->[com.google.firebase:firebase-common:20.4.3] /home/naufal/.gradle/caches/transforms-3/8d4ee856b0501bd4e2deb987ae70e355/transformed/jetified-firebase-common-20.4.3/AndroidManifest.xml:27:13-37
-212            android:initOrder="100" />
-212-->[com.google.firebase:firebase-common:20.4.3] /home/naufal/.gradle/caches/transforms-3/8d4ee856b0501bd4e2deb987ae70e355/transformed/jetified-firebase-common-20.4.3/AndroidManifest.xml:28:13-36
+144
+145        <service
+145-->[:geolocator_android] /home/naufal/project/nebeng-fullstack/frontend/build/geolocator_android/intermediates/merged_manifest/debug/AndroidManifest.xml:10:9-14:56
+146            android:name="com.baseflow.geolocator.GeolocatorLocationService"
+146-->[:geolocator_android] /home/naufal/project/nebeng-fullstack/frontend/build/geolocator_android/intermediates/merged_manifest/debug/AndroidManifest.xml:11:13-77
+147            android:enabled="true"
+147-->[:geolocator_android] /home/naufal/project/nebeng-fullstack/frontend/build/geolocator_android/intermediates/merged_manifest/debug/AndroidManifest.xml:12:13-35
+148            android:exported="false"
+148-->[:geolocator_android] /home/naufal/project/nebeng-fullstack/frontend/build/geolocator_android/intermediates/merged_manifest/debug/AndroidManifest.xml:13:13-37
+149            android:foregroundServiceType="location" />
+149-->[:geolocator_android] /home/naufal/project/nebeng-fullstack/frontend/build/geolocator_android/intermediates/merged_manifest/debug/AndroidManifest.xml:14:13-53
+150
+151        <provider
+151-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:11:9-19:20
+152            android:name="io.flutter.plugins.imagepicker.ImagePickerFileProvider"
+152-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:12:13-82
+153            android:authorities="com.example.nebeng.flutter.image_provider"
+153-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:13:13-74
+154            android:exported="false"
+154-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:14:13-37
+155            android:grantUriPermissions="true" >
+155-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:15:13-47
+156            <meta-data
+156-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:16:13-18:75
+157                android:name="android.support.FILE_PROVIDER_PATHS"
+157-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:17:17-67
+158                android:resource="@xml/flutter_image_picker_file_paths" />
+158-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:18:17-72
+159        </provider> <!-- Trigger Google Play services to install the backported photo picker module. -->
+160        <service
+160-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:21:9-33:19
+161            android:name="com.google.android.gms.metadata.ModuleDependencies"
+161-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:22:13-78
+162            android:enabled="false"
+162-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:23:13-36
+163            android:exported="false" >
+163-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:24:13-37
+164            <intent-filter>
+164-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:26:13-28:29
+165                <action android:name="com.google.android.gms.metadata.MODULE_DEPENDENCIES" />
+165-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:27:17-94
+165-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:27:25-91
+166            </intent-filter>
+167
+168            <meta-data
+168-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:30:13-32:36
+169                android:name="photopicker_activity:0:required"
+169-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:31:17-63
+170                android:value="" />
+170-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:32:17-33
+171        </service>
+172
+173        <receiver
+173-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:16:9-18:40
+174            android:name="com.dexterous.flutterlocalnotifications.ActionBroadcastReceiver"
+174-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:17:13-91
+175            android:exported="false" />
+175-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:18:13-37
+176        <receiver
+176-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:19:9-21:40
+177            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
+177-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:20:13-97
+178            android:exported="false" />
+178-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:21:13-37
+179        <receiver
+179-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:22:9-31:20
+180            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
+180-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:23:13-101
+181            android:exported="false" >
+181-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:24:13-37
+182            <intent-filter>
+182-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:25:13-30:29
+183                <action android:name="android.intent.action.BOOT_COMPLETED" />
+183-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:26:17-79
+183-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:26:25-76
+184                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+184-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:27:17-84
+184-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:27:25-81
+185                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+185-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:28:17-82
+185-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:28:25-79
+186                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
+186-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:29:17-82
+186-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:29:25-79
+187            </intent-filter>
+188        </receiver>
+189        <receiver
+189-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/a197a881aca6d0ef24797bbb920c6df4/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:29:9-40:20
+190            android:name="com.google.firebase.iid.FirebaseInstanceIdReceiver"
+190-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/a197a881aca6d0ef24797bbb920c6df4/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:30:13-78
+191            android:exported="true"
+191-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/a197a881aca6d0ef24797bbb920c6df4/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:31:13-36
+192            android:permission="com.google.android.c2dm.permission.SEND" >
+192-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/a197a881aca6d0ef24797bbb920c6df4/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:32:13-73
+193            <intent-filter>
+193-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:32:13-34:29
+194                <action android:name="com.google.android.c2dm.intent.RECEIVE" />
+194-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:33:17-81
+194-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:33:25-78
+195            </intent-filter>
+196
+197            <meta-data
+197-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/a197a881aca6d0ef24797bbb920c6df4/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:37:13-39:40
+198                android:name="com.google.android.gms.cloudmessaging.FINISHED_AFTER_HANDLED"
+198-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/a197a881aca6d0ef24797bbb920c6df4/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:38:17-92
+199                android:value="true" />
+199-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/a197a881aca6d0ef24797bbb920c6df4/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:39:17-37
+200        </receiver>
+201        <!--
+202             FirebaseMessagingService performs security checks at runtime,
+203             but set to not exported to explicitly avoid allowing another app to call it.
+204        -->
+205        <service
+205-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/a197a881aca6d0ef24797bbb920c6df4/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:46:9-53:19
+206            android:name="com.google.firebase.messaging.FirebaseMessagingService"
+206-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/a197a881aca6d0ef24797bbb920c6df4/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:47:13-82
+207            android:directBootAware="true"
+207-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/a197a881aca6d0ef24797bbb920c6df4/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:48:13-43
+208            android:exported="false" >
+208-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/a197a881aca6d0ef24797bbb920c6df4/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:49:13-37
+209            <intent-filter android:priority="-500" >
+209-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:23:13-25:29
+210                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+210-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:24:17-78
+210-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:24:25-75
+211            </intent-filter>
+212        </service>
 213
 214        <activity
-214-->[com.google.android.gms:play-services-base:18.0.1] /home/naufal/.gradle/caches/transforms-3/456feef7530341a2c919967cc4dde951/transformed/jetified-play-services-base-18.0.1/AndroidManifest.xml:20:9-22:45
+214-->[com.google.android.gms:play-services-base:18.3.0] /home/naufal/.gradle/caches/transforms-3/f87a5b6d8c901f1f13eed3f57ef0fc8f/transformed/jetified-play-services-base-18.3.0/AndroidManifest.xml:20:9-22:45
 215            android:name="com.google.android.gms.common.api.GoogleApiActivity"
-215-->[com.google.android.gms:play-services-base:18.0.1] /home/naufal/.gradle/caches/transforms-3/456feef7530341a2c919967cc4dde951/transformed/jetified-play-services-base-18.0.1/AndroidManifest.xml:20:19-85
+215-->[com.google.android.gms:play-services-base:18.3.0] /home/naufal/.gradle/caches/transforms-3/f87a5b6d8c901f1f13eed3f57ef0fc8f/transformed/jetified-play-services-base-18.3.0/AndroidManifest.xml:20:19-85
 216            android:exported="false"
-216-->[com.google.android.gms:play-services-base:18.0.1] /home/naufal/.gradle/caches/transforms-3/456feef7530341a2c919967cc4dde951/transformed/jetified-play-services-base-18.0.1/AndroidManifest.xml:22:19-43
+216-->[com.google.android.gms:play-services-base:18.3.0] /home/naufal/.gradle/caches/transforms-3/f87a5b6d8c901f1f13eed3f57ef0fc8f/transformed/jetified-play-services-base-18.3.0/AndroidManifest.xml:22:19-43
 217            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
-217-->[com.google.android.gms:play-services-base:18.0.1] /home/naufal/.gradle/caches/transforms-3/456feef7530341a2c919967cc4dde951/transformed/jetified-play-services-base-18.0.1/AndroidManifest.xml:21:19-78
+217-->[com.google.android.gms:play-services-base:18.3.0] /home/naufal/.gradle/caches/transforms-3/f87a5b6d8c901f1f13eed3f57ef0fc8f/transformed/jetified-play-services-base-18.3.0/AndroidManifest.xml:21:19-78
 218
-219        <meta-data
-219-->[com.google.android.gms:play-services-basement:18.3.0] /home/naufal/.gradle/caches/transforms-3/c3e05c9fbf3e6c63974105ad6d97e1f5/transformed/jetified-play-services-basement-18.3.0/AndroidManifest.xml:21:9-23:69
-220            android:name="com.google.android.gms.version"
-220-->[com.google.android.gms:play-services-basement:18.3.0] /home/naufal/.gradle/caches/transforms-3/c3e05c9fbf3e6c63974105ad6d97e1f5/transformed/jetified-play-services-basement-18.3.0/AndroidManifest.xml:22:13-58
-221            android:value="@integer/google_play_services_version" />
-221-->[com.google.android.gms:play-services-basement:18.3.0] /home/naufal/.gradle/caches/transforms-3/c3e05c9fbf3e6c63974105ad6d97e1f5/transformed/jetified-play-services-basement-18.3.0/AndroidManifest.xml:23:13-66
-222
-223        <uses-library
-223-->[androidx.window:window:1.0.0-beta04] /home/naufal/.gradle/caches/transforms-3/032f4dff274e516110d9363a9793a3e3/transformed/jetified-window-1.0.0-beta04/AndroidManifest.xml:25:9-27:40
-224            android:name="androidx.window.extensions"
-224-->[androidx.window:window:1.0.0-beta04] /home/naufal/.gradle/caches/transforms-3/032f4dff274e516110d9363a9793a3e3/transformed/jetified-window-1.0.0-beta04/AndroidManifest.xml:26:13-54
-225            android:required="false" />
-225-->[androidx.window:window:1.0.0-beta04] /home/naufal/.gradle/caches/transforms-3/032f4dff274e516110d9363a9793a3e3/transformed/jetified-window-1.0.0-beta04/AndroidManifest.xml:27:13-37
+219        <provider
+219-->[com.google.firebase:firebase-common:20.4.3] /home/naufal/.gradle/caches/transforms-3/987b53b4ea02211bc94054a1c7feee70/transformed/jetified-firebase-common-20.4.3/AndroidManifest.xml:23:9-28:39
+220            android:name="com.google.firebase.provider.FirebaseInitProvider"
+220-->[com.google.firebase:firebase-common:20.4.3] /home/naufal/.gradle/caches/transforms-3/987b53b4ea02211bc94054a1c7feee70/transformed/jetified-firebase-common-20.4.3/AndroidManifest.xml:24:13-77
+221            android:authorities="com.example.nebeng.firebaseinitprovider"
+221-->[com.google.firebase:firebase-common:20.4.3] /home/naufal/.gradle/caches/transforms-3/987b53b4ea02211bc94054a1c7feee70/transformed/jetified-firebase-common-20.4.3/AndroidManifest.xml:25:13-72
+222            android:directBootAware="true"
+222-->[com.google.firebase:firebase-common:20.4.3] /home/naufal/.gradle/caches/transforms-3/987b53b4ea02211bc94054a1c7feee70/transformed/jetified-firebase-common-20.4.3/AndroidManifest.xml:26:13-43
+223            android:exported="false"
+223-->[com.google.firebase:firebase-common:20.4.3] /home/naufal/.gradle/caches/transforms-3/987b53b4ea02211bc94054a1c7feee70/transformed/jetified-firebase-common-20.4.3/AndroidManifest.xml:27:13-37
+224            android:initOrder="100" />
+224-->[com.google.firebase:firebase-common:20.4.3] /home/naufal/.gradle/caches/transforms-3/987b53b4ea02211bc94054a1c7feee70/transformed/jetified-firebase-common-20.4.3/AndroidManifest.xml:28:13-36
+225
 226        <uses-library
-226-->[androidx.window:window:1.0.0-beta04] /home/naufal/.gradle/caches/transforms-3/032f4dff274e516110d9363a9793a3e3/transformed/jetified-window-1.0.0-beta04/AndroidManifest.xml:28:9-30:40
-227            android:name="androidx.window.sidecar"
-227-->[androidx.window:window:1.0.0-beta04] /home/naufal/.gradle/caches/transforms-3/032f4dff274e516110d9363a9793a3e3/transformed/jetified-window-1.0.0-beta04/AndroidManifest.xml:29:13-51
+226-->[androidx.window:window:1.0.0-beta04] /home/naufal/.gradle/caches/transforms-3/3b0e9f5aa3ca69e666209fa59588d5cd/transformed/jetified-window-1.0.0-beta04/AndroidManifest.xml:25:9-27:40
+227            android:name="androidx.window.extensions"
+227-->[androidx.window:window:1.0.0-beta04] /home/naufal/.gradle/caches/transforms-3/3b0e9f5aa3ca69e666209fa59588d5cd/transformed/jetified-window-1.0.0-beta04/AndroidManifest.xml:26:13-54
 228            android:required="false" />
-228-->[androidx.window:window:1.0.0-beta04] /home/naufal/.gradle/caches/transforms-3/032f4dff274e516110d9363a9793a3e3/transformed/jetified-window-1.0.0-beta04/AndroidManifest.xml:30:13-37
-229
-230        <provider
-230-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/a0ecce03964d1d4dc26ffab32b08b16e/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:24:9-32:20
-231            android:name="androidx.startup.InitializationProvider"
-231-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/a0ecce03964d1d4dc26ffab32b08b16e/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:25:13-67
-232            android:authorities="com.example.nebeng.androidx-startup"
-232-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/a0ecce03964d1d4dc26ffab32b08b16e/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:26:13-68
-233            android:exported="false" >
-233-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/a0ecce03964d1d4dc26ffab32b08b16e/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:27:13-37
-234            <meta-data
-234-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/a0ecce03964d1d4dc26ffab32b08b16e/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:29:13-31:52
-235                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
-235-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/a0ecce03964d1d4dc26ffab32b08b16e/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:30:17-85
-236                android:value="androidx.startup" />
-236-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/a0ecce03964d1d4dc26ffab32b08b16e/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:31:17-49
-237        </provider>
-238
-239        <receiver
-239-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/a0ecce03964d1d4dc26ffab32b08b16e/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:34:9-52:20
-240            android:name="androidx.profileinstaller.ProfileInstallReceiver"
-240-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/a0ecce03964d1d4dc26ffab32b08b16e/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:35:13-76
-241            android:directBootAware="false"
-241-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/a0ecce03964d1d4dc26ffab32b08b16e/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:36:13-44
-242            android:enabled="true"
-242-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/a0ecce03964d1d4dc26ffab32b08b16e/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:37:13-35
-243            android:exported="true"
-243-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/a0ecce03964d1d4dc26ffab32b08b16e/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:38:13-36
-244            android:permission="android.permission.DUMP" >
-244-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/a0ecce03964d1d4dc26ffab32b08b16e/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:39:13-57
-245            <intent-filter>
-245-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/a0ecce03964d1d4dc26ffab32b08b16e/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:40:13-42:29
-246                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
-246-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/a0ecce03964d1d4dc26ffab32b08b16e/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:41:17-91
-246-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/a0ecce03964d1d4dc26ffab32b08b16e/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:41:25-88
-247            </intent-filter>
-248            <intent-filter>
-248-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/a0ecce03964d1d4dc26ffab32b08b16e/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:43:13-45:29
-249                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
-249-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/a0ecce03964d1d4dc26ffab32b08b16e/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:44:17-85
-249-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/a0ecce03964d1d4dc26ffab32b08b16e/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:44:25-82
-250            </intent-filter>
-251            <intent-filter>
-251-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/a0ecce03964d1d4dc26ffab32b08b16e/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:46:13-48:29
-252                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
-252-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/a0ecce03964d1d4dc26ffab32b08b16e/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:47:17-88
-252-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/a0ecce03964d1d4dc26ffab32b08b16e/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:47:25-85
-253            </intent-filter>
-254            <intent-filter>
-254-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/a0ecce03964d1d4dc26ffab32b08b16e/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:49:13-51:29
-255                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
-255-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/a0ecce03964d1d4dc26ffab32b08b16e/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:50:17-95
-255-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/a0ecce03964d1d4dc26ffab32b08b16e/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:50:25-92
-256            </intent-filter>
-257        </receiver>
-258
-259        <service
-259-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /home/naufal/.gradle/caches/transforms-3/af73949769087a357b326260c4043148/transformed/jetified-transport-backend-cct-3.1.8/AndroidManifest.xml:28:9-34:19
-260            android:name="com.google.android.datatransport.runtime.backends.TransportBackendDiscovery"
-260-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /home/naufal/.gradle/caches/transforms-3/af73949769087a357b326260c4043148/transformed/jetified-transport-backend-cct-3.1.8/AndroidManifest.xml:29:13-103
-261            android:exported="false" >
-261-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /home/naufal/.gradle/caches/transforms-3/af73949769087a357b326260c4043148/transformed/jetified-transport-backend-cct-3.1.8/AndroidManifest.xml:30:13-37
-262            <meta-data
-262-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /home/naufal/.gradle/caches/transforms-3/af73949769087a357b326260c4043148/transformed/jetified-transport-backend-cct-3.1.8/AndroidManifest.xml:31:13-33:39
-263                android:name="backend:com.google.android.datatransport.cct.CctBackendFactory"
-263-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /home/naufal/.gradle/caches/transforms-3/af73949769087a357b326260c4043148/transformed/jetified-transport-backend-cct-3.1.8/AndroidManifest.xml:32:17-94
-264                android:value="cct" />
-264-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /home/naufal/.gradle/caches/transforms-3/af73949769087a357b326260c4043148/transformed/jetified-transport-backend-cct-3.1.8/AndroidManifest.xml:33:17-36
-265        </service>
+228-->[androidx.window:window:1.0.0-beta04] /home/naufal/.gradle/caches/transforms-3/3b0e9f5aa3ca69e666209fa59588d5cd/transformed/jetified-window-1.0.0-beta04/AndroidManifest.xml:27:13-37
+229        <uses-library
+229-->[androidx.window:window:1.0.0-beta04] /home/naufal/.gradle/caches/transforms-3/3b0e9f5aa3ca69e666209fa59588d5cd/transformed/jetified-window-1.0.0-beta04/AndroidManifest.xml:28:9-30:40
+230            android:name="androidx.window.sidecar"
+230-->[androidx.window:window:1.0.0-beta04] /home/naufal/.gradle/caches/transforms-3/3b0e9f5aa3ca69e666209fa59588d5cd/transformed/jetified-window-1.0.0-beta04/AndroidManifest.xml:29:13-51
+231            android:required="false" />
+231-->[androidx.window:window:1.0.0-beta04] /home/naufal/.gradle/caches/transforms-3/3b0e9f5aa3ca69e666209fa59588d5cd/transformed/jetified-window-1.0.0-beta04/AndroidManifest.xml:30:13-37
+232
+233        <meta-data
+233-->[com.google.android.gms:play-services-basement:18.3.0] /home/naufal/.gradle/caches/transforms-3/958cb211f1ea886007a6251f88872e9a/transformed/jetified-play-services-basement-18.3.0/AndroidManifest.xml:21:9-23:69
+234            android:name="com.google.android.gms.version"
+234-->[com.google.android.gms:play-services-basement:18.3.0] /home/naufal/.gradle/caches/transforms-3/958cb211f1ea886007a6251f88872e9a/transformed/jetified-play-services-basement-18.3.0/AndroidManifest.xml:22:13-58
+235            android:value="@integer/google_play_services_version" />
+235-->[com.google.android.gms:play-services-basement:18.3.0] /home/naufal/.gradle/caches/transforms-3/958cb211f1ea886007a6251f88872e9a/transformed/jetified-play-services-basement-18.3.0/AndroidManifest.xml:23:13-66
+236
+237        <provider
+237-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/e4e3b3ef6272b915c3b538a974dbefb6/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:24:9-32:20
+238            android:name="androidx.startup.InitializationProvider"
+238-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/e4e3b3ef6272b915c3b538a974dbefb6/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:25:13-67
+239            android:authorities="com.example.nebeng.androidx-startup"
+239-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/e4e3b3ef6272b915c3b538a974dbefb6/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:26:13-68
+240            android:exported="false" >
+240-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/e4e3b3ef6272b915c3b538a974dbefb6/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:27:13-37
+241            <meta-data
+241-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/e4e3b3ef6272b915c3b538a974dbefb6/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:29:13-31:52
+242                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+242-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/e4e3b3ef6272b915c3b538a974dbefb6/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:30:17-85
+243                android:value="androidx.startup" />
+243-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/e4e3b3ef6272b915c3b538a974dbefb6/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:31:17-49
+244        </provider>
+245
+246        <receiver
+246-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/e4e3b3ef6272b915c3b538a974dbefb6/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:34:9-52:20
+247            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+247-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/e4e3b3ef6272b915c3b538a974dbefb6/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:35:13-76
+248            android:directBootAware="false"
+248-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/e4e3b3ef6272b915c3b538a974dbefb6/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:36:13-44
+249            android:enabled="true"
+249-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/e4e3b3ef6272b915c3b538a974dbefb6/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:37:13-35
+250            android:exported="true"
+250-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/e4e3b3ef6272b915c3b538a974dbefb6/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:38:13-36
+251            android:permission="android.permission.DUMP" >
+251-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/e4e3b3ef6272b915c3b538a974dbefb6/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:39:13-57
+252            <intent-filter>
+252-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/e4e3b3ef6272b915c3b538a974dbefb6/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:40:13-42:29
+253                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+253-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/e4e3b3ef6272b915c3b538a974dbefb6/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:41:17-91
+253-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/e4e3b3ef6272b915c3b538a974dbefb6/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:41:25-88
+254            </intent-filter>
+255            <intent-filter>
+255-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/e4e3b3ef6272b915c3b538a974dbefb6/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:43:13-45:29
+256                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+256-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/e4e3b3ef6272b915c3b538a974dbefb6/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:44:17-85
+256-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/e4e3b3ef6272b915c3b538a974dbefb6/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:44:25-82
+257            </intent-filter>
+258            <intent-filter>
+258-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/e4e3b3ef6272b915c3b538a974dbefb6/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:46:13-48:29
+259                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+259-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/e4e3b3ef6272b915c3b538a974dbefb6/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:47:17-88
+259-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/e4e3b3ef6272b915c3b538a974dbefb6/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:47:25-85
+260            </intent-filter>
+261            <intent-filter>
+261-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/e4e3b3ef6272b915c3b538a974dbefb6/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:49:13-51:29
+262                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+262-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/e4e3b3ef6272b915c3b538a974dbefb6/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:50:17-95
+262-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/e4e3b3ef6272b915c3b538a974dbefb6/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:50:25-92
+263            </intent-filter>
+264        </receiver>
+265
 266        <service
-266-->[com.google.android.datatransport:transport-runtime:3.1.8] /home/naufal/.gradle/caches/transforms-3/b039ec23eadf3bb398bcb791f1383592/transformed/jetified-transport-runtime-3.1.8/AndroidManifest.xml:26:9-30:19
-267            android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.JobInfoSchedulerService"
-267-->[com.google.android.datatransport:transport-runtime:3.1.8] /home/naufal/.gradle/caches/transforms-3/b039ec23eadf3bb398bcb791f1383592/transformed/jetified-transport-runtime-3.1.8/AndroidManifest.xml:27:13-117
-268            android:exported="false"
-268-->[com.google.android.datatransport:transport-runtime:3.1.8] /home/naufal/.gradle/caches/transforms-3/b039ec23eadf3bb398bcb791f1383592/transformed/jetified-transport-runtime-3.1.8/AndroidManifest.xml:28:13-37
-269            android:permission="android.permission.BIND_JOB_SERVICE" >
-269-->[com.google.android.datatransport:transport-runtime:3.1.8] /home/naufal/.gradle/caches/transforms-3/b039ec23eadf3bb398bcb791f1383592/transformed/jetified-transport-runtime-3.1.8/AndroidManifest.xml:29:13-69
-270        </service>
-271
-272        <receiver
-272-->[com.google.android.datatransport:transport-runtime:3.1.8] /home/naufal/.gradle/caches/transforms-3/b039ec23eadf3bb398bcb791f1383592/transformed/jetified-transport-runtime-3.1.8/AndroidManifest.xml:32:9-34:40
-273            android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.AlarmManagerSchedulerBroadcastReceiver"
-273-->[com.google.android.datatransport:transport-runtime:3.1.8] /home/naufal/.gradle/caches/transforms-3/b039ec23eadf3bb398bcb791f1383592/transformed/jetified-transport-runtime-3.1.8/AndroidManifest.xml:33:13-132
-274            android:exported="false" />
-274-->[com.google.android.datatransport:transport-runtime:3.1.8] /home/naufal/.gradle/caches/transforms-3/b039ec23eadf3bb398bcb791f1383592/transformed/jetified-transport-runtime-3.1.8/AndroidManifest.xml:34:13-37
-275    </application>
-276
-277</manifest>
+266-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /home/naufal/.gradle/caches/transforms-3/c8707aea0d55b0c7706ebf46b07f0c21/transformed/jetified-transport-backend-cct-3.1.8/AndroidManifest.xml:28:9-34:19
+267            android:name="com.google.android.datatransport.runtime.backends.TransportBackendDiscovery"
+267-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /home/naufal/.gradle/caches/transforms-3/c8707aea0d55b0c7706ebf46b07f0c21/transformed/jetified-transport-backend-cct-3.1.8/AndroidManifest.xml:29:13-103
+268            android:exported="false" >
+268-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /home/naufal/.gradle/caches/transforms-3/c8707aea0d55b0c7706ebf46b07f0c21/transformed/jetified-transport-backend-cct-3.1.8/AndroidManifest.xml:30:13-37
+269            <meta-data
+269-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /home/naufal/.gradle/caches/transforms-3/c8707aea0d55b0c7706ebf46b07f0c21/transformed/jetified-transport-backend-cct-3.1.8/AndroidManifest.xml:31:13-33:39
+270                android:name="backend:com.google.android.datatransport.cct.CctBackendFactory"
+270-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /home/naufal/.gradle/caches/transforms-3/c8707aea0d55b0c7706ebf46b07f0c21/transformed/jetified-transport-backend-cct-3.1.8/AndroidManifest.xml:32:17-94
+271                android:value="cct" />
+271-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /home/naufal/.gradle/caches/transforms-3/c8707aea0d55b0c7706ebf46b07f0c21/transformed/jetified-transport-backend-cct-3.1.8/AndroidManifest.xml:33:17-36
+272        </service>
+273        <service
+273-->[com.google.android.datatransport:transport-runtime:3.1.8] /home/naufal/.gradle/caches/transforms-3/cea7abf85f77feb04adff77e35b32f49/transformed/jetified-transport-runtime-3.1.8/AndroidManifest.xml:26:9-30:19
+274            android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.JobInfoSchedulerService"
+274-->[com.google.android.datatransport:transport-runtime:3.1.8] /home/naufal/.gradle/caches/transforms-3/cea7abf85f77feb04adff77e35b32f49/transformed/jetified-transport-runtime-3.1.8/AndroidManifest.xml:27:13-117
+275            android:exported="false"
+275-->[com.google.android.datatransport:transport-runtime:3.1.8] /home/naufal/.gradle/caches/transforms-3/cea7abf85f77feb04adff77e35b32f49/transformed/jetified-transport-runtime-3.1.8/AndroidManifest.xml:28:13-37
+276            android:permission="android.permission.BIND_JOB_SERVICE" >
+276-->[com.google.android.datatransport:transport-runtime:3.1.8] /home/naufal/.gradle/caches/transforms-3/cea7abf85f77feb04adff77e35b32f49/transformed/jetified-transport-runtime-3.1.8/AndroidManifest.xml:29:13-69
+277        </service>
+278
+279        <receiver
+279-->[com.google.android.datatransport:transport-runtime:3.1.8] /home/naufal/.gradle/caches/transforms-3/cea7abf85f77feb04adff77e35b32f49/transformed/jetified-transport-runtime-3.1.8/AndroidManifest.xml:32:9-34:40
+280            android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.AlarmManagerSchedulerBroadcastReceiver"
+280-->[com.google.android.datatransport:transport-runtime:3.1.8] /home/naufal/.gradle/caches/transforms-3/cea7abf85f77feb04adff77e35b32f49/transformed/jetified-transport-runtime-3.1.8/AndroidManifest.xml:33:13-132
+281            android:exported="false" />
+281-->[com.google.android.datatransport:transport-runtime:3.1.8] /home/naufal/.gradle/caches/transforms-3/cea7abf85f77feb04adff77e35b32f49/transformed/jetified-transport-runtime-3.1.8/AndroidManifest.xml:34:13-37
+282    </application>
+283
+284</manifest>

@@ -207,6 +207,32 @@ class ApiService {
     }
   }
 
+  /// Fetch mitra's ride history (requires Bearer token)
+  static Future<List<Map<String, dynamic>>> fetchMitraHistory({
+    required String token,
+    String?
+        status, // expected values: 'selesai','proses','dibatalkan','kosong' or null
+  }) async {
+    final queryParams = <String, String>{};
+    if (status != null && status.isNotEmpty) queryParams['status'] = status;
+
+    final uri = Uri.parse('$baseUrl/api/v1/mitra/riwayat')
+        .replace(queryParameters: queryParams);
+    final resp = await http.get(uri, headers: {
+      'Accept': 'application/json',
+      'Authorization': 'Bearer $token',
+    });
+
+    if (resp.statusCode == 200) {
+      final body = json.decode(resp.body);
+      if (body is Map && body['success'] == true && body['data'] is List) {
+        return List<Map<String, dynamic>>.from(body['data']);
+      }
+      throw Exception('Unexpected response format');
+    }
+    throw Exception('Failed to fetch mitra history: ${resp.statusCode}');
+  }
+
   /// Create ride (tebengan)
   static Future<Map<String, dynamic>> createRide({
     required String token,
@@ -219,6 +245,7 @@ class ApiService {
     required double price,
     int? kendaraanMitraId,
     int? bagasiCapacity,
+    int? jumlahBagasi,
     String? vehicleName,
     String? vehiclePlate,
     String? vehicleBrand,
@@ -251,6 +278,10 @@ class ApiService {
         request.fields['available_seats'] = availableSeats.toString();
       if (bagasiCapacity != null) {
         request.fields['bagasi_capacity'] = bagasiCapacity.toString();
+      }
+      if (jumlahBagasi != null) {
+        request.fields['jumlah_bagasi'] = jumlahBagasi.toString();
+      } else if (bagasiCapacity != null) {
         request.fields['jumlah_bagasi'] = bagasiCapacity.toString();
       }
 
@@ -297,7 +328,7 @@ class ApiService {
         'vehicle_color': vehicleColor,
         'available_seats': availableSeats,
         'bagasi_capacity': bagasiCapacity,
-        'jumlah_bagasi': bagasiCapacity,
+        'jumlah_bagasi': jumlahBagasi ?? bagasiCapacity,
       }),
     );
 
@@ -325,6 +356,7 @@ class ApiService {
     String? photoFilePath,
     String? weight,
     String? description,
+    String? penerima,
     List<Map<String, dynamic>>? penumpang,
   }) async {
     final uri = Uri.parse('$baseUrl/api/v1/bookings');
@@ -348,6 +380,9 @@ class ApiService {
       }
       if (description != null && description.isNotEmpty) {
         request.fields['description'] = description;
+      }
+      if (penerima != null && penerima.isNotEmpty) {
+        request.fields['penerima'] = penerima;
       }
 
       // Attach penumpang as nested form fields so Laravel validates as array
@@ -401,6 +436,7 @@ class ApiService {
         if (weight != null && weight.isNotEmpty) 'weight': weight,
         if (description != null && description.isNotEmpty)
           'description': description,
+        if (penerima != null && penerima.isNotEmpty) 'penerima': penerima,
         if (penumpang != null && penumpang.isNotEmpty) 'penumpang': penumpang,
       }),
     );
@@ -503,7 +539,22 @@ class ApiService {
       if (token != null) 'Authorization': 'Bearer $token',
     };
 
-    final resp = await http.get(uri, headers: headers);
+    var resp = await http.get(uri, headers: headers);
+    // Some backend implementations expect POST for this endpoint.
+    // If GET returns 405 Method Not Allowed, fallback to POST.
+    if (resp.statusCode == 405) {
+      resp = await http.post(
+        uri,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          if (headers['Authorization'] != null)
+            'Authorization': headers['Authorization']!,
+        },
+        body: json.encode({}),
+      );
+    }
+
     if (resp.statusCode == 200) {
       try {
         final body = json.decode(resp.body);
@@ -522,6 +573,63 @@ class ApiService {
           resp.body.length > 300 ? resp.body.substring(0, 300) : resp.body;
       throw Exception(
           'Failed to fetch booking: ${resp.statusCode}. Preview: $preview');
+    }
+  }
+
+  /// Fetch latest location for a booking (used by tracking page)
+  /// Expected response: { lat, lng, timestamp, status, tracking_active }
+  static Future<Map<String, dynamic>> fetchBookingLocation({
+    required int bookingId,
+    String? token,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/bookings/$bookingId/location');
+    final headers = {
+      'Accept': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+
+    // Try GET first
+    var resp = await http.get(uri, headers: headers);
+
+    // If backend expects POST for this route, fallback to POST on 405
+    if (resp.statusCode == 405) {
+      resp = await http.post(
+        uri,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          if (headers['Authorization'] != null)
+            'Authorization': headers['Authorization']!,
+        },
+        body: json.encode({}),
+      );
+    }
+
+    if (resp.statusCode == 200) {
+      try {
+        final body = json.decode(resp.body);
+        if (body is Map && body['success'] == true && body['data'] is Map) {
+          return Map<String, dynamic>.from(body['data']);
+        }
+        if (body is Map && body['lat'] != null) {
+          // some endpoints return raw object
+          return Map<String, dynamic>.from(body);
+        }
+        throw Exception('Unexpected response format');
+      } catch (e) {
+        final preview =
+            resp.body.length > 300 ? resp.body.substring(0, 300) : resp.body;
+        throw Exception(
+            'Expected JSON but received non-JSON response. Preview: $preview');
+      }
+    } else if (resp.statusCode == 304) {
+      // Not modified - return empty map to indicate no new data
+      return {};
+    } else {
+      final preview =
+          resp.body.length > 300 ? resp.body.substring(0, 300) : resp.body;
+      throw Exception(
+          'Failed to fetch booking location: ${resp.statusCode}. Preview: $preview');
     }
   }
 
@@ -569,6 +677,36 @@ class ApiService {
       throw Exception(
           'Failed to create vehicle: ${resp.statusCode}. Preview: $preview');
     }
+  }
+
+  /// Report mitra last location. Returns true when backend accepted the update.
+  static Future<bool> reportMitraLocation({
+    required String token,
+    required double lat,
+    required double lng,
+    DateTime? at,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/mitra/location');
+    final body = json.encode({
+      'lat': lat,
+      'lng': lng,
+      'timestamp': (at ?? DateTime.now()).toIso8601String(),
+    });
+
+    final resp = await http.post(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: body,
+    );
+
+    if (resp.statusCode == 200 || resp.statusCode == 201) {
+      return true;
+    }
+    return false;
   }
 
   /// Delete vehicle
@@ -956,5 +1094,137 @@ class ApiService {
       return Map<String, dynamic>.from(decoded as Map);
     }
     throw Exception(decoded['message'] ?? 'Failed to confirm reschedule');
+  }
+
+  /// Update booking status
+  static Future<Map<String, dynamic>> updateBookingStatus({
+    required int bookingId,
+    required String status,
+    required String token,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/bookings/$bookingId/status');
+    final resp = await http.put(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: json.encode({'status': status}),
+    );
+
+    final body = json.decode(resp.body);
+    if ((resp.statusCode == 200 || resp.statusCode == 201) &&
+        body is Map &&
+        body['success'] == true) {
+      return Map<String, dynamic>.from(body['data']);
+    }
+    throw Exception(body['message'] ?? 'Failed to update booking status');
+  }
+
+  /// Send driver location update for booking
+  static Future<bool> updateBookingLocation({
+    required int bookingId,
+    required String token,
+    required double lat,
+    required double lng,
+    DateTime? timestamp,
+    double? accuracy,
+    double? speed,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/bookings/$bookingId/location');
+    final resp = await http.post(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: json.encode({
+        'lat': lat,
+        'lng': lng,
+        if (timestamp != null) 'timestamp': timestamp.toIso8601String(),
+        if (accuracy != null) 'accuracy': accuracy,
+        if (speed != null) 'speed': speed,
+      }),
+    );
+
+    if (resp.statusCode == 200) {
+      final body = json.decode(resp.body);
+      return body is Map && body['success'] == true;
+    }
+    return false;
+  }
+
+  /// Get comprehensive tracking info for a booking
+  static Future<Map<String, dynamic>> getBookingTracking({
+    required int bookingId,
+    required String token,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/bookings/$bookingId/tracking');
+    final resp = await http.get(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (resp.statusCode == 200) {
+      final body = json.decode(resp.body);
+      if (body is Map && body['success'] == true && body['data'] is Map) {
+        return Map<String, dynamic>.from(body['data']);
+      }
+      throw Exception('Unexpected response format');
+    }
+    throw Exception('Failed to get tracking info: ${resp.statusCode}');
+  }
+
+  /// Start trip (driver marks trip as started)
+  static Future<Map<String, dynamic>> startTrip({
+    required int bookingId,
+    required String token,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/bookings/$bookingId/start-trip');
+    final resp = await http.post(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (resp.statusCode == 200) {
+      final body = json.decode(resp.body);
+      if (body is Map && body['success'] == true) {
+        return Map<String, dynamic>.from(body['data']);
+      }
+      throw Exception(body['message'] ?? 'Failed to start trip');
+    }
+    throw Exception('Failed to start trip: ${resp.statusCode}');
+  }
+
+  /// Complete trip (driver marks trip as completed)
+  static Future<Map<String, dynamic>> completeTrip({
+    required int bookingId,
+    required String token,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/bookings/$bookingId/complete-trip');
+    final resp = await http.post(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (resp.statusCode == 200) {
+      final body = json.decode(resp.body);
+      if (body is Map && body['success'] == true) {
+        return Map<String, dynamic>.from(body['data']);
+      }
+      throw Exception(body['message'] ?? 'Failed to complete trip');
+    }
+    throw Exception('Failed to complete trip: ${resp.statusCode}');
   }
 }

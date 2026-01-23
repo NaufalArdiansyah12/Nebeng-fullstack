@@ -4,24 +4,7 @@
             "outputFile": "com.example.nebeng.app-mergeReleaseResources-27:/values-mn/values-mn.xml",
             "map": [
                 {
-                    "source": "/home/naufal/.gradle/caches/transforms-3/c3e05c9fbf3e6c63974105ad6d97e1f5/transformed/jetified-play-services-basement-18.3.0/res/values-mn/values.xml",
-                    "from": {
-                        "startLines": "4",
-                        "startColumns": "0",
-                        "startOffsets": "195",
-                        "endColumns": "145",
-                        "endOffsets": "340"
-                    },
-                    "to": {
-                        "startLines": "17",
-                        "startColumns": "4",
-                        "startOffsets": "1798",
-                        "endColumns": "149",
-                        "endOffsets": "1943"
-                    }
-                },
-                {
-                    "source": "/home/naufal/.gradle/caches/transforms-3/456feef7530341a2c919967cc4dde951/transformed/jetified-play-services-base-18.0.1/res/values-mn/values.xml",
+                    "source": "/home/naufal/.gradle/caches/transforms-3/f87a5b6d8c901f1f13eed3f57ef0fc8f/transformed/jetified-play-services-base-18.3.0/res/values-mn/values.xml",
                     "from": {
                         "startLines": "4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20",
                         "startColumns": "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
@@ -38,7 +21,24 @@
                     }
                 },
                 {
-                    "source": "/home/naufal/.gradle/caches/transforms-3/0b9c903fef8d2eb2a269c36999ef4a74/transformed/core-1.10.1/res/values-mn/values-mn.xml",
+                    "source": "/home/naufal/.gradle/caches/transforms-3/958cb211f1ea886007a6251f88872e9a/transformed/jetified-play-services-basement-18.3.0/res/values-mn/values.xml",
+                    "from": {
+                        "startLines": "4",
+                        "startColumns": "0",
+                        "startOffsets": "195",
+                        "endColumns": "145",
+                        "endOffsets": "340"
+                    },
+                    "to": {
+                        "startLines": "17",
+                        "startColumns": "4",
+                        "startOffsets": "1798",
+                        "endColumns": "149",
+                        "endOffsets": "1943"
+                    }
+                },
+                {
+                    "source": "/home/naufal/.gradle/caches/transforms-3/b98fd5f30fa463963ba406c822aff787/transformed/core-1.13.0/res/values-mn/values-mn.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9",
                         "startColumns": "4,4,4,4,4,4,4,4",

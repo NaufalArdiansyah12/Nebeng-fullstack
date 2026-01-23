@@ -21,14 +21,13 @@ class Vehicle extends Model
         'model',
         'color',
         'year',
-        'seats',
         'is_active',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'year' => 'integer',
-        'seats' => 'integer',
+        
     ];
 
     public function user()

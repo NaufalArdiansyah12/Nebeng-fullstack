@@ -19,6 +19,7 @@ class BookingTitipBarang extends Model
         'photo',
         'weight',
         'description',
+        'penerima',
     ];
 
     protected $casts = [
