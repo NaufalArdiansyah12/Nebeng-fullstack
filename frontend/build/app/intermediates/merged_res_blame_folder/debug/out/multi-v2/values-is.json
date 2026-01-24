@@ -4,7 +4,24 @@
             "outputFile": "com.example.nebeng.app-mergeDebugResources-27:/values-is/values-is.xml",
             "map": [
                 {
-                    "source": "/home/naufal/.gradle/caches/transforms-3/b98fd5f30fa463963ba406c822aff787/transformed/core-1.13.0/res/values-is/values-is.xml",
+                    "source": "/home/naufal/.gradle/caches/transforms-3/65235f76a9e044798db35ae3ab34c640/transformed/jetified-play-services-basement-18.3.0/res/values-is/values.xml",
+                    "from": {
+                        "startLines": "4",
+                        "startColumns": "0",
+                        "startOffsets": "195",
+                        "endColumns": "124",
+                        "endOffsets": "319"
+                    },
+                    "to": {
+                        "startLines": "17",
+                        "startColumns": "4",
+                        "startOffsets": "1746",
+                        "endColumns": "128",
+                        "endOffsets": "1870"
+                    }
+                },
+                {
+                    "source": "/home/naufal/.gradle/caches/transforms-3/abd335cf229f14b9b90c619ca3159806/transformed/core-1.13.0/res/values-is/values-is.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9",
                         "startColumns": "4,4,4,4,4,4,4,4",
@@ -21,7 +38,7 @@
                     }
                 },
                 {
-                    "source": "/home/naufal/.gradle/caches/transforms-3/f87a5b6d8c901f1f13eed3f57ef0fc8f/transformed/jetified-play-services-base-18.3.0/res/values-is/values.xml",
+                    "source": "/home/naufal/.gradle/caches/transforms-3/25e78ba83c2029ea8b5d616749f280a1/transformed/jetified-play-services-base-18.3.0/res/values-is/values.xml",
                     "from": {
                         "startLines": "4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20",
                         "startColumns": "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
@@ -35,23 +52,6 @@
                         "startOffsets": "772,878,1032,1157,1266,1407,1532,1641,1875,2029,2135,2292,2418,2560,2714,2778,2841",
                         "endColumns": "105,153,124,108,140,124,108,104,153,105,156,125,141,153,63,62,78",
                         "endOffsets": "873,1027,1152,1261,1402,1527,1636,1741,2024,2130,2287,2413,2555,2709,2773,2836,2915"
-                    }
-                },
-                {
-                    "source": "/home/naufal/.gradle/caches/transforms-3/958cb211f1ea886007a6251f88872e9a/transformed/jetified-play-services-basement-18.3.0/res/values-is/values.xml",
-                    "from": {
-                        "startLines": "4",
-                        "startColumns": "0",
-                        "startOffsets": "195",
-                        "endColumns": "124",
-                        "endOffsets": "319"
-                    },
-                    "to": {
-                        "startLines": "17",
-                        "startColumns": "4",
-                        "startOffsets": "1746",
-                        "endColumns": "128",
-                        "endOffsets": "1870"
                     }
                 }
             ]

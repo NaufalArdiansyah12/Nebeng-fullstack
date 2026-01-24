@@ -374,6 +374,29 @@ class BookingController extends Controller
 
         $data = $booking->toArray();
         $data['booking_type'] = $bookingType;
+        // Ensure origin/destination include explicit lat/lng keys for clients
+        try {
+            if (isset($data['ride']) && is_array($data['ride'])) {
+                $rideObj = $booking->ride;
+                if ($rideObj && $rideObj->originLocation) {
+                    if (!isset($data['ride']['origin_location']) || !is_array($data['ride']['origin_location'])) {
+                        $data['ride']['origin_location'] = [];
+                    }
+                    $data['ride']['origin_location']['lat'] = $rideObj->originLocation->latitude ?? $rideObj->originLocation->lat ?? null;
+                    $data['ride']['origin_location']['lng'] = $rideObj->originLocation->longitude ?? $rideObj->originLocation->lng ?? null;
+                }
+                if ($rideObj && $rideObj->destinationLocation) {
+                    if (!isset($data['ride']['destination_location']) || !is_array($data['ride']['destination_location'])) {
+                        $data['ride']['destination_location'] = [];
+                    }
+                    $data['ride']['destination_location']['lat'] = $rideObj->destinationLocation->latitude ?? $rideObj->destinationLocation->lat ?? null;
+                    $data['ride']['destination_location']['lng'] = $rideObj->destinationLocation->longitude ?? $rideObj->destinationLocation->lng ?? null;
+                }
+            }
+        } catch (\Exception $e) {
+            // non-fatal; proceed without blocking response
+            Log::debug('Failed to attach lat/lng to ride origin/destination: ' . $e->getMessage());
+        }
         
         // Add tracking status based on ride departure time
         if ($booking->ride && $booking->ride->departure_date && $booking->ride->departure_time) {
@@ -432,7 +455,7 @@ class BookingController extends Controller
         }
 
         $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
-            'status' => 'required|string|in:pending,paid,confirmed,in_progress,completed,cancelled',
+            'status' => 'required|string|in:pending,paid,confirmed,menuju_penjemputan,sudah_di_penjemputan,menuju_tujuan,sudah_sampai_tujuan,in_progress,completed,cancelled,scheduled',
         ]);
 
         if ($validator->fails()) {

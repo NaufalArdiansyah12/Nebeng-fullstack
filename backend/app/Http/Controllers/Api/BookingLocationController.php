@@ -155,17 +155,18 @@ class BookingLocationController extends Controller
             'status' => $booking->status ?? null,
         ];
 
-        // compute tracking activation: default to 2 hours if not set
-        $windowHours = $booking->tracking_window_hours ?? 2;
+        // compute tracking activation: tracking window column removed;
+        // enable tracking if scheduled time has passed or if no scheduled time provided
         $trackingActive = false;
-        if ($booking->scheduled_at) {
+        if (!$booking->scheduled_at) {
+            $trackingActive = true;
+        } else {
             try {
-                $startWindow = $booking->scheduled_at->subHours($windowHours);
-                if (now()->greaterThanOrEqualTo($startWindow)) {
+                if (now()->greaterThanOrEqualTo($booking->scheduled_at)) {
                     $trackingActive = true;
                 }
             } catch (\Exception $e) {
-                // ignore parse errors, default false
+                $trackingActive = false;
             }
         }
 

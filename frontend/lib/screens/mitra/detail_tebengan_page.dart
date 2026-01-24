@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
+import 'mitra_tracking_map_page.dart';
 
 class MitraTebenganDetailPage extends StatefulWidget {
   final Map<String, dynamic> item;
@@ -14,6 +15,12 @@ class MitraTebenganDetailPage extends StatefulWidget {
 }
 
 class _MitraTebenganDetailPageState extends State<MitraTebenganDetailPage> {
+  @override
+  void initState() {
+    super.initState();
+    print('🔍 widget.item structure: ${jsonEncode(widget.item)}');
+  }
+
   String _formatPrice(dynamic price) {
     if (price == null) return 'Rp 0,00';
     double amount = 0;
@@ -40,15 +47,6 @@ class _MitraTebenganDetailPageState extends State<MitraTebenganDetailPage> {
         dt = DateTime(dt.year, dt.month, dt.day, h, m);
       }
     }
-    final days = [
-      'Minggu',
-      'Senin',
-      'Selasa',
-      'Rabu',
-      'Kamis',
-      'Jumat',
-      'Sabtu'
-    ];
     final months = [
       '',
       'Januari',
@@ -64,7 +62,6 @@ class _MitraTebenganDetailPageState extends State<MitraTebenganDetailPage> {
       'November',
       'Desember'
     ];
-    final dayName = days[dt.weekday % 7];
     final day = dt.day.toString().padLeft(2, '0');
     final month = months[dt.month];
     final year = dt.year;
@@ -143,7 +140,7 @@ class _MitraTebenganDetailPageState extends State<MitraTebenganDetailPage> {
               '')
           .toString()
           .toLowerCase();
-      final sType = (serviceType ?? '').toString().toLowerCase();
+      final sType = serviceType.toString().toLowerCase();
       if (rawType.contains('motor') || sType.contains('motor')) return 'Motor';
       if (rawType.contains('mobil') ||
           rawType.contains('car') ||
@@ -214,6 +211,53 @@ class _MitraTebenganDetailPageState extends State<MitraTebenganDetailPage> {
               _buildHeaderCard(headerDate, kode, statusLabel, statusBgColor,
                   origin, destination, incomeLabel, income),
               const SizedBox(height: 20),
+              // Tracking Map Button
+              Builder(builder: (context) {
+                final ride = widget.item['ride'] ?? {};
+                final status = (ride['status'] ?? '').toString().toLowerCase();
+                final showTrackingButton = status.contains('active') ||
+                    status.contains('progress') ||
+                    status == 'paid' ||
+                    status == 'confirmed';
+
+                if (showTrackingButton) {
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 20),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => MitraTrackingMapPage(
+                                item: widget.item,
+                              ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.map, color: Colors.white),
+                        label: const Text(
+                          'Buka Peta Tracking',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1E3A8A),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              }),
               _buildInfoMitra(
                   ownerName, transportasi, plat, vehicleModel, warna, kursi),
               const SizedBox(height: 20),
@@ -1186,10 +1230,22 @@ class _MitraTebenganDetailPageState extends State<MitraTebenganDetailPage> {
   // API Calls
   Future<Map<String, dynamic>?> _getMotorBooking(dynamic rideId) async {
     try {
-      // Ambil booking motor berdasarkan ride_id
-      // Di sini perlu disesuaikan dengan API yang ada
-      return null; // Placeholder
+      print('🔍 Fetching motor booking for ride ID: $rideId');
+
+      // Gunakan endpoint passengers untuk mendapatkan booking motor
+      final passengers = await ApiService.getRidePassengers(rideId, 'motor');
+
+      if (passengers.isNotEmpty) {
+        // Untuk motor, biasanya hanya 1 booking
+        final booking = passengers.first;
+        print('✅ Motor booking found: ${booking['id']}');
+        return booking;
+      }
+
+      print('❌ No motor booking found for ride ID: $rideId');
+      return null;
     } catch (e) {
+      print('❌ Error fetching motor booking: $e');
       return null;
     }
   }

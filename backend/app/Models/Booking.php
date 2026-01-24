@@ -12,7 +12,6 @@ class Booking extends Model
         'ride_id',
         'user_id',
         'booking_number',
-        'tracking_window_hours',
         'driver_id',
         'seats',
         'status',
@@ -28,7 +27,6 @@ class Booking extends Model
         'waiting_start_at' => 'datetime',
         'arrived_at' => 'datetime',
         'last_location_at' => 'datetime',
-        'tracking_window_hours' => 'integer',
     ];
 
     public function ride(): BelongsTo

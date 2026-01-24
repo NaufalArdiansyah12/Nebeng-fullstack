@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/api_service.dart';
@@ -16,6 +17,7 @@ class MitraMainPage extends StatefulWidget {
 class _MitraMainPageState extends State<MitraMainPage>
     with WidgetsBindingObserver {
   int _currentIndex = 0;
+  Timer? _locationTimer;
 
   final List<Widget> _pages = [
     const MitraHomePage(),
@@ -30,10 +32,12 @@ class _MitraMainPageState extends State<MitraMainPage>
     WidgetsBinding.instance.addObserver(this);
     // report location once on page init
     _reportCurrentLocation();
+    _startLocationTimer();
   }
 
   @override
   void dispose() {
+    _stopLocationTimer();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -42,6 +46,11 @@ class _MitraMainPageState extends State<MitraMainPage>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _reportCurrentLocation();
+      _startLocationTimer();
+    }
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      _stopLocationTimer();
     }
   }
 
@@ -69,6 +78,40 @@ class _MitraMainPageState extends State<MitraMainPage>
     } catch (e) {
       // ignore errors for now
     }
+  }
+
+  void _startLocationTimer() {
+    if (_locationTimer != null && _locationTimer!.isActive) return;
+    _locationTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
+      try {
+        bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+        if (!serviceEnabled) return;
+
+        LocationPermission permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.denied ||
+            permission == LocationPermission.deniedForever) {
+          return;
+        }
+
+        final pos = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.best);
+        final prefs = await SharedPreferences.getInstance();
+        final token = prefs.getString('api_token');
+        if (token == null || token.isEmpty) return;
+
+        await ApiService.reportMitraLocation(
+            token: token, lat: pos.latitude, lng: pos.longitude);
+      } catch (_) {
+        // ignore periodic errors
+      }
+    });
+  }
+
+  void _stopLocationTimer() {
+    try {
+      _locationTimer?.cancel();
+      _locationTimer = null;
+    } catch (_) {}
   }
 
   @override

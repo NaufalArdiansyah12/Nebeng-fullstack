@@ -40,7 +40,6 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
   final TextEditingController _searchController = TextEditingController();
   String _userName = '';
   String _userPhone = '';
-  bool _isLoadingUser = true;
   final TextEditingController _weightController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   File? selectedImage;
@@ -62,11 +61,10 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
   }
 
   Future<void> _loadUserData() async {
-    setState(() => _isLoadingUser = true);
+    // loading indicator removed; just proceed
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('api_token');
     if (token == null) {
-      setState(() => _isLoadingUser = false);
       return;
     }
 
@@ -81,8 +79,6 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
       }
     } catch (e) {
       // ignore, keep defaults
-    } finally {
-      setState(() => _isLoadingUser = false);
     }
   }
 

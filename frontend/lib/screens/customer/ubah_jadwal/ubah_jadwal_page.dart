@@ -39,7 +39,6 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
   final ImagePicker _picker = ImagePicker();
   // Penerima (recipient) fields for titip/barang
   String? _dataPenerima;
-  String? _penerimaPhone;
   final TextEditingController _penerimaController = TextEditingController();
 
   Future<void> _pickImage() async {
@@ -90,7 +89,6 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
     if (result != null && mounted) {
       setState(() {
         _dataPenerima = result['name'];
-        _penerimaPhone = result['phone'];
         _penerimaController.text = result['name'] ?? '';
       });
     }
@@ -242,7 +240,7 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
         );
         return;
       }
-      if ((_barangDescriptionController.text ?? '').isEmpty) {
+      if (_barangDescriptionController.text.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
               content: Text('Isi keterangan barang terlebih dahulu')),

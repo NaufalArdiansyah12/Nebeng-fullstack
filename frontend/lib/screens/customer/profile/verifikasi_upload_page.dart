@@ -1,8 +1,4 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../../../services/verifikasi_service.dart';
 import 'verifikasi_form_page.dart';
 import 'verifikasi_capture_page.dart';
 import 'verifikasi_type_page.dart';
@@ -20,7 +16,6 @@ class VerifikasiUploadPage extends StatefulWidget {
 }
 
 class _VerifikasiUploadPageState extends State<VerifikasiUploadPage> {
-  final ImagePicker _picker = ImagePicker();
   bool _isLoading = false;
 
   String get _verificationTitle {

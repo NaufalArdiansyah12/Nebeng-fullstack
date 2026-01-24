@@ -465,10 +465,8 @@ class _VerifikasiKtpUploadPageState extends State<VerifikasiKtpUploadPage> {
       // Use alamat as placeholder since it's not in the form
       final alamat = 'Alamat sesuai KTP';
 
-      Map<String, dynamic> response;
-
       if (widget.verificationType == VerificationType.ktp) {
-        response = await VerifikasiService.uploadKtpPhoto(
+        await VerifikasiService.uploadKtpPhoto(
           token: token,
           photo: _imageFile!,
           namaLengkap: widget.namaLengkap,
@@ -478,7 +476,7 @@ class _VerifikasiKtpUploadPageState extends State<VerifikasiKtpUploadPage> {
         );
       } else {
         // For face+ktp verification
-        response = await VerifikasiService.uploadFaceKtpPhoto(
+        await VerifikasiService.uploadFaceKtpPhoto(
           token: token,
           photo: _imageFile!,
           namaLengkap: widget.namaLengkap,

@@ -290,17 +290,15 @@ class _VerifikasiCapturePageState extends State<VerifikasiCapturePage> {
         throw Exception('Token tidak ditemukan. Silakan login kembali.');
       }
 
-      Map<String, dynamic> response;
-
       switch (widget.verificationType) {
         case VerificationType.face:
-          response = await VerifikasiService.uploadFacePhoto(
+          await VerifikasiService.uploadFacePhoto(
             token: token,
             photo: _imageFile!,
           );
           break;
         case VerificationType.ktp:
-          response = await VerifikasiService.uploadKtpPhoto(
+          await VerifikasiService.uploadKtpPhoto(
             token: token,
             photo: _imageFile!,
             namaLengkap: widget.namaLengkap!,
@@ -310,7 +308,7 @@ class _VerifikasiCapturePageState extends State<VerifikasiCapturePage> {
           );
           break;
         case VerificationType.faceKtp:
-          response = await VerifikasiService.uploadFaceKtpPhoto(
+          await VerifikasiService.uploadFaceKtpPhoto(
             token: token,
             photo: _imageFile!,
             namaLengkap: widget.namaLengkap!,

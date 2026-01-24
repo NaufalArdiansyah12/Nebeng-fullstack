@@ -117,6 +117,10 @@ class _LoginScreenState extends State<LoginScreen> {
             Future<void> _maybeRequestLocation() async {
               if (role == 'mitra') {
                 try {
+                  final prefs = await SharedPreferences.getInstance();
+                  final alreadyAsked =
+                      prefs.getBool('mitra_location_requested') ?? false;
+
                   bool serviceEnabled =
                       await Geolocator.isLocationServiceEnabled();
                   if (!serviceEnabled) {
@@ -124,12 +128,40 @@ class _LoginScreenState extends State<LoginScreen> {
                     await Geolocator.openLocationSettings();
                   }
 
+                  // Always check current permission. If not granted, request it
+                  // on first ask. If already asked but not granted, open app settings.
                   LocationPermission permission =
                       await Geolocator.checkPermission();
+
                   if (permission == LocationPermission.denied) {
-                    await Geolocator.requestPermission();
+                    if (!alreadyAsked) {
+                      permission = await Geolocator.requestPermission();
+                      await prefs.setBool('mitra_location_requested', true);
+                    } else {
+                      // already asked before and still denied -> open app settings to let user enable
+                      await Geolocator.openAppSettings();
+                    }
                   } else if (permission == LocationPermission.deniedForever) {
-                    // can't request; optionally inform user later
+                    // can't request programmatically; guide user to app settings
+                    await Geolocator.openAppSettings();
+                  }
+
+                  // If permission granted now, capture and report current location
+                  if (permission == LocationPermission.always ||
+                      permission == LocationPermission.whileInUse) {
+                    try {
+                      final pos = await Geolocator.getCurrentPosition(
+                          desiredAccuracy: LocationAccuracy.best);
+                      final token = prefs.getString('api_token');
+                      if (token != null && token.isNotEmpty) {
+                        await ApiService.reportMitraLocation(
+                            token: token,
+                            lat: pos.latitude,
+                            lng: pos.longitude);
+                      }
+                    } catch (_) {
+                      // ignore location/report errors
+                    }
                   }
                 } catch (_) {
                   // ignore permission errors

@@ -41,6 +41,31 @@ class BookingTrackingController extends Controller
             return response()->json(['success' => false, 'message' => 'Booking tidak ditemukan'], 404);
         }
 
+        // Auto-transition to in_progress when departure time has passed
+        try {
+            if ($booking->ride) {
+                $ride = $booking->ride;
+                $departureDate = $ride->departure_date ?? null;
+                $departureTime = $ride->departure_time ?? null;
+
+                if ($departureDate && $departureTime) {
+                    $dtString = $departureDate . ' ' . $departureTime;
+                    $departureDT = \Carbon\Carbon::parse($dtString);
+                    if ($departureDT->lte(now())) {
+                        $current = strtolower((string) ($booking->status ?? ''));
+                        if (in_array($current, ['paid', 'confirmed', 'pending'])) {
+                            $booking->status = 'in_progress';
+                            $booking->trip_started_at = $booking->trip_started_at ?? now();
+                            $booking->save();
+                            Log::info('Auto set booking to in_progress based on departure time', ['booking_id' => $booking->id]);
+                        }
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to auto-update booking status based on departure', ['error' => $e->getMessage(), 'booking_id' => $booking->id]);
+        }
+
         // Build tracking response
         $trackingData = [
             'booking_id' => $booking->id,
