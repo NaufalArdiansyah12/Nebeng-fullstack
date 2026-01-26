@@ -1,12 +1,12 @@
-# Finance Tugas - Nebeng Finance Dashboard
+# Finance Dashboard - Nebeng Finance
 
 Aplikasi dashboard finance untuk mengelola transaksi, mitra, dan pencairan dana.
 
 ## Tech Stack
 
 - **Frontend**: React + TypeScript + Vite
-- **Backend**: Laravel (PHP)
-- **Database**: MySQL
+- **Backend**: Terintegrasi dengan backend utama di `/backend` (Laravel)
+- **Database**: MySQL (shared dengan backend utama)
 - **UI**: shadcn-ui + Tailwind CSS
 
 ## Setup
@@ -23,10 +23,23 @@ npm run dev
 
 Frontend akan berjalan di `http://localhost:8080`
 
-### Backend Laravel
+### Backend
+
+Backend finance sudah terintegrasi dengan backend utama di folder `/backend`.
 
 ```bash
-cd backend-laravel
+cd ../backend
+
+# Install dependencies (jika belum)
+composer install
+
+# Start server
+php artisan serve
+```
+
+Backend akan berjalan di `http://127.0.0.1:8000`
+
+**API Endpoints Finance**: `http://127.0.0.1:8000/api/finance`
 
 # Install dependencies
 composer install

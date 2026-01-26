@@ -2,6 +2,8 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Hash;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\FcmController;
 use App\Http\Controllers\Api\FcmTestController;
@@ -12,6 +14,10 @@ use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PaymentTestController;
 use App\Http\Controllers\TebenganTitipBarangController;
 use App\Http\Controllers\Api\MitraHistoryController;
+use App\Http\Controllers\Finance\DashboardController;
+use App\Http\Controllers\Finance\BookingController;
+use App\Http\Controllers\Finance\UserController as FinanceUserController;
+use App\Http\Controllers\Finance\TransactionController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -141,5 +147,81 @@ Route::prefix('api/v1')->group(function () {
         Route::post('/locations', [LocationController::class, 'store']);
         Route::put('/locations/{id}', [LocationController::class, 'update']);
         Route::delete('/locations/{id}', [LocationController::class, 'destroy']);
+    });
+});
+
+// =====================================================
+// Finance Dashboard Routes (prefix: /api/finance)
+// =====================================================
+Route::prefix('finance')->group(function () {
+    // Password reset routes
+    Route::post('/forgot-password', function (Request $request) {
+        $request->validate([
+            'email' => 'required|email',
+        ]);
+
+        $status = Password::sendResetLink(
+            $request->only('email')
+        );
+
+        if ($status === Password::RESET_LINK_SENT) {
+            return response()->json(['message' => 'Link reset password telah dikirim ke email Anda']);
+        }
+
+        // Untuk keamanan, selalu kirim pesan sukses meskipun email tidak ditemukan
+        // Ini mencegah user enumeration attack
+        return response()->json(['message' => 'Jika email terdaftar, link reset password telah dikirim']);
+    });
+
+    Route::post('/reset-password', function (Request $request) {
+        $request->validate([
+            'token' => 'required',
+            'email' => 'required|email',
+            'password' => 'required|min:6|confirmed',
+        ]);
+
+        $status = Password::reset(
+            $request->only('email', 'password', 'password_confirmation', 'token'),
+            function ($user, $password) {
+                $user->password = Hash::make($password);
+                $user->save();
+            }
+        );
+
+        if ($status === Password::PASSWORD_RESET) {
+            return response()->json(['message' => 'Password berhasil direset']);
+        }
+
+        if ($status === Password::INVALID_TOKEN) {
+            return response()->json(['message' => 'Token tidak valid atau telah kedaluwarsa'], 400);
+        }
+
+        if ($status === Password::INVALID_USER) {
+            return response()->json(['message' => 'Email tidak ditemukan'], 400);
+        }
+
+        return response()->json(['message' => 'Gagal mereset password'], 400);
+    });
+
+    // Dashboard routes
+    Route::get('/pendapatan', [DashboardController::class, 'getPendapatan']);
+    Route::get('/pendapatan/chart', [DashboardController::class, 'getPendapatanChart']);
+
+    // Booking routes
+    Route::get('/bookings/chart', [BookingController::class, 'getPesananChart']);
+    Route::get('/bookings/transactions', [BookingController::class, 'getAllBookingTransactions']);
+
+    // Transaction routes
+    Route::get('/transactions/{id}', [TransactionController::class, 'getById']);
+
+    // User routes
+    Route::prefix('users')->group(function () {
+        Route::get('/count-by-role', [FinanceUserController::class, 'countByRole']);
+        Route::get('/mitra', [FinanceUserController::class, 'getMitraUsers']);
+        Route::post('/login', [FinanceUserController::class, 'login']);
+        Route::get('/{id}', [FinanceUserController::class, 'getById']);
+        Route::get('/profile/{id}', [FinanceUserController::class, 'profile']);
+        Route::put('/profile/{id}', [FinanceUserController::class, 'updateProfile']);
+        Route::put('/account/{id}', [FinanceUserController::class, 'updateAccount']);
     });
 });

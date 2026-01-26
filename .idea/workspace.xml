@@ -5,20 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="396e872e-b231-45a9-bdd8-552a6395c6bd" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/finance/TODO.md" beforeDir="false" afterPath="$PROJECT_DIR$/finance/TODO.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/finance/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/finance/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/finance/src/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/finance/src/App.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/finance/src/components/ProtectedRoute.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/finance/src/components/ProtectedRoute.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/finance/src/components/UserDropdown.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/finance/src/components/UserDropdown.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/finance/src/data/transaksi.ts" beforeDir="false" afterPath="$PROJECT_DIR$/finance/src/data/transaksi.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/finance/src/lib/api.ts" beforeDir="false" afterPath="$PROJECT_DIR$/finance/src/lib/api.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/finance/src/pages/DetailMitra.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/finance/src/pages/DetailMitra.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/finance/src/pages/DetailPosMitra.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/finance/src/pages/DetailPosMitra.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/finance/src/pages/Detailpencairan.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/finance/src/pages/Detailpencairan.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/finance/src/pages/PencairanDana.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/finance/src/pages/PencairanDana.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/finance/src/pages/PosMitra.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/finance/src/pages/PosMitra.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/finance/src/pages/ResetPassword.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/finance/src/pages/ResetPassword.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/finance/src/pages/editPencairan.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/finance/src/pages/editPencairan.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/bootstrap/app.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/bootstrap/app.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/routes/api.php" beforeDir="false" afterPath="$PROJECT_DIR$/backend/routes/api.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -29,7 +20,7 @@
     <option name="formatViaClangd" value="false" />
   </component>
   <component name="Git.Settings">
-    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/finance" />
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 4
