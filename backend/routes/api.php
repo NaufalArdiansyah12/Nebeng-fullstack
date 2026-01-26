@@ -91,6 +91,14 @@ Route::prefix('api/v1')->group(function () {
     // Get latest location for a booking (requires bearer token). Supports If-Modified-Since and If-None-Match.
     Route::get('/bookings/{id}/location', [\App\Http\Controllers\Api\BookingLocationController::class, 'show']);
 
+    // Booking Mobil Query & Tracking & Location
+    Route::get('/booking-mobil', [\App\Http\Controllers\Api\BookingMobilController::class, 'index']);
+    Route::get('/booking-mobil/{id}/tracking', [\App\Http\Controllers\Api\BookingMobilTrackingController::class, 'show']);
+    Route::post('/booking-mobil/{id}/start-trip', [\App\Http\Controllers\Api\BookingMobilTrackingController::class, 'startTrip']);
+    Route::post('/booking-mobil/{id}/complete-trip', [\App\Http\Controllers\Api\BookingMobilTrackingController::class, 'completeTrip']);
+    Route::post('/booking-mobil/{id}/location', [\App\Http\Controllers\Api\BookingMobilLocationController::class, 'store']);
+    Route::get('/booking-mobil/{id}/location', [\App\Http\Controllers\Api\BookingMobilLocationController::class, 'show']);
+
     // Vehicles (requires auth via bearer token)
     Route::get('/vehicles', [VehicleController::class, 'index']);
     Route::post('/vehicles', [VehicleController::class, 'store']);

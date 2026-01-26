@@ -203,6 +203,16 @@ class _RiwayatPageState extends State<RiwayatPage> with WidgetsBindingObserver {
 
       final status =
           (b['status'] ?? ride['status'] ?? '').toString().toLowerCase();
+      // Include in-progress statuses (removed in_progress as it's been deleted)
+      if (status == 'menuju_penjemputan' ||
+          status == 'sudah_di_penjemputan' ||
+          status == 'menuju_tujuan' ||
+          status == 'sudah_sampai_tujuan' ||
+          status == 'confirmed' ||
+          status == 'scheduled') {
+        return true;
+      }
+
       // Exclude completed/cancelled statuses
       if (status.contains('selesai') ||
           status.contains('paid') ||
@@ -563,25 +573,36 @@ class _RiwayatPageState extends State<RiwayatPage> with WidgetsBindingObserver {
     if (s.contains('cancel') || s.contains('batalkan')) {
       label = 'Dibatalkan';
       bg = Colors.red;
-    } else if (s.contains('in_progress') ||
-        s.contains('proses') ||
-        s.contains('progress')) {
-      label = 'Proses';
-      bg = const Color(0xFF1E3A8A); // dark blue
     } else if (s.contains('completed') ||
         s.contains('selesai') ||
         s.contains('done') ||
         s.contains('success')) {
       label = 'Selesai';
       bg = Colors.green;
-    } else if (s.contains('paid') ||
-        s.contains('confirmed') ||
-        s.contains('menunggu')) {
+    } else if (s == 'menuju_penjemputan') {
+      label = 'Menuju Penjemputan';
+      bg = const Color(0xFF1E3A8A); // dark blue
+    } else if (s == 'sudah_di_penjemputan') {
+      label = 'Di Penjemputan';
+      bg = const Color(0xFF1E3A8A); // dark blue
+    } else if (s == 'menuju_tujuan') {
+      label = 'Menuju Tujuan';
+      bg = const Color(0xFF1E3A8A); // dark blue
+    } else if (s == 'sudah_sampai_tujuan') {
+      label = 'Sampai Tujuan';
+      bg = const Color(0xFF1E3A8A); // dark blue
+    } else if (s == 'scheduled') {
+      label = 'Dijadwalkan';
+      bg = Colors.purple;
+    } else if (s.contains('paid') || s.contains('confirmed')) {
       label = 'Menunggu';
       bg = Colors.orange;
+    } else if (s == 'pending') {
+      label = 'Pending';
+      bg = Colors.grey;
     } else {
-      label = 'Menunggu';
-      bg = Colors.orange;
+      label = status; // Show original status if unknown
+      bg = Colors.grey;
     }
 
     return Container(

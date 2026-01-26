@@ -14,6 +14,7 @@ class BookingMobil extends Model
         'ride_id',
         'user_id',
         'booking_number',
+        'driver_id',
         'seats',
         'status',
         'meta',
@@ -21,6 +22,8 @@ class BookingMobil extends Model
 
     protected $casts = [
         'meta' => 'array',
+        'scheduled_at' => 'datetime',
+        'last_location_at' => 'datetime',
     ];
 
     public function ride(): BelongsTo

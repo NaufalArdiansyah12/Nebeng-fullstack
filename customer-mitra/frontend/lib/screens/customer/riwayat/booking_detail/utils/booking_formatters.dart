@@ -88,17 +88,28 @@ class BookingFormatters {
   /// Get human-readable status text
   static String getStatusText(String status) {
     switch (status.toLowerCase()) {
-      case 'in_progress':
-        return 'Sedang Berlangsung';
+      case 'menuju_penjemputan':
+        return 'Menuju Penjemputan';
+      case 'sudah_di_penjemputan':
+        return 'Di Titik Penjemputan';
+      case 'menuju_tujuan':
+        return 'Menuju Tujuan';
+      case 'sudah_sampai_tujuan':
+        return 'Sudah Sampai Tujuan';
       case 'completed':
         return 'Trip Selesai';
       case 'cancelled':
         return 'Dibatalkan';
+      case 'scheduled':
+        return 'Dijadwalkan';
       case 'paid':
+        return 'Sudah Dibayar';
       case 'confirmed':
-        return 'Menunggu';
-      default:
+        return 'Dikonfirmasi';
+      case 'pending':
         return 'Menunggu Pembayaran';
+      default:
+        return status; // Return original status if unknown
     }
   }
 }
