@@ -1,0 +1,34 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.dexterous.flutterlocalnotifications.flutter_local_notifications-merged_res-11:/values-be/values-be.xml",
+            "map": [
+                {
+                    "source": "/home/naufal/.gradle/caches/transforms-3/5f92c4a6594b81c424ac630f41d1540f/transformed/core-1.6.0/res/values-be/values-be.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "100",
+                        "endOffsets": "151"
+                    }
+                }
+            ]
+        },
+        {
+            "outputFile": "com.dexterous.flutterlocalnotifications.flutter_local_notifications-mergeReleaseResources-9:/values-be/values-be.xml",
+            "map": [
+                {
+                    "source": "/home/naufal/.gradle/caches/transforms-3/5f92c4a6594b81c424ac630f41d1540f/transformed/core-1.6.0/res/values-be/values-be.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "100",
+                        "endOffsets": "151"
+                    }
+                }
+            ]
+        }
+    ]
+}
