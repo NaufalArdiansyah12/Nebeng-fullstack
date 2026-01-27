@@ -28,18 +28,16 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   if (kIsWeb) {
-    // For web, Firebase requires FirebaseOptions. Replace the placeholder
-    // strings below with your Firebase Web config values (from Firebase
-    // Console -> Project Settings -> SDK setup and configuration).
+    // Firebase Web configuration for Nebeng1 project
     await Firebase.initializeApp(
       options: const FirebaseOptions(
-        apiKey: 'YOUR_API_KEY',
-        authDomain: 'YOUR_AUTH_DOMAIN',
-        projectId: 'YOUR_PROJECT_ID',
-        storageBucket: 'YOUR_STORAGE_BUCKET',
-        messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-        appId: 'YOUR_APP_ID',
-        measurementId: 'YOUR_MEASUREMENT_ID',
+        apiKey: 'AIzaSyBUbH0l6mEyV2Ljpm4bMJNSnQ8sZYFz0d8',
+        authDomain: 'nebeng1.firebaseapp.com',
+        projectId: 'nebeng1',
+        storageBucket: 'nebeng1.firebasestorage.app',
+        messagingSenderId: '182582993392',
+        appId: '1:182582993392:web:8722c82a418eb850ba3d35',
+        measurementId: 'G-K854K8MNHP',
       ),
     );
   } else {

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../services/api_service.dart';
 import '../../../../services/payment_service.dart';
+import '../../../../utils/chat_helper.dart';
 import '../../nebeng_motor/pages/payment_waiting_page.dart';
 import '../../nebeng_motor/pages/payment_success_page.dart';
 import '../../nebeng_motor/models/trip_model.dart' as motor_model;
@@ -567,6 +568,51 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
       // Use server-generated values to avoid mismatch
       final createdBookingId = booking['id'];
       final createdBookingNumber = booking['booking_number'] ?? bookingNumber;
+
+      // Auto-create conversation with driver
+      try {
+        final ride = booking['ride'] ?? {};
+        final driver = ride['user'] ?? {};
+        final mitraId = driver['id'];
+        final mitraName = driver['name'] ?? 'Driver';
+        final mitraPhoto = driver['photo_url'];
+
+        // Debug: Print booking structure
+        print('🔍 Booking data for conversation: ${booking.keys}');
+        print('🔍 Ride data: $ride');
+        print('🔍 Driver data: $driver');
+        print('🔍 MitraId: $mitraId (${mitraId.runtimeType})');
+
+        // Only create conversation if we have valid mitra data
+        if (mitraId != null && mitraId is int) {
+          final prefs = await SharedPreferences.getInstance();
+          final userName = prefs.getString('user_name') ??
+              prefs.getString('name') ??
+              widget.passengerName;
+          await ChatHelper.createConversationAfterBooking(
+            rideId: int.parse(widget.trip.id),
+            bookingType: 'mobil',
+            customerData: {
+              'id': userId,
+              'name': userName,
+              'photo': prefs.getString('photo_url'),
+            },
+            mitraData: {
+              'id': mitraId,
+              'name': mitraName,
+              'photo': mitraPhoto,
+            },
+          );
+          print(
+              '✅ Conversation created automatically for booking $createdBookingId');
+        } else {
+          print(
+              '⚠️ Cannot create conversation: driver ID is null or invalid (mitraId: $mitraId)');
+        }
+      } catch (e) {
+        print('❌ Failed to create conversation: $e');
+        // Don't fail the booking if conversation creation fails
+      }
 
       // 2) Create payment
       final paymentSvc = PaymentService();

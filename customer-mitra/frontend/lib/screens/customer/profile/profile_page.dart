@@ -9,6 +9,8 @@ import '../../pin/create_pin_page.dart';
 import '../main_page.dart';
 import 'reward_page.dart';
 import 'verifikasi_intro_page.dart';
+import 'language_page.dart';
+import 'transaction_history_page.dart';
 
 class ProfilePage extends StatefulWidget {
   final bool showBottomNav;
@@ -280,13 +282,40 @@ class _ProfilePageState extends State<ProfilePage> {
             icon: Icons.receipt_long_outlined,
             iconColor: Colors.black87,
             title: 'Riwayat Transaksi',
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const TransactionHistoryPage(),
+                ),
+              );
+            },
+          ),
+          _buildMenuItem(
+            icon: Icons.monetization_on_outlined,
+            iconColor: Colors.black87,
+            title: 'Refund',
+            onTap: () {
+              // TODO: Navigate to RefundPage
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Halaman Refund dalam pengembangan'),
+                ),
+              );
+            },
           ),
           _buildMenuItem(
             icon: Icons.language,
             iconColor: Colors.black87,
             title: 'Bahasa',
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const LanguagePage(),
+                ),
+              );
+            },
           ),
           _buildMenuItem(
             icon: Icons.lock_outline,

@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PaymentTestController;
 use App\Http\Controllers\TebenganTitipBarangController;
 use App\Http\Controllers\Api\MitraHistoryController;
+use App\Http\Controllers\Api\TransactionHistoryController;
 use App\Http\Controllers\Finance\DashboardController;
 use App\Http\Controllers\Finance\BookingController;
 use App\Http\Controllers\Finance\UserController as FinanceUserController;
@@ -152,6 +153,9 @@ Route::prefix('api/v1')->group(function () {
 
     // Mitra: riwayat tebengan (partner history)
     Route::get('/mitra/riwayat', [MitraHistoryController::class, 'index']);
+
+    // Customer: riwayat transaksi (transaction history) - uses custom ApiToken auth
+    Route::get('/transactions/history', [TransactionHistoryController::class, 'index']);
 
     // Rewards (points / merchandise)
     Route::get('/rewards', [\App\Http\Controllers\Api\RewardController::class, 'index']);

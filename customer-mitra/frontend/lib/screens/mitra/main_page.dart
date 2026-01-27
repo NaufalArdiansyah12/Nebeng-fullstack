@@ -6,6 +6,7 @@ import '../../services/api_service.dart';
 import 'home_page.dart';
 import 'riwayat_page.dart';
 import 'profile/profile_page.dart';
+import 'messages/chats_page.dart';
 
 class MitraMainPage extends StatefulWidget {
   const MitraMainPage({Key? key}) : super(key: key);
@@ -22,7 +23,7 @@ class _MitraMainPageState extends State<MitraMainPage>
   final List<Widget> _pages = [
     const MitraHomePage(),
     const MitraRiwayatPage(),
-    const Center(child: Text('Pesan')), // TODO: Create PesanPage
+    const MitraChatsPage(),
     const MitraProfilePage(),
   ];
 

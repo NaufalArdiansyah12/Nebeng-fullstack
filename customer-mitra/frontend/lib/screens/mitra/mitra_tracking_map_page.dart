@@ -7,6 +7,11 @@ import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/api_service.dart';
+import '../../services/chat_service.dart';
+import '../../utils/chat_helper.dart';
+import 'messages/chat_detail_page.dart';
+import '../../utils/chat_helper.dart';
+import 'messages/chat_detail_page.dart';
 
 class MitraTrackingMapPage extends StatefulWidget {
   final Map<String, dynamic> item;
@@ -40,6 +45,9 @@ class _MitraTrackingMapPageState extends State<MitraTrackingMapPage> {
 
   // Booking type detection
   String _bookingType = 'motor'; // 'motor' or 'mobil'
+
+  // Chat service
+  final ChatService _chatService = ChatService();
 
   LatLng? _parseLatLng(dynamic loc) {
     if (loc == null || loc is! Map) return null;
@@ -715,6 +723,100 @@ class _MitraTrackingMapPageState extends State<MitraTrackingMapPage> {
     }
   }
 
+  Future<void> _openChatWithCustomer() async {
+    try {
+      print('💬 Opening chat with customer...');
+
+      final prefs = await SharedPreferences.getInstance();
+      final mitraId = prefs.getInt('user_id');
+      final mitraName =
+          prefs.getString('user_name') ?? prefs.getString('name') ?? 'Mitra';
+
+      if (mitraId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User ID tidak ditemukan')),
+        );
+        return;
+      }
+
+      // Get customer ID from booking
+      final ride = widget.item['ride'] ?? {};
+      final rideId = ride['id'] as int?;
+      final customerId = widget.item['user_id'] as int?;
+
+      print('🔍 RideId: $rideId, CustomerId: $customerId, MitraId: $mitraId');
+
+      if (rideId == null || customerId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Data booking tidak lengkap')),
+        );
+        return;
+      }
+
+      // Check if conversation exists
+      final existingConv = await _chatService.getConversationByRideAndUsers(
+        rideId: rideId,
+        customerId: customerId,
+        mitraId: mitraId,
+      );
+
+      String conversationId;
+      if (existingConv != null) {
+        conversationId = existingConv['id'] as String;
+        print('✅ Found existing conversation: $conversationId');
+      } else {
+        // Create new conversation
+        print('📝 Creating new conversation...');
+        final customerName = widget.item['user_name'] as String? ?? 'Customer';
+        final customerPhoto = widget.item['user_photo'] as String?;
+
+        final newConvId = await ChatHelper.createConversationAfterBooking(
+          rideId: rideId,
+          bookingType: _bookingType,
+          customerData: {
+            'id': customerId,
+            'name': customerName,
+            'photo': customerPhoto,
+          },
+          mitraData: {
+            'id': mitraId,
+            'name': mitraName,
+            'photo': null,
+          },
+        );
+
+        if (newConvId == null) {
+          throw Exception('Failed to create conversation');
+        }
+
+        conversationId = newConvId;
+        print('✅ Conversation created: $conversationId');
+      }
+
+      // Navigate to chat page
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MitraChatDetailPage(
+              conversationId: conversationId,
+              otherUserName: widget.item['user_name'] as String? ?? 'Customer',
+              otherUserPhoto: widget.item['user_photo'] as String?,
+              bookingType: _bookingType,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      print('❌ Error opening chat: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal membuka chat: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final ride = widget.item['ride'] ?? {};
@@ -871,9 +973,7 @@ class _MitraTrackingMapPageState extends State<MitraTrackingMapPage> {
                 borderRadius: BorderRadius.circular(25),
                 elevation: 4,
                 child: InkWell(
-                  onTap: () {
-                    // Chat functionality
-                  },
+                  onTap: _openChatWithCustomer,
                   borderRadius: BorderRadius.circular(25),
                   child: Container(
                     padding: const EdgeInsets.symmetric(

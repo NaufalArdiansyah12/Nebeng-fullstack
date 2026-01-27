@@ -1282,4 +1282,36 @@ class ApiService {
     }
     throw Exception('Failed to complete trip: ${resp.statusCode}');
   }
+
+  /// Fetch transaction history for customer
+  static Future<List<Map<String, dynamic>>> fetchTransactionHistory({
+    required String token,
+    String? status, // 'all', 'completed', 'cancelled'
+  }) async {
+    final queryParams = status != null ? '?status=$status' : '';
+    final uri = Uri.parse('$baseUrl/api/v1/transactions/history$queryParams');
+
+    print('🌐 API Request: GET $uri');
+    print('🔑 Token (first 20 chars): ${token.substring(0, 20)}...');
+
+    final resp = await http.get(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    print('📥 Response Status: ${resp.statusCode}');
+    print('📥 Response Body: ${resp.body}');
+
+    if (resp.statusCode == 200) {
+      final body = json.decode(resp.body);
+      if (body is Map && body['success'] == true && body['data'] is List) {
+        return List<Map<String, dynamic>>.from(body['data']);
+      }
+      throw Exception('Unexpected response format');
+    }
+    throw Exception('Failed to fetch transaction history: ${resp.statusCode}');
+  }
 }
