@@ -1,0 +1,10 @@
+2026/01/26-11:04:02.856 a2baa Creating DB /tmp/flutter_tools.CFBMYC/flutter_tools_chrome_device.YQMQHD/Default/IndexedDB/http_localhost_45251.indexeddb.leveldb since it was missing.
+2026/01/26-11:04:02.858 a2baa Reusing MANIFEST /tmp/flutter_tools.CFBMYC/flutter_tools_chrome_device.YQMQHD/Default/IndexedDB/http_localhost_45251.indexeddb.leveldb/MANIFEST-000001
+2026/01/26-11:04:02.919 a2baa Level-0 table #5: started
+2026/01/26-11:04:02.920 a2baa Level-0 table #5: 665 bytes OK
+2026/01/26-11:04:02.921 a2baa Delete type=0 #3
+2026/01/26-11:04:02.921 a2baa Manual compaction at level-0 from '\x00\x01\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x02\x00\x00\x00' @ 0 : 0; will stop at (end)
+2026/01/26-11:14:16.793 a2baa Level-0 table #7: started
+2026/01/26-11:14:16.793 a2baa Level-0 table #7: 1573 bytes OK
+2026/01/26-11:14:16.794 a2baa Delete type=0 #4
+2026/01/26-11:14:16.795 a2baa Manual compaction at level-0 from '\x00\x03\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x04\x00\x00\x00' @ 0 : 0; will stop at (end)

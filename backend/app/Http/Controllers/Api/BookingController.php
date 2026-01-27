@@ -404,9 +404,11 @@ class BookingController extends Controller
                 $departureDateTime = \Carbon\Carbon::parse($booking->ride->departure_date . ' ' . $booking->ride->departure_time);
                 $now = \Carbon\Carbon::now();
                 
-                // Determine tracking status
-                if ($departureDateTime->isPast()) {
-                    $data['tracking_status'] = 'in_progress';
+                // Determine tracking status from actual booking status
+                if (in_array($booking->status, ['menuju_penjemputan', 'sudah_di_penjemputan', 'menuju_tujuan', 'sudah_sampai_tujuan'])) {
+                    $data['tracking_status'] = $booking->status;
+                } elseif ($departureDateTime->isPast()) {
+                    $data['tracking_status'] = 'menuju_penjemputan';
                 } elseif ($departureDateTime->diffInHours($now) <= 1) {
                     $data['tracking_status'] = 'waiting';
                     $data['countdown'] = [
@@ -455,7 +457,7 @@ class BookingController extends Controller
         }
 
         $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
-            'status' => 'required|string|in:pending,paid,confirmed,menuju_penjemputan,sudah_di_penjemputan,menuju_tujuan,sudah_sampai_tujuan,in_progress,completed,cancelled,scheduled',
+            'status' => 'required|string|in:pending,paid,confirmed,menuju_penjemputan,sudah_di_penjemputan,menuju_tujuan,sudah_sampai_tujuan,completed,cancelled,scheduled',
         ]);
 
         if ($validator->fails()) {

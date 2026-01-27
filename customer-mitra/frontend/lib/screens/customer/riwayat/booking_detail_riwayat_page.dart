@@ -13,6 +13,8 @@ import 'booking_detail/widgets/route_card.dart';
 import 'booking_detail/widgets/passenger_card.dart';
 import 'booking_detail/widgets/price_card.dart';
 import 'booking_detail/widgets/in_progress_layout.dart';
+import 'booking_detail/widgets/waiting_at_pickup_layout.dart';
+import 'booking_detail/widgets/arrived_at_destination_layout.dart';
 import 'booking_detail/utils/booking_formatters.dart';
 import 'booking_detail/utils/countdown_helper.dart';
 
@@ -115,9 +117,13 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
       if (token == null) return;
 
       final bookingId = widget.booking['id'];
+      final bookingType =
+          (widget.booking['booking_type'] ?? 'motor').toString().toLowerCase();
+
       final data = await ApiService.getBookingTracking(
         bookingId: bookingId,
         token: token,
+        bookingType: bookingType,
       );
 
       // Deteksi gerakan driver
@@ -155,10 +161,14 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
         currentStatus = data['status'] ?? widget.booking['status'] ?? 'pending';
       });
 
-      // Auto refresh untuk status aktif
-      if (currentStatus == 'in_progress' ||
+      // Auto refresh untuk status aktif (tidak termasuk in_progress karena sudah dihapus)
+      if (currentStatus == 'menuju_penjemputan' ||
+          currentStatus == 'sudah_di_penjemputan' ||
+          currentStatus == 'menuju_tujuan' ||
+          currentStatus == 'sudah_sampai_tujuan' ||
           currentStatus == 'paid' ||
-          currentStatus == 'confirmed') {
+          currentStatus == 'confirmed' ||
+          currentStatus == 'scheduled') {
         if (_refreshTimer == null || !_refreshTimer!.isActive) {
           _startPolling();
         }
@@ -238,14 +248,40 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
 
   @override
   Widget build(BuildContext context) {
-    // Show different layout for in_progress status
-    if (currentStatus == 'in_progress') {
+    // Show different layout based on status
+    if (currentStatus == 'menuju_penjemputan') {
       return InProgressLayout(
         booking: widget.booking,
         trackingData: trackingData,
         currentDot: _currentDot,
         isDriverMoving: _isDriverMoving,
         lastLocationUpdate: _lastLocationUpdate,
+        currentStatus: currentStatus,
+      );
+    }
+
+    if (currentStatus == 'sudah_di_penjemputan') {
+      return WaitingAtPickupLayout(
+        booking: widget.booking,
+        trackingData: trackingData,
+      );
+    }
+
+    if (currentStatus == 'menuju_tujuan') {
+      return InProgressLayout(
+        booking: widget.booking,
+        trackingData: trackingData,
+        currentDot: _currentDot,
+        isDriverMoving: _isDriverMoving,
+        lastLocationUpdate: _lastLocationUpdate,
+        currentStatus: currentStatus,
+      );
+    }
+
+    if (currentStatus == 'sudah_sampai_tujuan') {
+      return ArrivedAtDestinationLayout(
+        booking: widget.booking,
+        trackingData: trackingData,
       );
     }
 

@@ -10,6 +10,21 @@ use Illuminate\Support\Facades\Storage;
 
 class BookingBarangController extends Controller
 {
+    public function index(Request $request)
+    {
+        $rideId = $request->query('ride_id');
+        
+        if ($rideId) {
+            $bookings = \App\Models\BookingBarang::where('ride_id', $rideId)
+                ->with(['user', 'ride'])
+                ->get();
+            
+            return response()->json(['success' => true, 'data' => $bookings], 200);
+        }
+        
+        return response()->json(['success' => false, 'message' => 'ride_id parameter required'], 400);
+    }
+    
     public function store(Request $request, $ride = null)
     {
         // Expect $ride to be an instance of \App\Models\BarangRide

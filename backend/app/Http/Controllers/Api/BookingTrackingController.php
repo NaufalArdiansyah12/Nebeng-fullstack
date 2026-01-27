@@ -54,10 +54,10 @@ class BookingTrackingController extends Controller
                     if ($departureDT->lte(now())) {
                         $current = strtolower((string) ($booking->status ?? ''));
                         if (in_array($current, ['paid', 'confirmed', 'pending'])) {
-                            $booking->status = 'in_progress';
+                            $booking->status = 'menuju_penjemputan';
                             $booking->trip_started_at = $booking->trip_started_at ?? now();
                             $booking->save();
-                            Log::info('Auto set booking to in_progress based on departure time', ['booking_id' => $booking->id]);
+                            Log::info('Auto set booking to menuju_penjemputan based on departure time', ['booking_id' => $booking->id]);
                         }
                     }
                 }
@@ -144,8 +144,8 @@ class BookingTrackingController extends Controller
                     $trackingData['tracking_status'] = 'completed';
                 } elseif ($booking->status === 'cancelled') {
                     $trackingData['tracking_status'] = 'cancelled';
-                } elseif ($departureDateTime->isPast()) {
-                    $trackingData['tracking_status'] = 'in_progress';
+                } elseif (in_array($booking->status, ['menuju_penjemputan', 'sudah_di_penjemputan', 'menuju_tujuan', 'sudah_sampai_tujuan'])) {
+                    $trackingData['tracking_status'] = $booking->status;
                     $trackingData['elapsed_minutes'] = $now->diffInMinutes($departureDateTime);
                 } elseif ($departureDateTime->diffInHours($now) <= 1) {
                     $trackingData['tracking_status'] = 'waiting';
@@ -170,9 +170,6 @@ class BookingTrackingController extends Controller
         }
 
         // Waiting time information
-        if ($booking->waiting_start_at) {
-            $trackingData['waiting_duration_minutes'] = \Carbon\Carbon::parse($booking->waiting_start_at)->diffInMinutes(now());
-        }
 
         return response()->json(['success' => true, 'data' => $trackingData]);
     }
@@ -207,11 +204,11 @@ class BookingTrackingController extends Controller
             return response()->json(['success' => false, 'message' => 'Anda bukan driver untuk booking ini'], 403);
         }
 
-        $booking->status = 'in_progress';
+        $booking->status = 'menuju_penjemputan';
         $booking->trip_started_at = now();
         $booking->save();
 
-        Log::info('Trip started', ['booking_id' => $booking->id, 'driver_id' => $userId]);
+        Log::info('Trip started (menuju_penjemputan)', ['booking_id' => $booking->id, 'driver_id' => $userId]);
 
         return response()->json(['success' => true, 'data' => $booking]);
     }

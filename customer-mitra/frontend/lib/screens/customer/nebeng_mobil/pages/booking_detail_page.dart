@@ -354,7 +354,8 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
           return _buildPassengerCard(index);
         }),
         const SizedBox(height: 8),
-        if (widget.trip.serviceType == 'both')
+        if (widget.trip.serviceType == 'both' ||
+            widget.trip.serviceType == 'tebengan')
           OutlinedButton(
             onPressed: passengers.length < widget.trip.maxPassengers
                 ? _showPassengerInfoModal

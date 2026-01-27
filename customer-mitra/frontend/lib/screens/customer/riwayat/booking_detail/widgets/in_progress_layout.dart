@@ -3,13 +3,15 @@ import '../widgets/map_placeholder.dart';
 import '../widgets/location_card.dart';
 import '../utils/booking_formatters.dart';
 
-/// Layout widget for in_progress status
+/// Layout widget for journey statuses (menuju_penjemputan, menuju_tujuan)
+/// Displays different routes based on current status
 class InProgressLayout extends StatefulWidget {
   final Map<String, dynamic> booking;
   final Map<String, dynamic>? trackingData;
   final int currentDot;
   final bool isDriverMoving;
   final DateTime? lastLocationUpdate;
+  final String currentStatus; // NEW: to determine which route to show
 
   const InProgressLayout({
     Key? key,
@@ -18,6 +20,7 @@ class InProgressLayout extends StatefulWidget {
     required this.currentDot,
     this.isDriverMoving = false,
     this.lastLocationUpdate,
+    required this.currentStatus, // NEW
   }) : super(key: key);
 
   @override
@@ -46,6 +49,20 @@ class _InProgressLayoutState extends State<InProgressLayout> {
     final dateOnly = BookingFormatters.formatDateOnly(rawDate);
     final price = ride['price'] ?? widget.booking['total_price'] ?? 20000;
 
+    // Determine status message based on current status
+    String statusMessage;
+    String statusTitle;
+    if (widget.currentStatus == 'menuju_penjemputan') {
+      statusMessage = 'DRIVER MENUJU LOKASI PENJEMPUTAN';
+      statusTitle = 'Menuju Penjemputan';
+    } else if (widget.currentStatus == 'menuju_tujuan') {
+      statusMessage = 'PERJALANAN SEDANG BERLANGSUNG';
+      statusTitle = 'Menuju Tujuan';
+    } else {
+      statusMessage = 'PERJALANAN SEDANG BERLANGSUNG';
+      statusTitle = 'Perjalanan';
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -55,9 +72,9 @@ class _InProgressLayoutState extends State<InProgressLayout> {
           icon: const Icon(Icons.arrow_back, color: Colors.black87),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Perjalanan',
-          style: TextStyle(
+        title: Text(
+          statusTitle,
+          style: const TextStyle(
             color: Colors.black87,
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -119,11 +136,89 @@ class _InProgressLayoutState extends State<InProgressLayout> {
                 }
               }
 
-              // Debug logging removed to avoid terminal spam
+              // Extract origin and destination coordinates for route
+              double? originLat;
+              double? originLng;
+              double? destinationLat;
+              double? destinationLng;
+
+              // For menuju_penjemputan: route from driver current location to pickup location
+              // For menuju_tujuan: route from pickup location to destination location
+              if (widget.currentStatus == 'menuju_penjemputan') {
+                // Origin: current driver location (already in mapLat/mapLng)
+                originLat = mapLat;
+                originLng = mapLng;
+
+                // Destination: pickup location (origin_location)
+                final pickupLoc = ride['origin_location'];
+                if (pickupLoc != null) {
+                  final pickupLat = pickupLoc['lat'] ??
+                      pickupLoc['latitude'] ??
+                      pickupLoc['pickup_lat'];
+                  final pickupLng = pickupLoc['lng'] ??
+                      pickupLoc['longitude'] ??
+                      pickupLoc['pickup_lng'];
+                  destinationLat = pickupLat is num
+                      ? pickupLat.toDouble()
+                      : (pickupLat is String
+                          ? double.tryParse(pickupLat)
+                          : null);
+                  destinationLng = pickupLng is num
+                      ? pickupLng.toDouble()
+                      : (pickupLng is String
+                          ? double.tryParse(pickupLng)
+                          : null);
+                }
+              } else if (widget.currentStatus == 'menuju_tujuan') {
+                // Origin: pickup location (origin_location)
+                final pickupLoc = ride['origin_location'];
+                if (pickupLoc != null) {
+                  final pickupLat = pickupLoc['lat'] ??
+                      pickupLoc['latitude'] ??
+                      pickupLoc['pickup_lat'];
+                  final pickupLng = pickupLoc['lng'] ??
+                      pickupLoc['longitude'] ??
+                      pickupLoc['pickup_lng'];
+                  originLat = pickupLat is num
+                      ? pickupLat.toDouble()
+                      : (pickupLat is String
+                          ? double.tryParse(pickupLat)
+                          : null);
+                  originLng = pickupLng is num
+                      ? pickupLng.toDouble()
+                      : (pickupLng is String
+                          ? double.tryParse(pickupLng)
+                          : null);
+                }
+
+                // Destination: destination location
+                final destLoc = ride['destination_location'];
+                if (destLoc != null) {
+                  final destLat = destLoc['lat'] ??
+                      destLoc['latitude'] ??
+                      destLoc['dest_lat'];
+                  final destLng = destLoc['lng'] ??
+                      destLoc['longitude'] ??
+                      destLoc['dest_lng'];
+                  destinationLat = destLat is num
+                      ? destLat.toDouble()
+                      : (destLat is String ? double.tryParse(destLat) : null);
+                  destinationLng = destLng is num
+                      ? destLng.toDouble()
+                      : (destLng is String ? double.tryParse(destLng) : null);
+                }
+              }
+
               return MapPlaceholder(
-                statusText: 'Driver dalam perjalanan',
+                statusText: widget.currentStatus == 'menuju_penjemputan'
+                    ? 'Driver menuju lokasi penjemputan Anda'
+                    : 'Driver dalam perjalanan menuju tujuan',
                 lat: mapLat,
                 lng: mapLng,
+                originLat: originLat,
+                originLng: originLng,
+                destinationLat: destinationLat,
+                destinationLng: destinationLng,
               );
             }),
           ),
@@ -209,9 +304,9 @@ class _InProgressLayoutState extends State<InProgressLayout> {
                       Center(
                         child: Column(
                           children: [
-                            const Text(
-                              'PERJALANAN SEDANG BERLANGSUNG',
-                              style: TextStyle(
+                            Text(
+                              statusMessage,
+                              style: const TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.grey,
@@ -341,22 +436,44 @@ class _InProgressLayoutState extends State<InProgressLayout> {
                                 ),
                               ),
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.phone),
-                              style: IconButton.styleFrom(
-                                backgroundColor: const Color(0xFF1E3A8A),
-                                foregroundColor: Colors.white,
+                            Container(
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1E3A8A),
+                                shape: BoxShape.circle,
                               ),
-                              onPressed: () {},
+                              child: IconButton(
+                                icon: const Icon(Icons.phone, size: 20),
+                                color: Colors.white,
+                                onPressed: () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                          'Fitur panggilan akan segera tersedia'),
+                                      duration: Duration(seconds: 2),
+                                    ),
+                                  );
+                                },
+                              ),
                             ),
                             const SizedBox(width: 8),
-                            IconButton(
-                              icon: const Icon(Icons.message),
-                              style: IconButton.styleFrom(
-                                backgroundColor: const Color(0xFF1E3A8A),
-                                foregroundColor: Colors.white,
+                            Container(
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1E3A8A),
+                                shape: BoxShape.circle,
                               ),
-                              onPressed: () {},
+                              child: IconButton(
+                                icon: const Icon(Icons.chat_bubble, size: 20),
+                                color: Colors.white,
+                                onPressed: () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                          'Fitur chat akan segera tersedia'),
+                                      duration: Duration(seconds: 2),
+                                    ),
+                                  );
+                                },
+                              ),
                             ),
                           ],
                         ),
@@ -394,29 +511,6 @@ class _InProgressLayoutState extends State<InProgressLayout> {
                             ),
                           ),
                         ],
-                      ),
-                      const SizedBox(height: 24),
-                      // Cancel Button
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton(
-                          onPressed: () {},
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            side: const BorderSide(color: Colors.black87),
-                          ),
-                          child: const Text(
-                            'Batalkan Pesanan',
-                            style: TextStyle(
-                              color: Colors.black87,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
                       ),
                       const SizedBox(height: 20),
                     ],

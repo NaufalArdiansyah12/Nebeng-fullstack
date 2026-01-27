@@ -13,15 +13,15 @@
 13         to allow setting breakpoints, to provide hot reload, etc.
 14    -->
 15    <uses-permission android:name="android.permission.INTERNET" />
-15-->/home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:2:5-67
-15-->/home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:2:22-64
+15-->/home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:2:5-67
+15-->/home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:2:22-64
 16    <!-- Location permissions required for driver (mitra) tracking -->
 17    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-17-->/home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:4:5-81
-17-->/home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:4:22-78
+17-->/home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:4:5-81
+17-->/home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:4:22-78
 18    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-18-->/home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:5:5-79
-18-->/home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:5:22-76
+18-->/home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:5:5-79
+18-->/home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:5:22-76
 19    <!--
 20 Required to query activities that can process text, see:
 21         https://developer.android.com/training/package-visibility?hl=en and
@@ -30,40 +30,40 @@
 24         In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin.
 25    -->
 26    <queries>
-26-->/home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:44:5-49:15
+26-->/home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:44:5-49:15
 27        <intent>
-27-->/home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:45:9-48:18
+27-->/home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:45:9-48:18
 28            <action android:name="android.intent.action.PROCESS_TEXT" />
-28-->/home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:46:13-72
-28-->/home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:46:21-70
+28-->/home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:46:13-72
+28-->/home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:46:21-70
 29
 30            <data android:mimeType="text/plain" />
-30-->/home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:47:13-50
-30-->/home/naufal/project/nebeng-fullstack/frontend/android/app/src/main/AndroidManifest.xml:47:19-48
+30-->/home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:47:13-50
+30-->/home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:47:19-48
 31        </intent>
 32    </queries>
 33
 34    <uses-permission android:name="android.permission.WAKE_LOCK" />
-34-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:10:5-68
-34-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:10:22-65
+34-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:10:5-68
+34-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:10:22-65
 35    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" /> <!-- Permissions options for the `notification` group -->
-35-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:11:5-79
-35-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:11:22-76
+35-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:11:5-79
+35-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:11:22-76
 36    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-36-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:13:5-77
-36-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:13:22-74
+36-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:13:5-77
+36-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:13:22-74
 37    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-37-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:9:5-81
-37-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:9:22-78
+37-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:9:5-81
+37-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:9:22-78
 38    <uses-permission android:name="android.permission.VIBRATE" />
-38-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:10:5-66
-38-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:10:22-63
+38-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:10:5-66
+38-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:10:22-63
 39    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
-39-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:11:5-81
-39-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:11:22-78
+39-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:11:5-81
+39-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:11:22-78
 40    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" /> <!-- Required by older versions of Google Play services to create IID tokens -->
-40-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:12:5-79
-40-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:12:22-76
+40-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:12:5-79
+40-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:12:22-76
 41    <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
 41-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/e3bdf2111081a55a06da7b3f43b30952/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:26:5-82
 41-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/e3bdf2111081a55a06da7b3f43b30952/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:26:22-79
@@ -120,63 +120,63 @@
 86            android:value="2" />
 87
 88        <service
-88-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:16:9-19:72
+88-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:16:9-19:72
 89            android:name="io.flutter.plugins.firebase.messaging.FlutterFirebaseMessagingBackgroundService"
-89-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:17:13-107
+89-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:17:13-107
 90            android:exported="false"
-90-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:18:13-37
+90-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:18:13-37
 91            android:permission="android.permission.BIND_JOB_SERVICE" />
-91-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:19:13-69
+91-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:19:13-69
 92        <service
-92-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:20:9-26:19
+92-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:20:9-26:19
 93            android:name="io.flutter.plugins.firebase.messaging.FlutterFirebaseMessagingService"
-93-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:21:13-97
+93-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:21:13-97
 94            android:exported="false" >
-94-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:22:13-37
+94-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:22:13-37
 95            <intent-filter>
-95-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:23:13-25:29
+95-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:23:13-25:29
 96                <action android:name="com.google.firebase.MESSAGING_EVENT" />
-96-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:24:17-78
-96-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:24:25-75
+96-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:24:17-78
+96-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:24:25-75
 97            </intent-filter>
 98        </service>
 99
 100        <receiver
-100-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:28:9-35:20
+100-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:28:9-35:20
 101            android:name="io.flutter.plugins.firebase.messaging.FlutterFirebaseMessagingReceiver"
-101-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:29:13-98
+101-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:29:13-98
 102            android:exported="true"
-102-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:30:13-36
+102-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:30:13-36
 103            android:permission="com.google.android.c2dm.permission.SEND" >
-103-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:31:13-73
+103-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:31:13-73
 104            <intent-filter>
-104-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:32:13-34:29
+104-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:32:13-34:29
 105                <action android:name="com.google.android.c2dm.intent.RECEIVE" />
-105-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:33:17-81
-105-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:33:25-78
+105-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:33:17-81
+105-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:33:25-78
 106            </intent-filter>
 107        </receiver>
 108
 109        <service
-109-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:37:9-41:19
+109-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:37:9-41:19
 110            android:name="com.google.firebase.components.ComponentDiscoveryService"
-110-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:37:18-89
+110-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:37:18-89
 111            android:directBootAware="true"
 111-->[com.google.firebase:firebase-common:20.4.3] /home/naufal/.gradle/caches/transforms-3/117e0596424dae302b1802767e67aa4b/transformed/jetified-firebase-common-20.4.3/AndroidManifest.xml:32:13-43
 112            android:exported="false" >
 112-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/e3bdf2111081a55a06da7b3f43b30952/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:56:13-37
 113            <meta-data
-113-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:38:13-40:85
+113-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:38:13-40:85
 114                android:name="com.google.firebase.components:io.flutter.plugins.firebase.messaging.FlutterFirebaseAppRegistrar"
-114-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:39:17-128
+114-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:39:17-128
 115                android:value="com.google.firebase.components.ComponentRegistrar" />
-115-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:40:17-82
+115-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:40:17-82
 116            <meta-data
-116-->[:firebase_core] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_core/intermediates/merged_manifest/debug/AndroidManifest.xml:11:13-13:85
+116-->[:firebase_core] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_core/intermediates/merged_manifest/debug/AndroidManifest.xml:11:13-13:85
 117                android:name="com.google.firebase.components:io.flutter.plugins.firebase.core.FlutterFirebaseCoreRegistrar"
-117-->[:firebase_core] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_core/intermediates/merged_manifest/debug/AndroidManifest.xml:12:17-124
+117-->[:firebase_core] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_core/intermediates/merged_manifest/debug/AndroidManifest.xml:12:17-124
 118                android:value="com.google.firebase.components.ComponentRegistrar" />
-118-->[:firebase_core] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_core/intermediates/merged_manifest/debug/AndroidManifest.xml:13:17-82
+118-->[:firebase_core] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_core/intermediates/merged_manifest/debug/AndroidManifest.xml:13:17-82
 119            <meta-data
 119-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/e3bdf2111081a55a06da7b3f43b30952/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:57:13-59:85
 120                android:name="com.google.firebase.components:com.google.firebase.messaging.FirebaseMessagingKtxRegistrar"
@@ -222,99 +222,99 @@
 140        </service>
 141
 142        <provider
-142-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:43:9-47:38
+142-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:43:9-47:38
 143            android:name="io.flutter.plugins.firebase.messaging.FlutterFirebaseMessagingInitProvider"
-143-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:44:13-102
+143-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:44:13-102
 144            android:authorities="com.example.nebeng.flutterfirebasemessaginginitprovider"
-144-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:45:13-88
+144-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:45:13-88
 145            android:exported="false"
-145-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:46:13-37
+145-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:46:13-37
 146            android:initOrder="99" />
-146-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:47:13-35
+146-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:47:13-35
 147
 148        <service
-148-->[:geolocator_android] /home/naufal/project/nebeng-fullstack/frontend/build/geolocator_android/intermediates/merged_manifest/debug/AndroidManifest.xml:10:9-14:56
+148-->[:geolocator_android] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/geolocator_android/intermediates/merged_manifest/debug/AndroidManifest.xml:10:9-14:56
 149            android:name="com.baseflow.geolocator.GeolocatorLocationService"
-149-->[:geolocator_android] /home/naufal/project/nebeng-fullstack/frontend/build/geolocator_android/intermediates/merged_manifest/debug/AndroidManifest.xml:11:13-77
+149-->[:geolocator_android] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/geolocator_android/intermediates/merged_manifest/debug/AndroidManifest.xml:11:13-77
 150            android:enabled="true"
-150-->[:geolocator_android] /home/naufal/project/nebeng-fullstack/frontend/build/geolocator_android/intermediates/merged_manifest/debug/AndroidManifest.xml:12:13-35
+150-->[:geolocator_android] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/geolocator_android/intermediates/merged_manifest/debug/AndroidManifest.xml:12:13-35
 151            android:exported="false"
-151-->[:geolocator_android] /home/naufal/project/nebeng-fullstack/frontend/build/geolocator_android/intermediates/merged_manifest/debug/AndroidManifest.xml:13:13-37
+151-->[:geolocator_android] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/geolocator_android/intermediates/merged_manifest/debug/AndroidManifest.xml:13:13-37
 152            android:foregroundServiceType="location" />
-152-->[:geolocator_android] /home/naufal/project/nebeng-fullstack/frontend/build/geolocator_android/intermediates/merged_manifest/debug/AndroidManifest.xml:14:13-53
+152-->[:geolocator_android] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/geolocator_android/intermediates/merged_manifest/debug/AndroidManifest.xml:14:13-53
 153
 154        <provider
-154-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:11:9-19:20
+154-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:11:9-19:20
 155            android:name="io.flutter.plugins.imagepicker.ImagePickerFileProvider"
-155-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:12:13-82
+155-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:12:13-82
 156            android:authorities="com.example.nebeng.flutter.image_provider"
-156-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:13:13-74
+156-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:13:13-74
 157            android:exported="false"
-157-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:14:13-37
+157-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:14:13-37
 158            android:grantUriPermissions="true" >
-158-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:15:13-47
+158-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:15:13-47
 159            <meta-data
-159-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:16:13-18:75
+159-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:16:13-18:75
 160                android:name="android.support.FILE_PROVIDER_PATHS"
-160-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:17:17-67
+160-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:17:17-67
 161                android:resource="@xml/flutter_image_picker_file_paths" />
-161-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:18:17-72
+161-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:18:17-72
 162        </provider> <!-- Trigger Google Play services to install the backported photo picker module. -->
 163        <service
-163-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:21:9-33:19
+163-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:21:9-33:19
 164            android:name="com.google.android.gms.metadata.ModuleDependencies"
-164-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:22:13-78
+164-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:22:13-78
 165            android:enabled="false"
-165-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:23:13-36
+165-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:23:13-36
 166            android:exported="false" >
-166-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:24:13-37
+166-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:24:13-37
 167            <intent-filter>
-167-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:26:13-28:29
+167-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:26:13-28:29
 168                <action android:name="com.google.android.gms.metadata.MODULE_DEPENDENCIES" />
-168-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:27:17-94
-168-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:27:25-91
+168-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:27:17-94
+168-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:27:25-91
 169            </intent-filter>
 170
 171            <meta-data
-171-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:30:13-32:36
+171-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:30:13-32:36
 172                android:name="photopicker_activity:0:required"
-172-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:31:17-63
+172-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:31:17-63
 173                android:value="" />
-173-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:32:17-33
+173-->[:image_picker_android] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:32:17-33
 174        </service>
 175
 176        <receiver
-176-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:16:9-18:40
+176-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:16:9-18:40
 177            android:name="com.dexterous.flutterlocalnotifications.ActionBroadcastReceiver"
-177-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:17:13-91
+177-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:17:13-91
 178            android:exported="false" />
-178-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:18:13-37
+178-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:18:13-37
 179        <receiver
-179-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:19:9-21:40
+179-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:19:9-21:40
 180            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
-180-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:20:13-97
+180-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:20:13-97
 181            android:exported="false" />
-181-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:21:13-37
+181-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:21:13-37
 182        <receiver
-182-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:22:9-31:20
+182-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:22:9-31:20
 183            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
-183-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:23:13-101
+183-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:23:13-101
 184            android:exported="false" >
-184-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:24:13-37
+184-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:24:13-37
 185            <intent-filter>
-185-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:25:13-30:29
+185-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:25:13-30:29
 186                <action android:name="android.intent.action.BOOT_COMPLETED" />
-186-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:26:17-79
-186-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:26:25-76
+186-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:26:17-79
+186-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:26:25-76
 187                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
-187-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:27:17-84
-187-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:27:25-81
+187-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:27:17-84
+187-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:27:25-81
 188                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
-188-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:28:17-82
-188-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:28:25-79
+188-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:28:17-82
+188-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:28:25-79
 189                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
-189-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:29:17-82
-189-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:29:25-79
+189-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:29:17-82
+189-->[:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:29:25-79
 190            </intent-filter>
 191        </receiver>
 192
@@ -340,10 +340,10 @@
 203            android:permission="com.google.android.c2dm.permission.SEND" >
 203-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/e3bdf2111081a55a06da7b3f43b30952/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:32:13-73
 204            <intent-filter>
-204-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:32:13-34:29
+204-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:32:13-34:29
 205                <action android:name="com.google.android.c2dm.intent.RECEIVE" />
-205-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:33:17-81
-205-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:33:25-78
+205-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:33:17-81
+205-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:33:25-78
 206            </intent-filter>
 207
 208            <meta-data
@@ -366,10 +366,10 @@
 219            android:exported="false" >
 219-->[com.google.firebase:firebase-messaging:23.4.1] /home/naufal/.gradle/caches/transforms-3/e3bdf2111081a55a06da7b3f43b30952/transformed/jetified-firebase-messaging-23.4.1/AndroidManifest.xml:49:13-37
 220            <intent-filter android:priority="-500" >
-220-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:23:13-25:29
+220-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:23:13-25:29
 221                <action android:name="com.google.firebase.MESSAGING_EVENT" />
-221-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:24:17-78
-221-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:24:25-75
+221-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:24:17-78
+221-->[:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:24:25-75
 222            </intent-filter>
 223        </service>
 224

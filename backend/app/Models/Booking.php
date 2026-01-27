@@ -24,8 +24,6 @@ class Booking extends Model
     protected $casts = [
         'meta' => 'array',
         'scheduled_at' => 'datetime',
-        'waiting_start_at' => 'datetime',
-        'arrived_at' => 'datetime',
         'last_location_at' => 'datetime',
     ];
 
