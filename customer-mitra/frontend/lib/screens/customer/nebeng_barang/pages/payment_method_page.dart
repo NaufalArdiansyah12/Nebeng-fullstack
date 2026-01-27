@@ -743,7 +743,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
           MaterialPageRoute(
             builder: (context) => PaymentWaitingPage(
               trip: widget.trip,
-              bookingNumber: widget.bookingNumber,
+              bookingNumber: createdBookingNumber,
               passengerName: widget.passengerName,
               phoneNumber: widget.phoneNumber,
               paymentMethod: widget.paymentMethod,

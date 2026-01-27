@@ -1131,37 +1131,70 @@ class ApiService {
     DateTime? timestamp,
     double? accuracy,
     double? speed,
+    String bookingType = 'motor', // 'motor', 'mobil', 'barang', or 'titip'
   }) async {
-    final uri = Uri.parse('$baseUrl/api/v1/bookings/$bookingId/location');
-    final resp = await http.post(
-      uri,
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: json.encode({
-        'lat': lat,
-        'lng': lng,
-        if (timestamp != null) 'timestamp': timestamp.toIso8601String(),
-        if (accuracy != null) 'accuracy': accuracy,
-        if (speed != null) 'speed': speed,
-      }),
-    );
+    try {
+      String endpoint;
+      if (bookingType == 'mobil') {
+        endpoint = 'booking-mobil';
+      } else if (bookingType == 'barang') {
+        endpoint = 'booking-barang';
+      } else if (bookingType == 'titip') {
+        endpoint = 'booking-titip-barang';
+      } else {
+        endpoint = 'bookings';
+      }
 
-    if (resp.statusCode == 200) {
-      final body = json.decode(resp.body);
-      return body is Map && body['success'] == true;
+      final uri = Uri.parse('$baseUrl/api/v1/$endpoint/$bookingId/location');
+      print('🌐 Sending to: $uri');
+
+      final resp = await http.post(
+        uri,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode({
+          'lat': lat,
+          'lng': lng,
+          if (timestamp != null) 'timestamp': timestamp.toIso8601String(),
+          if (accuracy != null) 'accuracy': accuracy,
+          if (speed != null) 'speed': speed,
+        }),
+      );
+
+      print('📡 Response status: ${resp.statusCode}');
+      print('📡 Response body: ${resp.body}');
+
+      if (resp.statusCode == 200) {
+        final body = json.decode(resp.body);
+        return body is Map && body['success'] == true;
+      }
+      return false;
+    } catch (e) {
+      print('❌ Error in updateBookingLocation: $e');
+      return false;
     }
-    return false;
   }
 
   /// Get comprehensive tracking info for a booking
   static Future<Map<String, dynamic>> getBookingTracking({
     required int bookingId,
     required String token,
+    String bookingType = 'motor', // 'motor', 'mobil', 'barang', or 'titip'
   }) async {
-    final uri = Uri.parse('$baseUrl/api/v1/bookings/$bookingId/tracking');
+    String endpoint;
+    if (bookingType == 'mobil') {
+      endpoint = 'booking-mobil';
+    } else if (bookingType == 'barang') {
+      endpoint = 'booking-barang';
+    } else if (bookingType == 'titip') {
+      endpoint = 'booking-titip-barang';
+    } else {
+      endpoint = 'bookings';
+    }
+    final uri = Uri.parse('$baseUrl/api/v1/$endpoint/$bookingId/tracking');
     final resp = await http.get(
       uri,
       headers: {
@@ -1184,8 +1217,19 @@ class ApiService {
   static Future<Map<String, dynamic>> startTrip({
     required int bookingId,
     required String token,
+    String bookingType = 'motor',
   }) async {
-    final uri = Uri.parse('$baseUrl/api/v1/bookings/$bookingId/start-trip');
+    String endpoint;
+    if (bookingType == 'mobil') {
+      endpoint = 'booking-mobil';
+    } else if (bookingType == 'barang') {
+      endpoint = 'booking-barang';
+    } else if (bookingType == 'titip') {
+      endpoint = 'booking-titip-barang';
+    } else {
+      endpoint = 'bookings';
+    }
+    final uri = Uri.parse('$baseUrl/api/v1/$endpoint/$bookingId/start-trip');
     final resp = await http.post(
       uri,
       headers: {
@@ -1208,8 +1252,19 @@ class ApiService {
   static Future<Map<String, dynamic>> completeTrip({
     required int bookingId,
     required String token,
+    String bookingType = 'motor',
   }) async {
-    final uri = Uri.parse('$baseUrl/api/v1/bookings/$bookingId/complete-trip');
+    String endpoint;
+    if (bookingType == 'mobil') {
+      endpoint = 'booking-mobil';
+    } else if (bookingType == 'barang') {
+      endpoint = 'booking-barang';
+    } else if (bookingType == 'titip') {
+      endpoint = 'booking-titip-barang';
+    } else {
+      endpoint = 'bookings';
+    }
+    final uri = Uri.parse('$baseUrl/api/v1/$endpoint/$bookingId/complete-trip');
     final resp = await http.post(
       uri,
       headers: {

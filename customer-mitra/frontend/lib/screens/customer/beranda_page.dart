@@ -28,7 +28,6 @@ class BerandaPage extends StatefulWidget {
 class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
   late User currentUser;
   int _currentCarouselIndex = 0;
-  bool _showKTPWarning = true;
   String _verificationStatus = 'not_verified';
   Timer? _statusCheckTimer;
   String _previousStatus = '';
@@ -194,20 +193,15 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
         final data = await VerifikasiService.getVerification(token);
 
         String newStatus;
-        bool showWarning;
 
         if (data.status == 'approved') {
           newStatus = 'verified';
-          showWarning = false;
         } else if (data.status == 'pending') {
           newStatus = 'pending';
-          showWarning = true;
         } else if (data.status == 'rejected') {
           newStatus = 'rejected';
-          showWarning = true;
         } else {
           newStatus = 'not_verified';
-          showWarning = true;
         }
 
         if (_previousStatus.isNotEmpty && _previousStatus != newStatus) {
@@ -216,7 +210,6 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
 
         setState(() {
           _verificationStatus = newStatus;
-          _showKTPWarning = showWarning;
           _previousStatus = newStatus;
         });
       } else {
@@ -403,6 +396,87 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
   }
 
   Widget _buildRewardSection() {
+    // Show KTP warning if not verified
+    if (_verificationStatus != 'verified') {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFEF2F2),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFFECACA)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: const BoxDecoration(
+                color: Color(0xFFEF4444),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.error_outline,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Kamu belum melakukan verifikasi KTP',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.black87,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const VerifikasiIntroPage(),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEF4444),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Text(
+                        'Verifikasi Sekarang!',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.cancel,
+              color: Colors.grey,
+              size: 20,
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Show reward points if verified
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(16),
@@ -567,8 +641,12 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
     required Color color,
     required VoidCallback onTap,
   }) {
+    final bool isEnabled = _verificationStatus == 'verified';
+    final Color displayColor = isEnabled ? color : Colors.grey[300]!;
+    final Color iconColor = isEnabled ? Colors.white : Colors.grey[400]!;
+
     return GestureDetector(
-      onTap: onTap,
+      onTap: isEnabled ? onTap : () => _showVerificationRequired(),
       child: SizedBox(
         width: 80,
         child: Column(
@@ -578,28 +656,28 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
               width: 64,
               height: 64,
               decoration: BoxDecoration(
-                color: color,
+                color: displayColor,
                 shape: BoxShape.circle,
               ),
               child: Center(
                 child: FaIcon(
                   icon,
                   size: 28,
-                  color: Colors.white,
+                  color: iconColor,
                 ),
               ),
             ),
             const SizedBox(height: 8),
             SizedBox(
-              height: 42, // Fixed height untuk text
+              height: 42,
               child: Text(
                 label,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 10,
                   height: 1.2,
                   fontWeight: FontWeight.w500,
-                  color: Colors.black87,
+                  color: isEnabled ? Colors.black87 : Colors.grey[500],
                 ),
                 maxLines: 3,
               ),

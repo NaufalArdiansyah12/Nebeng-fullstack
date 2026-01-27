@@ -53,8 +53,8 @@ class BookingLocationController extends Controller
         
         // Auto-update status based on location and time
         if ($booking->status === 'paid' || $booking->status === 'confirmed') {
-            // If booking is paid/confirmed and driver starts moving, set to in_progress
-            $booking->status = 'in_progress';
+            // If booking is paid/confirmed and driver starts moving, set to menuju_penjemputan
+            $booking->status = 'menuju_penjemputan';
         }
         
         $booking->save();
@@ -70,14 +70,44 @@ class BookingLocationController extends Controller
             'status' => $booking->status,
         ]);
 
-        // If pickup position exists, compute distance and update status or waiting
-        if ($booking->pickup_lat && $booking->pickup_lng) {
-            $dist = $this->haversineDistance($booking->pickup_lat, $booking->pickup_lng, $data['lat'], $data['lng']);
-            // If within 20m and waiting_start_at not set -> waiting started
-            if ($dist <= 20 && !$booking->waiting_start_at) {
-                $booking->waiting_start_at = now();
+        // Get pickup coordinates from ride's origin location
+        $pickupLat = null;
+        $pickupLng = null;
+        
+        $booking->load('ride.originLocation');
+        if ($booking->ride && $booking->ride->originLocation) {
+            $pickupLat = $booking->ride->originLocation->latitude;
+            $pickupLng = $booking->ride->originLocation->longitude;
+        }
+
+        // If pickup position exists, compute distance and update status
+        if ($pickupLat && $pickupLng) {
+            $dist = $this->haversineDistance($pickupLat, $pickupLng, $data['lat'], $data['lng']);
+            
+            Log::info('booking.location.distance_check', [
+                'booking_id' => $booking->id,
+                'distance_meters' => round($dist, 2),
+                'status' => $booking->status,
+                'pickup_lat' => $pickupLat,
+                'pickup_lng' => $pickupLng,
+                'driver_lat' => $data['lat'],
+                'driver_lng' => $data['lng']
+            ]);
+            
+            // Auto-update status to 'sudah_di_penjemputan' if driver arrives at pickup location (within 10m)
+            if ($booking->status === 'menuju_penjemputan' && $dist <= 10) {
+                $booking->status = 'sudah_di_penjemputan';
                 $booking->save();
-                Log::info('booking.waiting.started', ['booking_id' => $booking->id, 'started_at' => $booking->waiting_start_at->toIso8601String()]);
+                Log::info('booking.status.auto_updated', [
+                    'booking_id' => $booking->id, 
+                    'status' => 'sudah_di_penjemputan',
+                    'distance_meters' => round($dist, 2),
+                    'pickup_lat' => $pickupLat,
+                    'pickup_lng' => $pickupLng,
+                    'driver_lat' => $data['lat'],
+                    'driver_lng' => $data['lng'],
+                    'trigger' => 'arrived_at_pickup'
+                ]);
             }
 
             // If moved >100m from pickup and status is 'menunggu' -> set to 'sedang_dalam_perjalanan'

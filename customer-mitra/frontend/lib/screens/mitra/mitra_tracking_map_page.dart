@@ -25,15 +25,21 @@ class _MitraTrackingMapPageState extends State<MitraTrackingMapPage> {
   final List<LatLng> _routePoints = [];
   final MapController _mapController = MapController();
 
+  // Base URL for API
+  final String baseUrl = ApiService.baseUrl;
+
   // Route (driving) from current position to origin (fetched from routing service)
   List<LatLng> _routeToOrigin = [];
-  
+
   // Route from origin to destination (main route)
   List<LatLng> _mainRoute = [];
 
   // Origin/destination coordinates
   LatLng? _originLatLng;
   LatLng? _destinationLatLng;
+
+  // Booking type detection
+  String _bookingType = 'motor'; // 'motor' or 'mobil'
 
   LatLng? _parseLatLng(dynamic loc) {
     if (loc == null || loc is! Map) return null;
@@ -61,9 +67,53 @@ class _MitraTrackingMapPageState extends State<MitraTrackingMapPage> {
   void initState() {
     super.initState();
     print('🗺️ MitraTrackingMapPage initialized');
+    _detectBookingType();
     _extractOriginDestination();
     _fetchMainRoute(); // Fetch main route on init
     _checkAndStartTracking();
+  }
+
+  void _detectBookingType() {
+    // Check widget.item['type'] first (highest priority - set by mitra history page)
+    final itemType = (widget.item['type'] ?? '').toString().toLowerCase();
+
+    final ride = widget.item['ride'] ?? {};
+    final mitraVehicle = ride['kendaraan_mitra'] ?? {};
+    final rawType = (mitraVehicle['type'] ??
+            mitraVehicle['vehicle_type'] ??
+            mitraVehicle['transportation'] ??
+            '')
+        .toString()
+        .toLowerCase();
+    final serviceType = (ride['service_type'] ?? '').toString().toLowerCase();
+    final rideType = (ride['ride_type'] ?? '').toString().toLowerCase();
+
+    // Priority 1: Check item type (from mitra history)
+    if (itemType.contains('titip')) {
+      _bookingType = 'titip';
+    } else if (itemType.contains('barang') && !itemType.contains('titip')) {
+      _bookingType = 'barang';
+    } else if (itemType.contains('mobil') || itemType.contains('car')) {
+      _bookingType = 'mobil';
+    } else if (itemType.contains('motor')) {
+      _bookingType = 'motor';
+    }
+    // Priority 2: Check service/ride type
+    else if (serviceType.contains('titip') || rideType.contains('titip')) {
+      _bookingType = 'titip';
+    } else if (serviceType.contains('barang') || rideType.contains('barang')) {
+      _bookingType = 'barang';
+    }
+    // Priority 3: Check vehicle type
+    else if (rawType.contains('mobil') ||
+        rawType.contains('car') ||
+        serviceType.contains('mobil') ||
+        serviceType.contains('car')) {
+      _bookingType = 'mobil';
+    } else {
+      _bookingType = 'motor';
+    }
+    print('🚗 Booking type detected: $_bookingType (from itemType: $itemType)');
   }
 
   @override
@@ -93,13 +143,14 @@ class _MitraTrackingMapPageState extends State<MitraTrackingMapPage> {
 
     try {
       final src = '${_originLatLng!.longitude},${_originLatLng!.latitude}';
-      final dst = '${_destinationLatLng!.longitude},${_destinationLatLng!.latitude}';
+      final dst =
+          '${_destinationLatLng!.longitude},${_destinationLatLng!.latitude}';
       print('🧭 Fetching main route from $src to $dst');
-      
+
       final url = Uri.parse(
           'https://router.project-osrm.org/route/v1/driving/$src;$dst?overview=full&geometries=geojson');
       final resp = await http.get(url);
-      
+
       if (resp.statusCode == 200) {
         final data = json.decode(resp.body);
         if (data != null &&
@@ -287,7 +338,8 @@ class _MitraTrackingMapPageState extends State<MitraTrackingMapPage> {
         return;
       }
 
-      print('🚀 Sending location to server - BookingID: $bookingId');
+      print(
+          '🚀 Sending location to server - BookingID: $bookingId, Type: $_bookingType');
 
       final success = await ApiService.updateBookingLocation(
         bookingId: bookingId,
@@ -297,6 +349,7 @@ class _MitraTrackingMapPageState extends State<MitraTrackingMapPage> {
         timestamp: DateTime.now(),
         accuracy: position.accuracy,
         speed: position.speed,
+        bookingType: _bookingType,
       );
 
       if (success) {
@@ -349,34 +402,178 @@ class _MitraTrackingMapPageState extends State<MitraTrackingMapPage> {
     int? bookingId;
     final ride = widget.item['ride'] ?? {};
     final rideId = ride['id'];
-    final type = (widget.item['type'] ?? '').toString().toLowerCase();
+
+    print(
+        '🔍 _resolveBookingId - widget.item keys: ${widget.item.keys.toList()}');
+    print('🔍 widget.item[id]: ${widget.item['id']}');
+    print('🔍 ride_id: $rideId');
+    print('🔍 _bookingType: $_bookingType');
 
     if (widget.item['id'] != null) {
       bookingId = widget.item['id'] as int?;
+      print('⚠️ Found widget.item[id]: $bookingId');
     }
 
     if (bookingId == null && widget.item['booking'] is Map) {
       final booking = widget.item['booking'] as Map<String, dynamic>;
       if (booking['id'] != null) {
         bookingId = booking['id'] as int?;
+        print('✅ Found booking.id: $bookingId');
       }
     }
 
     if (bookingId == null && widget.item['booking_id'] != null) {
       bookingId = widget.item['booking_id'] as int?;
+      print('✅ Found booking_id: $bookingId');
     }
 
-    if (bookingId == null) {
-      if (type == 'motor') {
+    if (bookingId == null && rideId != null) {
+      print(
+          '🔍 Resolving booking ID from ride_id: $rideId, type: $_bookingType');
+      if (_bookingType == 'motor') {
         final motorBooking = await _getMotorBooking(rideId);
         bookingId = motorBooking?['id'];
-      } else if (type == 'mobil') {
-        final mobilData = await _getMobilBookingWithPassengers(rideId);
-        bookingId = mobilData['booking']?['id'];
+        print('🏍️ Motor booking ID: $bookingId');
+      } else if (_bookingType == 'mobil') {
+        final mobilBooking = await _getMobilBookingByRideId(rideId);
+        bookingId = mobilBooking?['id'];
+        print('🚗 Mobil booking ID: $bookingId');
+      } else if (_bookingType == 'barang') {
+        final barangBooking = await _getBarangBookingByRideId(rideId);
+        bookingId = barangBooking?['id'];
+        print('📦 Barang booking ID: $bookingId');
+      } else if (_bookingType == 'titip') {
+        final titipBooking = await _getTitipBarangBookingByRideId(rideId);
+        bookingId = titipBooking?['id'];
+        print('📮 Titip barang booking ID: $bookingId');
+      }
+    } else if (bookingId != null && rideId != null) {
+      // bookingId sudah ada, tapi kita perlu pastikan itu bukan ride_id
+      print(
+          '⚠️ BookingId already set to $bookingId, checking if it\'s actually a ride_id...');
+      // Jika bookingId == rideId, kemungkinan besar itu ride_id, bukan booking_id
+      if (bookingId == rideId) {
+        print('⚠️ BookingId matches ride_id! Fetching actual booking_id...');
+        if (_bookingType == 'motor') {
+          final motorBooking = await _getMotorBooking(rideId);
+          bookingId = motorBooking?['id'];
+          print('🏍️ Corrected motor booking ID: $bookingId');
+        } else if (_bookingType == 'mobil') {
+          final mobilBooking = await _getMobilBookingByRideId(rideId);
+          bookingId = mobilBooking?['id'];
+          print('🚗 Corrected mobil booking ID: $bookingId');
+        } else if (_bookingType == 'barang') {
+          final barangBooking = await _getBarangBookingByRideId(rideId);
+          bookingId = barangBooking?['id'];
+          print('📦 Corrected barang booking ID: $bookingId');
+        } else if (_bookingType == 'titip') {
+          final titipBooking = await _getTitipBarangBookingByRideId(rideId);
+          bookingId = titipBooking?['id'];
+          print('📮 Corrected titip barang booking ID: $bookingId');
+        }
       }
     }
 
+    print('✅ Final resolved booking ID: $bookingId');
     return bookingId;
+  }
+
+  Future<Map<String, dynamic>?> _getMobilBookingByRideId(int? rideId) async {
+    if (rideId == null) return null;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('api_token');
+      if (token == null) return null;
+
+      // Query booking_mobil by ride_id
+      final uri = Uri.parse('$baseUrl/api/v1/booking-mobil?ride_id=$rideId');
+      final resp = await http.get(
+        uri,
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (resp.statusCode == 200) {
+        final body = json.decode(resp.body);
+        if (body is Map && body['success'] == true && body['data'] is List) {
+          final bookings = List<Map<String, dynamic>>.from(body['data']);
+          if (bookings.isNotEmpty) {
+            return bookings.first;
+          }
+        }
+      }
+    } catch (e) {
+      print('❌ Error getting mobil booking by ride_id: $e');
+    }
+    return null;
+  }
+
+  Future<Map<String, dynamic>?> _getBarangBookingByRideId(int? rideId) async {
+    if (rideId == null) return null;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('api_token');
+      if (token == null) return null;
+
+      // Query booking_barang by ride_id
+      final uri = Uri.parse('$baseUrl/api/v1/booking-barang?ride_id=$rideId');
+      final resp = await http.get(
+        uri,
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (resp.statusCode == 200) {
+        final body = json.decode(resp.body);
+        if (body is Map && body['success'] == true && body['data'] is List) {
+          final bookings = List<Map<String, dynamic>>.from(body['data']);
+          if (bookings.isNotEmpty) {
+            return bookings.first;
+          }
+        }
+      }
+    } catch (e) {
+      print('❌ Error getting barang booking by ride_id: $e');
+    }
+    return null;
+  }
+
+  Future<Map<String, dynamic>?> _getTitipBarangBookingByRideId(
+      int? rideId) async {
+    if (rideId == null) return null;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('api_token');
+      if (token == null) return null;
+
+      // Query booking_titip_barang by ride_id
+      final uri =
+          Uri.parse('$baseUrl/api/v1/booking-titip-barang?ride_id=$rideId');
+      final resp = await http.get(
+        uri,
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (resp.statusCode == 200) {
+        final body = json.decode(resp.body);
+        if (body is Map && body['success'] == true && body['data'] is List) {
+          final bookings = List<Map<String, dynamic>>.from(body['data']);
+          if (bookings.isNotEmpty) {
+            return bookings.first;
+          }
+        }
+      }
+    } catch (e) {
+      print('❌ Error getting titip barang booking by ride_id: $e');
+    }
+    return null;
   }
 
   Future<void> _markMenujuPenjemputan() async {
@@ -486,11 +683,11 @@ class _MitraTrackingMapPageState extends State<MitraTrackingMapPage> {
       final src = '${_lastPosition!.longitude},${_lastPosition!.latitude}';
       final dst = '${_originLatLng!.longitude},${_originLatLng!.latitude}';
       print('🧭 Fetching route from current position to origin: $src to $dst');
-      
+
       final url = Uri.parse(
           'https://router.project-osrm.org/route/v1/driving/$src;$dst?overview=full&geometries=geojson');
       final resp = await http.get(url);
-      
+
       if (resp.statusCode == 200) {
         final data = json.decode(resp.body);
         if (data != null &&
@@ -545,7 +742,7 @@ class _MitraTrackingMapPageState extends State<MitraTrackingMapPage> {
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'com.example.nebeng',
               ),
-              
+
               // Main route line from origin to destination (rendered using OSRM route)
               if (_mainRoute.isNotEmpty)
                 PolylineLayer(
@@ -559,7 +756,7 @@ class _MitraTrackingMapPageState extends State<MitraTrackingMapPage> {
                     ),
                   ],
                 ),
-              
+
               // Route from current position to origin (when driver hasn't reached pickup)
               // This shows the actual driving route the driver will take
               if (_routeToOrigin.isNotEmpty)
@@ -574,7 +771,7 @@ class _MitraTrackingMapPageState extends State<MitraTrackingMapPage> {
                     ),
                   ],
                 ),
-              
+
               // Tracking route (actual path traveled by driver)
               if (_routePoints.length > 1)
                 PolylineLayer(
@@ -588,7 +785,7 @@ class _MitraTrackingMapPageState extends State<MitraTrackingMapPage> {
                     ),
                   ],
                 ),
-              
+
               // Markers
               MarkerLayer(
                 markers: [
