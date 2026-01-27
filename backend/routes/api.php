@@ -99,6 +99,22 @@ Route::prefix('api/v1')->group(function () {
     Route::post('/booking-mobil/{id}/location', [\App\Http\Controllers\Api\BookingMobilLocationController::class, 'store']);
     Route::get('/booking-mobil/{id}/location', [\App\Http\Controllers\Api\BookingMobilLocationController::class, 'show']);
 
+    // Booking Barang Tracking & Location
+    Route::get('/booking-barang', [\App\Http\Controllers\Api\BookingBarangController::class, 'index']);
+    Route::get('/booking-barang/{id}/tracking', [\App\Http\Controllers\Api\BookingBarangTrackingController::class, 'show']);
+    Route::post('/booking-barang/{id}/start-trip', [\App\Http\Controllers\Api\BookingBarangTrackingController::class, 'startTrip']);
+    Route::post('/booking-barang/{id}/complete-trip', [\App\Http\Controllers\Api\BookingBarangTrackingController::class, 'completeTrip']);
+    Route::post('/booking-barang/{id}/location', [\App\Http\Controllers\Api\BookingBarangLocationController::class, 'store']);
+    Route::get('/booking-barang/{id}/location', [\App\Http\Controllers\Api\BookingBarangLocationController::class, 'show']);
+
+    // Booking Titip Barang Tracking & Location
+    Route::get('/booking-titip-barang', [\App\Http\Controllers\Api\BookingTitipBarangController::class, 'index']);
+    Route::get('/booking-titip-barang/{id}/tracking', [\App\Http\Controllers\Api\BookingTitipBarangTrackingController::class, 'show']);
+    Route::post('/booking-titip-barang/{id}/start-trip', [\App\Http\Controllers\Api\BookingTitipBarangTrackingController::class, 'startTrip']);
+    Route::post('/booking-titip-barang/{id}/complete-trip', [\App\Http\Controllers\Api\BookingTitipBarangTrackingController::class, 'completeTrip']);
+    Route::post('/booking-titip-barang/{id}/location', [\App\Http\Controllers\Api\BookingTitipBarangLocationController::class, 'store']);
+    Route::get('/booking-titip-barang/{id}/location', [\App\Http\Controllers\Api\BookingTitipBarangLocationController::class, 'show']);
+
     // Vehicles (requires auth via bearer token)
     Route::get('/vehicles', [VehicleController::class, 'index']);
     Route::post('/vehicles', [VehicleController::class, 'store']);

@@ -104,6 +104,17 @@ class BookingTitipBarangController extends Controller
         return response()->json(['success' => true, 'data' => $booking], 201);
     }
 
+    public function index(Request $request)
+    {
+        $rideId = $request->query('ride_id');
+        if (!$rideId) {
+            return response()->json(['success' => false, 'message' => 'ride_id parameter required'], 400);
+        }
+
+        $bookings = \App\Models\BookingTitipBarang::where('ride_id', $rideId)->get();
+        return response()->json(['success' => true, 'data' => $bookings], 200);
+    }
+
     public function show($id)
     {
         $b = \App\Models\BookingTitipBarang::with(['ride', 'user'])->find($id);

@@ -1131,10 +1131,20 @@ class ApiService {
     DateTime? timestamp,
     double? accuracy,
     double? speed,
-    String bookingType = 'motor', // 'motor' or 'mobil'
+    String bookingType = 'motor', // 'motor', 'mobil', 'barang', or 'titip'
   }) async {
     try {
-      final endpoint = bookingType == 'mobil' ? 'booking-mobil' : 'bookings';
+      String endpoint;
+      if (bookingType == 'mobil') {
+        endpoint = 'booking-mobil';
+      } else if (bookingType == 'barang') {
+        endpoint = 'booking-barang';
+      } else if (bookingType == 'titip') {
+        endpoint = 'booking-titip-barang';
+      } else {
+        endpoint = 'bookings';
+      }
+
       final uri = Uri.parse('$baseUrl/api/v1/$endpoint/$bookingId/location');
       print('🌐 Sending to: $uri');
 
@@ -1172,9 +1182,18 @@ class ApiService {
   static Future<Map<String, dynamic>> getBookingTracking({
     required int bookingId,
     required String token,
-    String bookingType = 'motor', // 'motor' or 'mobil'
+    String bookingType = 'motor', // 'motor', 'mobil', 'barang', or 'titip'
   }) async {
-    final endpoint = bookingType == 'mobil' ? 'booking-mobil' : 'bookings';
+    String endpoint;
+    if (bookingType == 'mobil') {
+      endpoint = 'booking-mobil';
+    } else if (bookingType == 'barang') {
+      endpoint = 'booking-barang';
+    } else if (bookingType == 'titip') {
+      endpoint = 'booking-titip-barang';
+    } else {
+      endpoint = 'bookings';
+    }
     final uri = Uri.parse('$baseUrl/api/v1/$endpoint/$bookingId/tracking');
     final resp = await http.get(
       uri,
@@ -1200,7 +1219,16 @@ class ApiService {
     required String token,
     String bookingType = 'motor',
   }) async {
-    final endpoint = bookingType == 'mobil' ? 'booking-mobil' : 'bookings';
+    String endpoint;
+    if (bookingType == 'mobil') {
+      endpoint = 'booking-mobil';
+    } else if (bookingType == 'barang') {
+      endpoint = 'booking-barang';
+    } else if (bookingType == 'titip') {
+      endpoint = 'booking-titip-barang';
+    } else {
+      endpoint = 'bookings';
+    }
     final uri = Uri.parse('$baseUrl/api/v1/$endpoint/$bookingId/start-trip');
     final resp = await http.post(
       uri,
@@ -1226,7 +1254,16 @@ class ApiService {
     required String token,
     String bookingType = 'motor',
   }) async {
-    final endpoint = bookingType == 'mobil' ? 'booking-mobil' : 'bookings';
+    String endpoint;
+    if (bookingType == 'mobil') {
+      endpoint = 'booking-mobil';
+    } else if (bookingType == 'barang') {
+      endpoint = 'booking-barang';
+    } else if (bookingType == 'titip') {
+      endpoint = 'booking-titip-barang';
+    } else {
+      endpoint = 'bookings';
+    }
     final uri = Uri.parse('$baseUrl/api/v1/$endpoint/$bookingId/complete-trip');
     final resp = await http.post(
       uri,
