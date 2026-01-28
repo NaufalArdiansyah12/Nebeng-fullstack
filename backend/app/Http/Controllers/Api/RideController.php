@@ -360,10 +360,22 @@ class RideController extends Controller
     public function getRidePassengers(Request $request, $rideId)
     {
         $rideType = $request->query('ride_type', 'motor');
+        
+        // Normalize ride_type: accept both 'motor' and 'tebengan_motor' formats
+        $normalizedType = $rideType;
+        if ($rideType === 'tebengan_motor') {
+            $normalizedType = 'motor';
+        } elseif ($rideType === 'tebengan_mobil') {
+            $normalizedType = 'mobil';
+        } elseif ($rideType === 'tebengan_barang') {
+            $normalizedType = 'barang';
+        } elseif ($rideType === 'tebengan_titip_barang') {
+            $normalizedType = 'titip';
+        }
 
         $bookings = [];
 
-        switch ($rideType) {
+        switch ($normalizedType) {
             case 'mobil':
                 $bookings = \App\Models\BookingMobil::with(['user', 'penumpang'])
                     ->where('ride_id', $rideId)

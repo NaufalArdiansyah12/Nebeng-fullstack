@@ -15,6 +15,8 @@ import 'booking_detail/widgets/price_card.dart';
 import 'booking_detail/widgets/in_progress_layout.dart';
 import 'booking_detail/widgets/waiting_at_pickup_layout.dart';
 import 'booking_detail/widgets/arrived_at_destination_layout.dart';
+import 'booking_detail/widgets/rating_card.dart';
+import 'booking_detail/widgets/rating_dialog.dart';
 import 'booking_detail/utils/booking_formatters.dart';
 import 'booking_detail/utils/countdown_helper.dart';
 
@@ -40,6 +42,10 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
   AnimationController? _dotsAnimationController;
   int _currentDot = 0;
 
+  // Rating state
+  Map<String, dynamic>? existingRating;
+  bool isLoadingRating = false;
+
   // Movement tracking
   double? _previousLat;
   double? _previousLng;
@@ -64,6 +70,11 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
         (widget.booking['booking_type'] ?? '').toString().toLowerCase();
     if (bookingType == 'mobil') {
       _fetchAllPassengers();
+    }
+
+    // Fetch rating if booking is completed
+    if (currentStatus == 'completed') {
+      _fetchRating();
     }
   }
 
@@ -237,13 +248,131 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
     }
   }
 
+  Future<void> _fetchRating() async {
+    setState(() {
+      isLoadingRating = true;
+    });
+
+    try {
+      final bookingId = widget.booking['id'];
+      String bookingType =
+          (widget.booking['booking_type'] ?? '').toString().toLowerCase();
+      if (bookingType.isEmpty) {
+        bookingType = 'motor';
+      }
+
+      final rating = await ApiService.getRating(
+        bookingId: bookingId,
+        bookingType: bookingType,
+      );
+
+      if (mounted) {
+        setState(() {
+          existingRating = rating;
+          isLoadingRating = false;
+        });
+      }
+    } catch (e) {
+      print('Error fetching rating: $e');
+      if (mounted) {
+        setState(() {
+          isLoadingRating = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _showRatingDialog() async {
+    await showDialog(
+      context: context,
+      builder: (context) => RatingDialog(
+        booking: widget.booking,
+        onRatingSubmitted: () {
+          _fetchRating();
+        },
+      ),
+    );
+  }
+
+  bool _canReschedule() {
+    try {
+      final ride = widget.booking['ride'] ?? {};
+      final departureDate = ride['departure_date'] ?? '';
+      final departureTime = ride['departure_time'] ?? '';
+
+      if (departureDate.isEmpty) return false;
+
+      // Parse tanggal dan waktu keberangkatan
+      DateTime departureDateTime;
+      try {
+        // Format: YYYY-MM-DD HH:mm:ss
+        if (departureTime.isNotEmpty) {
+          final dateTimeParts = departureTime.split(' ');
+          final time = dateTimeParts.length > 1 ? dateTimeParts[1] : '00:00:00';
+          departureDateTime = DateTime.parse('$departureDate $time');
+        } else {
+          departureDateTime = DateTime.parse(departureDate);
+        }
+      } catch (e) {
+        // Fallback: coba parse hanya tanggal
+        departureDateTime = DateTime.parse(departureDate);
+      }
+
+      // Ambil waktu sekarang
+      final now = DateTime.now();
+
+      // Hitung selisih waktu
+      final difference = departureDateTime.difference(now);
+
+      // Bisa reschedule jika masih lebih dari 24 jam (1 hari)
+      return difference.inHours >= 24;
+    } catch (e) {
+      print('Error checking reschedule eligibility: $e');
+      return false;
+    }
+  }
+
   Future<void> _onReschedulePressed() async {
+    if (!_canReschedule()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Ubah jadwal hanya dapat dilakukan minimal 1x24 jam sebelum keberangkatan'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => UbahJadwalPage(booking: widget.booking),
       ),
     );
+  }
+
+  Future<void> _onCancelBookingPressed() async {
+    // Show cancellation dialog
+    final result = await showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return _CancellationDialog(booking: widget.booking);
+      },
+    );
+
+    if (result == 'cancelled') {
+      // Refresh atau kembali ke halaman sebelumnya
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Booking berhasil dibatalkan'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        Navigator.pop(context, true); // Return true to indicate refresh needed
+      }
+    }
   }
 
   @override
@@ -432,6 +561,73 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
               const SizedBox(height: 16),
             ],
 
+            // Tombol Ubah Jadwal dan Batalkan Booking
+            if ((bookingType == 'mobil' ||
+                    bookingType == 'motor' ||
+                    bookingType == 'barang' ||
+                    bookingType == 'titip') &&
+                _canReschedule()) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Column(
+                  children: [
+                    // Tombol Ubah Jadwal
+                    SizedBox(
+                      height: 52,
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _onReschedulePressed,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0F4AA3),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Ubah Jadwal',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Tombol Batalkan Booking
+                    SizedBox(
+                      height: 52,
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: _onCancelBookingPressed,
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(
+                            color: Color(0xFFEF4444),
+                            width: 2,
+                          ),
+                          backgroundColor: Colors.white,
+                          foregroundColor: const Color(0xFFEF4444),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Batalkan Booking',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
             // Price Card
             PriceCard(
               pricePerSeat: pricePerSeat,
@@ -441,11 +637,30 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
               booking: widget.booking,
             ),
 
-            const SizedBox(height: 100),
+            const SizedBox(height: 16),
+
+            // Rating Card (only show for completed bookings)
+            if (currentStatus == 'completed') ...[
+              if (isLoadingRating)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(20),
+                    child: CircularProgressIndicator(),
+                  ),
+                )
+              else
+                RatingCard(
+                  existingRating: existingRating,
+                  onRatePressed: _showRatingDialog,
+                  driverName: driverName,
+                ),
+              const SizedBox(height: 8),
+            ],
+
+            const SizedBox(height: 24),
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomNavigationBar(bookingType),
     );
   }
 
@@ -484,86 +699,426 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
       accentColor: accentColor,
     );
   }
+}
 
-  Widget? _buildBottomNavigationBar(String bookingType) {
-    if (bookingType != 'mobil' &&
-        bookingType != 'motor' &&
-        bookingType != 'barang' &&
-        bookingType != 'titip') {
-      return null;
+// Cancellation Dialog Widget
+class _CancellationDialog extends StatefulWidget {
+  final Map<String, dynamic> booking;
+
+  const _CancellationDialog({required this.booking});
+
+  @override
+  State<_CancellationDialog> createState() => _CancellationDialogState();
+}
+
+class _CancellationDialogState extends State<_CancellationDialog> {
+  String? selectedReason;
+  bool isLoading = false;
+  int cancellationCount = 0;
+
+  final List<String> cancellationReasons = [
+    'Bencana Alam',
+    'Kendaraan Rusak',
+    'Masalah Kesehatan Pribadi',
+    'Kebutuhan Mendesak yang Tidak Terduga',
+    'Alasan Lainnya',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchCancellationCount();
+  }
+
+  Future<void> _fetchCancellationCount() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getInt('user_id');
+      if (userId != null) {
+        final response = await ApiService.getCancellationCount(userId);
+        if (mounted) {
+          setState(() {
+            cancellationCount = response['count'] ?? 0;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error fetching cancellation count: $e');
+    }
+  }
+
+  Future<void> _cancelBooking() async {
+    if (selectedReason == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Silakan pilih alasan pembatalan'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
     }
 
-    return SafeArea(
-      child: Container(
-        padding: const EdgeInsets.all(16.0),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 20,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        child: SizedBox(
-          height: 52,
-          width: double.infinity,
-          child: Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () {
-                    // Tracking sudah tersedia di halaman in_progress
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                            'Tracking lokasi tersedia saat perjalanan berlangsung'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                  },
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Color(0xFF0F4AA3)),
-                    backgroundColor: Colors.white,
-                    foregroundColor: const Color(0xFF0F4AA3),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+    // Show confirmation dialog
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icon
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEF4444).withOpacity(0.1),
+                    shape: BoxShape.circle,
                   ),
-                  child: const Text(
-                    'Lacak Perjalanan',
-                    style: TextStyle(
-                      fontSize: 15,
+                  child: const Icon(
+                    Icons.close,
+                    color: Color(0xFFEF4444),
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Badge
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFDEF3FF),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    'Pembatalan pada bulan ini: $cancellationCount/3',
+                    style: const TextStyle(
+                      color: Color(0xFF0F4AA3),
+                      fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _onReschedulePressed,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0F4AA3),
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                const SizedBox(height: 20),
+
+                // Title
+                const Text(
+                  'Anda telah membatalkan tebengan ini',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Description
+                Text(
+                  'Harap diperhatikan bahwa jika Anda melakukan lebih dari 3 pembatalan dalam satu bulan, akun Anda akan otomatis diblokir sementara dari layanan kami. Apakah Anda yakin ingin melanjutkan pembatalan ini?',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[700],
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Buttons
+                Column(
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFEF4444),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Batalkan tebengan',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Color(0xFF0F4AA3)),
+                          foregroundColor: const Color(0xFF0F4AA3),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Kembali',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (confirm != true) return;
+
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      final bookingId = widget.booking['id'];
+      await ApiService.cancelBooking(bookingId, selectedReason!);
+
+      if (mounted) {
+        Navigator.pop(context, 'cancelled');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal membatalkan booking: ${e.toString()}'),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.black87),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                const Expanded(
+                  child: Text(
+                    'Pembatalan Tebengan',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
                     ),
                   ),
-                  child: const Text(
-                    'Ubah Jadwal',
+                ),
+                const SizedBox(width: 48), // Balance the back button
+              ],
+            ),
+          ),
+
+          const Divider(height: 1),
+
+          // Content
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Berikan alasan pembatalan tebengan Anda!',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Reason options
+                  ...cancellationReasons.map((reason) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: InkWell(
+                        onTap: () {
+                          setState(() {
+                            selectedReason = reason;
+                          });
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 16,
+                          ),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: selectedReason == reason
+                                  ? const Color(0xFF0F4AA3)
+                                  : Colors.grey[300]!,
+                              width: selectedReason == reason ? 2 : 1,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 20,
+                                height: 20,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: selectedReason == reason
+                                        ? const Color(0xFF0F4AA3)
+                                        : Colors.grey[400]!,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: selectedReason == reason
+                                    ? Center(
+                                        child: Container(
+                                          width: 10,
+                                          height: 10,
+                                          decoration: const BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: Color(0xFF0F4AA3),
+                                          ),
+                                        ),
+                                      )
+                                    : null,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  reason,
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    color: selectedReason == reason
+                                        ? Colors.black87
+                                        : Colors.grey[700],
+                                    fontWeight: selectedReason == reason
+                                        ? FontWeight.w600
+                                        : FontWeight.normal,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ],
+              ),
+            ),
+          ),
+
+          // Footer buttons
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(color: Colors.grey[200]!),
+              ),
+            ),
+            child: Column(
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton(
+                    onPressed: isLoading ? null : _cancelBooking,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFEF4444),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      disabledBackgroundColor: Colors.grey[300],
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Text(
+                            'Batalkan tebengan',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: OutlinedButton(
+                    onPressed: isLoading ? null : () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFF0F4AA3)),
+                      foregroundColor: const Color(0xFF0F4AA3),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Kembali',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

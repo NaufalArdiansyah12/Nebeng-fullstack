@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../../services/chat_service.dart';
+import '../../../../../utils/chat_helper.dart';
+import '../../../messages/chats_page.dart';
 
 /// Layout widget for sudah_di_penjemputan status
 /// Shows that driver has arrived at pickup location and is waiting for customer
-class WaitingAtPickupLayout extends StatelessWidget {
+class WaitingAtPickupLayout extends StatefulWidget {
   final Map<String, dynamic> booking;
   final Map<String, dynamic>? trackingData;
 
@@ -13,8 +17,116 @@ class WaitingAtPickupLayout extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<WaitingAtPickupLayout> createState() => _WaitingAtPickupLayoutState();
+}
+
+class _WaitingAtPickupLayoutState extends State<WaitingAtPickupLayout> {
+  final ChatService _chatService = ChatService();
+
+  Future<void> _openChatWithDriver(BuildContext context) async {
+    try {
+      // Show loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getInt('user_id');
+      final userName =
+          prefs.getString('user_name') ?? prefs.getString('name') ?? 'Customer';
+
+      if (userId == null) {
+        Navigator.pop(context); // Close loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('User ID tidak ditemukan. Silakan login kembali.')),
+        );
+        return;
+      }
+
+      // Get ride and driver info
+      final ride = widget.booking['ride'] ?? {};
+      final driver = ride['user'] ?? {};
+      final mitraId = driver['id'];
+      final mitraName = driver['name'] ?? 'Driver';
+      final mitraPhoto = driver['photo_url'];
+      final rideId = ride['id'] ?? widget.booking['ride_id'];
+      final bookingType =
+          (widget.booking['booking_type'] ?? 'motor').toString().toLowerCase();
+
+      if (mitraId == null || rideId == null) {
+        Navigator.pop(context); // Close loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Data driver tidak lengkap')),
+        );
+        return;
+      }
+
+      // Try to find existing conversation or create new one
+      String? conversationId;
+
+      // Check if conversation already exists
+      final existingConv = await _chatService.getConversationByRideAndUsers(
+        rideId: rideId,
+        customerId: userId,
+        mitraId: mitraId,
+      );
+
+      if (existingConv != null) {
+        conversationId = existingConv['id'];
+      } else {
+        // Create new conversation
+        conversationId = await ChatHelper.createConversationAfterBooking(
+          rideId: rideId,
+          bookingType: bookingType,
+          customerData: {
+            'id': userId,
+            'name': userName,
+            'photo': prefs.getString('photo_url'),
+          },
+          mitraData: {
+            'id': mitraId,
+            'name': mitraName,
+            'photo': mitraPhoto,
+          },
+        );
+      }
+
+      Navigator.pop(context); // Close loading
+
+      if (conversationId != null && conversationId.isNotEmpty) {
+        // Navigate to chat page
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatPage(
+              conversationId: conversationId!,
+              otherUserName: mitraName,
+              otherUserPhoto: mitraPhoto,
+            ),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gagal membuka chat')),
+        );
+      }
+    } catch (e) {
+      Navigator.pop(context); // Close loading if still open
+      print('Error opening chat: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final ride = booking['ride'] ?? {};
+    final ride = widget.booking['ride'] ?? {};
     final driver = ride['user'] ?? {};
     final driverName = driver['name'] ?? 'Driver';
     final driverPhoto = driver['photo_url'] ?? '';
@@ -194,16 +306,7 @@ class WaitingAtPickupLayout extends StatelessWidget {
                         child: IconButton(
                           icon: const Icon(Icons.chat_bubble,
                               color: Colors.white, size: 22),
-                          onPressed: () {
-                            // TODO: Implement chat
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content:
-                                    Text('Fitur chat akan segera tersedia'),
-                                duration: Duration(seconds: 2),
-                              ),
-                            );
-                          },
+                          onPressed: () => _openChatWithDriver(context),
                         ),
                       ),
                       const SizedBox(width: 8),

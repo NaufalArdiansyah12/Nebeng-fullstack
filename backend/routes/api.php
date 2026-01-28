@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PaymentTestController;
 use App\Http\Controllers\TebenganTitipBarangController;
 use App\Http\Controllers\Api\MitraHistoryController;
+use App\Http\Controllers\Api\TransactionHistoryController;
 use App\Http\Controllers\Finance\DashboardController;
 use App\Http\Controllers\Finance\BookingController;
 use App\Http\Controllers\Finance\UserController as FinanceUserController;
@@ -81,6 +82,10 @@ Route::prefix('api/v1')->group(function () {
     Route::get('/bookings/{id}', [\App\Http\Controllers\Api\BookingController::class, 'show']);
     // Update booking status (customer or driver can update)
     Route::put('/bookings/{id}/status', [\App\Http\Controllers\Api\BookingController::class, 'updateStatus']);
+    // Cancel booking with reason
+    Route::post('/bookings/{id}/cancel', [\App\Http\Controllers\Api\BookingController::class, 'cancel']);
+    // Get cancellation count for user
+    Route::get('/users/{userId}/cancellation-count', [\App\Http\Controllers\Api\BookingController::class, 'getCancellationCount']);
     // Get comprehensive tracking info
     Route::get('/bookings/{id}/tracking', [\App\Http\Controllers\Api\BookingTrackingController::class, 'show']);
     // Driver actions for trip
@@ -114,6 +119,17 @@ Route::prefix('api/v1')->group(function () {
     Route::post('/booking-titip-barang/{id}/complete-trip', [\App\Http\Controllers\Api\BookingTitipBarangTrackingController::class, 'completeTrip']);
     Route::post('/booking-titip-barang/{id}/location', [\App\Http\Controllers\Api\BookingTitipBarangLocationController::class, 'store']);
     Route::get('/booking-titip-barang/{id}/location', [\App\Http\Controllers\Api\BookingTitipBarangLocationController::class, 'show']);
+
+    // Refund routes
+    Route::get('/refunds', [\App\Http\Controllers\Api\RefundController::class, 'index']);
+    Route::get('/refunds/{id}', [\App\Http\Controllers\Api\RefundController::class, 'show']);
+    Route::post('/refunds', [\App\Http\Controllers\Api\RefundController::class, 'store']);
+    Route::get('/bookings/{bookingId}/refund-eligibility', [\App\Http\Controllers\Api\RefundController::class, 'checkEligibility']);
+
+    // Rating routes
+    Route::post('/ratings', [\App\Http\Controllers\Api\RatingController::class, 'store']);
+    Route::get('/ratings/booking/{bookingId}', [\App\Http\Controllers\Api\RatingController::class, 'show']);
+    Route::get('/ratings/driver/{driverId}', [\App\Http\Controllers\Api\RatingController::class, 'getDriverRatings']);
 
     // Vehicles (requires auth via bearer token)
     Route::get('/vehicles', [VehicleController::class, 'index']);
@@ -152,6 +168,9 @@ Route::prefix('api/v1')->group(function () {
 
     // Mitra: riwayat tebengan (partner history)
     Route::get('/mitra/riwayat', [MitraHistoryController::class, 'index']);
+
+    // Customer: riwayat transaksi (transaction history) - uses custom ApiToken auth
+    Route::get('/transactions/history', [TransactionHistoryController::class, 'index']);
 
     // Rewards (points / merchandise)
     Route::get('/rewards', [\App\Http\Controllers\Api\RewardController::class, 'index']);

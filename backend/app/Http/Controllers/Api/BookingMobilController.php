@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Api\Traits\CreatesConversation;
 
 class BookingMobilController extends Controller
 {
+    use CreatesConversation;
     public function index(Request $request)
     {
         $rideId = $request->query('ride_id');
@@ -83,6 +85,17 @@ class BookingMobilController extends Controller
         }
 
         Log::info('BookingMobil created', ['booking_id' => $booking->id, 'booking_number' => $bookingNumber]);
+
+        // Create conversation in Firebase
+        $this->createConversationAfterBooking(
+            rideId: $ride->id,
+            bookingType: 'mobil',
+            customerId: $request->user_id,
+            mitraId: $ride->user_id,
+            bookingNumber: $bookingNumber
+        );
+
+        $booking->load('ride.user');
 
         return response()->json(['success' => true, 'data' => $booking], 201);
     }

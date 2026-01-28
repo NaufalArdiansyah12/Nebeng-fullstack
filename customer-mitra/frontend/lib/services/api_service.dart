@@ -1282,4 +1282,283 @@ class ApiService {
     }
     throw Exception('Failed to complete trip: ${resp.statusCode}');
   }
+
+  /// Fetch transaction history for customer
+  static Future<List<Map<String, dynamic>>> fetchTransactionHistory({
+    required String token,
+    String? status, // 'all', 'completed', 'cancelled'
+  }) async {
+    final queryParams = status != null ? '?status=$status' : '';
+    final uri = Uri.parse('$baseUrl/api/v1/transactions/history$queryParams');
+
+    print('🌐 API Request: GET $uri');
+    print('🔑 Token (first 20 chars): ${token.substring(0, 20)}...');
+
+    final resp = await http.get(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    print('📥 Response Status: ${resp.statusCode}');
+    print('📥 Response Body: ${resp.body}');
+
+    if (resp.statusCode == 200) {
+      final body = json.decode(resp.body);
+      if (body is Map && body['success'] == true && body['data'] is List) {
+        return List<Map<String, dynamic>>.from(body['data']);
+      }
+      throw Exception('Unexpected response format');
+    }
+    throw Exception('Failed to fetch transaction history: ${resp.statusCode}');
+  }
+
+  /// Cancel a booking
+  static Future<Map<String, dynamic>> cancelBooking(
+    int bookingId,
+    String reason,
+  ) async {
+    final uri = Uri.parse('$baseUrl/api/v1/bookings/$bookingId/cancel');
+
+    final resp = await http.post(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode({
+        'cancellation_reason': reason,
+      }),
+    );
+
+    if (resp.statusCode == 200) {
+      final body = json.decode(resp.body);
+      if (body is Map && body['success'] == true) {
+        return Map<String, dynamic>.from(body['data'] ?? {});
+      }
+      throw Exception(body['message'] ?? 'Failed to cancel booking');
+    }
+    throw Exception('Failed to cancel booking: ${resp.statusCode}');
+  }
+
+  /// Get cancellation count for current month
+  static Future<Map<String, dynamic>> getCancellationCount(int userId) async {
+    final uri = Uri.parse('$baseUrl/api/v1/users/$userId/cancellation-count');
+
+    final resp = await http.get(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+      },
+    );
+
+    if (resp.statusCode == 200) {
+      final body = json.decode(resp.body);
+      if (body is Map && body['success'] == true) {
+        return Map<String, dynamic>.from(body['data'] ?? {'count': 0});
+      }
+      return {'count': 0};
+    }
+    return {'count': 0};
+  }
+
+  /// Check refund eligibility for a booking
+  static Future<Map<String, dynamic>> checkRefundEligibility(
+    int bookingId,
+    String bookingType,
+  ) async {
+    final uri = Uri.parse(
+        '$baseUrl/api/v1/bookings/$bookingId/refund-eligibility?type=$bookingType');
+
+    final resp = await http.get(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+      },
+    );
+
+    if (resp.statusCode == 200) {
+      final body = json.decode(resp.body);
+      if (body is Map && body['success'] == true) {
+        return Map<String, dynamic>.from(body['data'] ?? {});
+      }
+      throw Exception(body['message'] ?? 'Failed to check refund eligibility');
+    }
+    throw Exception('Failed to check refund eligibility: ${resp.statusCode}');
+  }
+
+  /// Submit refund request
+  static Future<Map<String, dynamic>> submitRefund({
+    required int userId,
+    required int bookingId,
+    required String bookingType,
+    required String refundReason,
+    required String bankName,
+    required String accountNumber,
+    required String accountHolderName,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/refunds');
+
+    final resp = await http.post(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode({
+        'user_id': userId,
+        'booking_id': bookingId,
+        'booking_type': bookingType,
+        'refund_reason': refundReason,
+        'bank_name': bankName,
+        'account_number': accountNumber,
+        'account_holder_name': accountHolderName,
+      }),
+    );
+
+    if (resp.statusCode == 201 || resp.statusCode == 200) {
+      final body = json.decode(resp.body);
+      if (body is Map && body['success'] == true) {
+        return Map<String, dynamic>.from(body['data'] ?? {});
+      }
+      throw Exception(body['message'] ?? 'Failed to submit refund');
+    }
+    throw Exception('Failed to submit refund: ${resp.statusCode}');
+  }
+
+  /// Get user's refund history
+  static Future<List<Map<String, dynamic>>> getRefundHistory(int userId) async {
+    final uri = Uri.parse('$baseUrl/api/v1/refunds?user_id=$userId');
+
+    final resp = await http.get(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+      },
+    );
+
+    if (resp.statusCode == 200) {
+      final body = json.decode(resp.body);
+      if (body is Map && body['success'] == true && body['data'] is List) {
+        return List<Map<String, dynamic>>.from(body['data']);
+      }
+      return [];
+    }
+    return [];
+  }
+
+  /// Get refund detail
+  static Future<Map<String, dynamic>> getRefundDetail(int refundId) async {
+    final uri = Uri.parse('$baseUrl/api/v1/refunds/$refundId');
+
+    final resp = await http.get(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+      },
+    );
+
+    if (resp.statusCode == 200) {
+      final body = json.decode(resp.body);
+      if (body is Map && body['success'] == true) {
+        return Map<String, dynamic>.from(body['data'] ?? {});
+      }
+      throw Exception(body['message'] ?? 'Failed to get refund detail');
+    }
+    throw Exception('Failed to get refund detail: ${resp.statusCode}');
+  }
+
+  /// Submit rating for a driver
+  static Future<Map<String, dynamic>> submitRating({
+    required String token,
+    required int bookingId,
+    required String bookingType,
+    required int driverId,
+    required int rating,
+    String? review,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/ratings');
+
+    final resp = await http.post(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: json.encode({
+        'booking_id': bookingId,
+        'booking_type': bookingType,
+        'driver_id': driverId,
+        'rating': rating,
+        'review': review,
+      }),
+    );
+
+    final body = json.decode(resp.body);
+
+    if (resp.statusCode == 200 || resp.statusCode == 201) {
+      if (body is Map && body['success'] == true) {
+        return Map<String, dynamic>.from(body['data'] ?? {});
+      }
+    }
+
+    throw Exception(body['message'] ?? 'Failed to submit rating');
+  }
+
+  /// Get rating for a specific booking
+  static Future<Map<String, dynamic>?> getRating({
+    required int bookingId,
+    required String bookingType,
+  }) async {
+    final uri = Uri.parse(
+        '$baseUrl/api/v1/ratings/booking/$bookingId?booking_type=$bookingType');
+
+    final resp = await http.get(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+      },
+    );
+
+    if (resp.statusCode == 200) {
+      final body = json.decode(resp.body);
+      if (body is Map && body['success'] == true) {
+        return Map<String, dynamic>.from(body['data'] ?? {});
+      }
+    }
+
+    // Rating not found is ok, return null
+    if (resp.statusCode == 404) {
+      return null;
+    }
+
+    throw Exception('Failed to get rating: ${resp.statusCode}');
+  }
+
+  /// Get all ratings for a driver
+  static Future<Map<String, dynamic>> getDriverRatings({
+    required int driverId,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/ratings/driver/$driverId');
+
+    final resp = await http.get(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+      },
+    );
+
+    if (resp.statusCode == 200) {
+      final body = json.decode(resp.body);
+      if (body is Map && body['success'] == true) {
+        return Map<String, dynamic>.from(body['data'] ?? {});
+      }
+      throw Exception(body['message'] ?? 'Failed to get driver ratings');
+    }
+
+    throw Exception('Failed to get driver ratings: ${resp.statusCode}');
+  }
 }
