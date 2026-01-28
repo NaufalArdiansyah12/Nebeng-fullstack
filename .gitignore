@@ -1,0 +1,28 @@
+# =========================
+# Flutter
+# =========================
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/build/
+
+# =========================
+# Node / Vite / React
+# =========================
+**/node_modules/
+**/dist/
+**/.env
+
+# =========================
+# Laravel / PHP
+# =========================
+**/vendor/
+**/.env
+**/storage/*.key
+
+# =========================
+# IDE
+# =========================
+.idea/
+.vscode/
+.DS_Store
