@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Api\Traits\CreatesConversation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
@@ -10,6 +11,8 @@ use Illuminate\Support\Facades\Storage;
 
 class BookingMotorController extends Controller
 {
+    use CreatesConversation;
+
     public function store(Request $request, $ride = null)
     {
         // Expect $ride to be an instance of \App\Models\Ride
@@ -68,6 +71,18 @@ class BookingMotorController extends Controller
         }
 
         Log::info('BookingMotor created', ['booking_id' => $booking->id, 'booking_number' => $bookingNumber]);
+
+        // Create Firebase conversation
+        $this->createConversationAfterBooking(
+            rideId: $ride->id,
+            bookingType: 'motor',
+            customerId: $request->user_id,
+            mitraId: $ride->user_id,
+            bookingNumber: $bookingNumber
+        );
+
+        // Load ride with user data for frontend
+        $booking->load('ride.user');
 
         return response()->json(['success' => true, 'data' => $booking], 201);
     }

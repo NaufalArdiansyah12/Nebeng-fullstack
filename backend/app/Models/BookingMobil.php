@@ -17,6 +17,7 @@ class BookingMobil extends Model
         'driver_id',
         'seats',
         'status',
+        'cancellation_reason',
         'meta',
     ];
 

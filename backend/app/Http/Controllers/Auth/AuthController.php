@@ -36,7 +36,7 @@ class AuthController extends Controller
             $redirectUrl = '/customer/home';
         } elseif ($user->role === 'mitra') {
             $redirectUrl = '/mitra/home';
-        }
+        } 
 
         return response()->json([
             'success' => true,

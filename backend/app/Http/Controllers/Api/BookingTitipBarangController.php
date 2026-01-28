@@ -8,9 +8,11 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use App\Http\Controllers\Api\Traits\CreatesConversation;
 
 class BookingTitipBarangController extends Controller
 {
+    use CreatesConversation;
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -100,6 +102,15 @@ class BookingTitipBarangController extends Controller
         }
 
         Log::info('BookingTitipBarang created', ['id' => $booking->id, 'booking_number' => $bookingNumber]);
+
+        // Create conversation in Firebase
+        $this->createConversationAfterBooking(
+            rideId: $ride->id,
+            bookingType: 'titip',
+            customerId: $request->user_id,
+            mitraId: $ride->user_id,
+            bookingNumber: $bookingNumber
+        );
 
         return response()->json(['success' => true, 'data' => $booking], 201);
     }
