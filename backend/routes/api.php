@@ -82,6 +82,10 @@ Route::prefix('api/v1')->group(function () {
     Route::get('/bookings/{id}', [\App\Http\Controllers\Api\BookingController::class, 'show']);
     // Update booking status (customer or driver can update)
     Route::put('/bookings/{id}/status', [\App\Http\Controllers\Api\BookingController::class, 'updateStatus']);
+    // Cancel booking with reason
+    Route::post('/bookings/{id}/cancel', [\App\Http\Controllers\Api\BookingController::class, 'cancel']);
+    // Get cancellation count for user
+    Route::get('/users/{userId}/cancellation-count', [\App\Http\Controllers\Api\BookingController::class, 'getCancellationCount']);
     // Get comprehensive tracking info
     Route::get('/bookings/{id}/tracking', [\App\Http\Controllers\Api\BookingTrackingController::class, 'show']);
     // Driver actions for trip
@@ -115,6 +119,17 @@ Route::prefix('api/v1')->group(function () {
     Route::post('/booking-titip-barang/{id}/complete-trip', [\App\Http\Controllers\Api\BookingTitipBarangTrackingController::class, 'completeTrip']);
     Route::post('/booking-titip-barang/{id}/location', [\App\Http\Controllers\Api\BookingTitipBarangLocationController::class, 'store']);
     Route::get('/booking-titip-barang/{id}/location', [\App\Http\Controllers\Api\BookingTitipBarangLocationController::class, 'show']);
+
+    // Refund routes
+    Route::get('/refunds', [\App\Http\Controllers\Api\RefundController::class, 'index']);
+    Route::get('/refunds/{id}', [\App\Http\Controllers\Api\RefundController::class, 'show']);
+    Route::post('/refunds', [\App\Http\Controllers\Api\RefundController::class, 'store']);
+    Route::get('/bookings/{bookingId}/refund-eligibility', [\App\Http\Controllers\Api\RefundController::class, 'checkEligibility']);
+
+    // Rating routes
+    Route::post('/ratings', [\App\Http\Controllers\Api\RatingController::class, 'store']);
+    Route::get('/ratings/booking/{bookingId}', [\App\Http\Controllers\Api\RatingController::class, 'show']);
+    Route::get('/ratings/driver/{driverId}', [\App\Http\Controllers\Api\RatingController::class, 'getDriverRatings']);
 
     // Vehicles (requires auth via bearer token)
     Route::get('/vehicles', [VehicleController::class, 'index']);

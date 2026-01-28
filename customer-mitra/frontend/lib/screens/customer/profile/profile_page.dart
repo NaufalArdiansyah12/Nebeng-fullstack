@@ -11,6 +11,7 @@ import 'reward_page.dart';
 import 'verifikasi_intro_page.dart';
 import 'language_page.dart';
 import 'transaction_history_page.dart';
+import '../refund/refund_landing_page.dart';
 
 class ProfilePage extends StatefulWidget {
   final bool showBottomNav;
@@ -296,10 +297,10 @@ class _ProfilePageState extends State<ProfilePage> {
             iconColor: Colors.black87,
             title: 'Refund',
             onTap: () {
-              // TODO: Navigate to RefundPage
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Halaman Refund dalam pengembangan'),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const RefundLandingPage(),
                 ),
               );
             },

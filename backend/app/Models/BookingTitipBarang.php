@@ -15,6 +15,7 @@ class BookingTitipBarang extends Model
         'booking_number',
         'seats',
         'status',
+        'cancellation_reason',
         'meta',
         'photo',
         'weight',

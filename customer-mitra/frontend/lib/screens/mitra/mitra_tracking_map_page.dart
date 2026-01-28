@@ -376,14 +376,64 @@ class _MitraTrackingMapPageState extends State<MitraTrackingMapPage> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('api_token');
-      if (token == null) return null;
+      if (token == null) {
+        print('❌ No token found for _getMotorBooking');
+        return null;
+      }
+
+      print('🔍 Querying motor bookings for ride_id: $rideId');
+
+      // Query booking_motor directly by ride_id
+      final uri = Uri.parse('$baseUrl/api/v1/bookings/my?type=motor');
+      final resp = await http.get(
+        uri,
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print('📡 API Response status: ${resp.statusCode}');
+
+      if (resp.statusCode == 200) {
+        final body = json.decode(resp.body);
+        print('📦 Response body type: ${body.runtimeType}');
+        print(
+            '📦 Response body: ${body.toString().substring(0, body.toString().length > 500 ? 500 : body.toString().length)}');
+
+        if (body is Map && body['success'] == true && body['data'] is List) {
+          final bookings = List<Map<String, dynamic>>.from(body['data']);
+          print('📋 Total motor bookings found: ${bookings.length}');
+
+          // Find booking with matching ride_id
+          for (var booking in bookings) {
+            print(
+                '🔍 Checking booking ${booking['id']} with ride_id ${booking['ride_id']}');
+            if (booking['ride_id'] == rideId) {
+              print(
+                  '✅ Found motor booking: ${booking['id']} for ride: $rideId');
+              return booking;
+            }
+          }
+          print('⚠️ No booking found with ride_id: $rideId');
+        } else {
+          print('❌ Response format unexpected');
+        }
+      } else {
+        print('❌ API request failed with status: ${resp.statusCode}');
+      }
+
+      // Fallback to getRidePassengers
+      print('🔄 Falling back to getRidePassengers...');
       final passengers =
           await ApiService.getRidePassengers(rideId, 'tebengan_motor');
+      print('👥 Passengers found: ${passengers.length}');
       if (passengers.isNotEmpty) {
+        print('✅ Returning first passenger as booking');
         return passengers[0];
       }
     } catch (e) {
-      print('Error getting motor booking: $e');
+      print('❌ Error getting motor booking: $e');
     }
     return null;
   }

@@ -191,6 +191,8 @@ class BookingController extends Controller
             return response()->json(['success' => false, 'message' => 'User tidak ditemukan'], 404);
         }
 
+        \Log::info('MyBookings Request', ['user_id' => $user->id, 'type' => $request->query('type', 'semua')]);
+
         $type = $request->query('type', 'semua');
 
         $results = [];
@@ -269,6 +271,8 @@ class BookingController extends Controller
             $tb = isset($b['created_at']) ? strtotime($b['created_at']) : 0;
             return $tb <=> $ta;
         });
+
+        \Log::info('MyBookings Response', ['user_id' => $user->id, 'total_results' => count($results)]);
 
         return response()->json(['success' => true, 'data' => $results]);
     }
@@ -498,5 +502,120 @@ class BookingController extends Controller
         }
 
         return response()->json(['success' => false, 'message' => 'Booking tidak ditemukan atau tidak memiliki akses'], 404);
+    }
+
+    public function cancel(Request $request, $id)
+    {
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'cancellation_reason' => 'required|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $reason = $request->cancellation_reason;
+        
+        // Try to find and cancel booking in all tables
+        $booking = \App\Models\Booking::find($id);
+        if ($booking) {
+            $booking->status = 'cancelled';
+            $booking->cancellation_reason = $reason;
+            $booking->save();
+            return response()->json([
+                'success' => true, 
+                'message' => 'Booking berhasil dibatalkan',
+                'data' => $booking
+            ]);
+        }
+
+        $booking = \App\Models\BookingMobil::find($id);
+        if ($booking) {
+            $booking->status = 'cancelled';
+            $booking->cancellation_reason = $reason;
+            $booking->save();
+            return response()->json([
+                'success' => true, 
+                'message' => 'Booking berhasil dibatalkan',
+                'data' => $booking
+            ]);
+        }
+
+        $booking = \App\Models\BookingBarang::find($id);
+        if ($booking) {
+            $booking->status = 'cancelled';
+            $booking->cancellation_reason = $reason;
+            $booking->save();
+            return response()->json([
+                'success' => true, 
+                'message' => 'Booking berhasil dibatalkan',
+                'data' => $booking
+            ]);
+        }
+
+        $booking = \App\Models\BookingTitipBarang::find($id);
+        if ($booking) {
+            $booking->status = 'cancelled';
+            $booking->cancellation_reason = $reason;
+            $booking->save();
+            return response()->json([
+                'success' => true, 
+                'message' => 'Booking berhasil dibatalkan',
+                'data' => $booking
+            ]);
+        }
+
+        return response()->json([
+            'success' => false, 
+            'message' => 'Booking tidak ditemukan'
+        ], 404);
+    }
+
+    public function getCancellationCount($userId)
+    {
+        // Get current month start and end
+        $startOfMonth = now()->startOfMonth();
+        $endOfMonth = now()->endOfMonth();
+
+        // Count cancelled bookings in current month across all booking tables
+        $motorCount = \App\Models\Booking::where('user_id', $userId)
+            ->where('status', 'cancelled')
+            ->whereBetween('updated_at', [$startOfMonth, $endOfMonth])
+            ->count();
+
+        $mobilCount = \App\Models\BookingMobil::where('user_id', $userId)
+            ->where('status', 'cancelled')
+            ->whereBetween('updated_at', [$startOfMonth, $endOfMonth])
+            ->count();
+
+        $barangCount = \App\Models\BookingBarang::where('user_id', $userId)
+            ->where('status', 'cancelled')
+            ->whereBetween('updated_at', [$startOfMonth, $endOfMonth])
+            ->count();
+
+        $titipCount = \App\Models\BookingTitipBarang::where('user_id', $userId)
+            ->where('status', 'cancelled')
+            ->whereBetween('updated_at', [$startOfMonth, $endOfMonth])
+            ->count();
+
+        $totalCount = $motorCount + $mobilCount + $barangCount + $titipCount;
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'count' => $totalCount,
+                'month' => now()->format('Y-m'),
+                'breakdown' => [
+                    'motor' => $motorCount,
+                    'mobil' => $mobilCount,
+                    'barang' => $barangCount,
+                    'titip' => $titipCount,
+                ]
+            ]
+        ]);
     }
 }
