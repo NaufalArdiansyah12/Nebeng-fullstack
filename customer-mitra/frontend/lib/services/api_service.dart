@@ -840,6 +840,31 @@ class ApiService {
     }
   }
 
+  /// Get user by ID
+  static Future<Map<String, dynamic>> getUserById(
+    int userId,
+    String token,
+  ) async {
+    final uri = Uri.parse('$baseUrl/api/v1/users/$userId');
+    final resp = await http.get(uri, headers: {
+      'Accept': 'application/json',
+      'Authorization': 'Bearer $token',
+    });
+
+    if (resp.statusCode == 200) {
+      final body = json.decode(resp.body);
+      if (body is Map && body['data'] != null) {
+        return Map<String, dynamic>.from(body['data']);
+      }
+      return Map<String, dynamic>.from(body);
+    } else {
+      final preview =
+          resp.body.length > 300 ? resp.body.substring(0, 300) : resp.body;
+      throw Exception(
+          'Failed to get user: ${resp.statusCode}. Preview: $preview');
+    }
+  }
+
   /// Check if user has PIN
   static Future<bool> checkPin({required String token}) async {
     final uri = Uri.parse('$baseUrl/api/v1/pin/check');

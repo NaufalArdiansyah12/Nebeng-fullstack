@@ -612,7 +612,7 @@ class _CreateCarRidePageState extends State<CreateCarRidePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: const Color(0xFF1E40AF),
         elevation: 0,

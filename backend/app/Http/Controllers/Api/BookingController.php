@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use App\Models\Rating;
 
 class BookingController extends Controller
 {
@@ -202,6 +203,7 @@ class BookingController extends Controller
                 'ride.originLocation',
                 'ride.destinationLocation',
                 'ride.kendaraanMitra',
+                'ride.user',
                 'user'
             ])
                 ->where('user_id', $user->id)
@@ -209,6 +211,19 @@ class BookingController extends Controller
                 ->map(function ($b) {
                     $arr = $b->toArray();
                     $arr['booking_type'] = 'motor';
+                    try {
+                        if (isset($arr['ride']['user']['id']) && $arr['ride']['user']['id']) {
+                            $driverId = $arr['ride']['user']['id'];
+                            $ratings = Rating::where('driver_id', $driverId)->get();
+                            $total = $ratings->count();
+                            $avg = $total > 0 ? round($ratings->avg('rating'), 2) : null;
+                            $arr['ride']['driver_rating_summary'] = [
+                                'average_rating' => $avg,
+                                'total_ratings' => $total,
+                            ];
+                        }
+                    } catch (\Exception $e) {
+                    }
                     return $arr;
                 })->toArray();
             $results = array_merge($results, $motor);
@@ -219,6 +234,7 @@ class BookingController extends Controller
                 'ride.originLocation',
                 'ride.destinationLocation',
                 'ride.kendaraanMitra',
+                'ride.user',
                 'user'
             ])
                 ->where('user_id', $user->id)
@@ -226,6 +242,19 @@ class BookingController extends Controller
                 ->map(function ($b) {
                     $arr = $b->toArray();
                     $arr['booking_type'] = 'mobil';
+                    try {
+                        if (isset($arr['ride']['user']['id']) && $arr['ride']['user']['id']) {
+                            $driverId = $arr['ride']['user']['id'];
+                            $ratings = Rating::where('driver_id', $driverId)->get();
+                            $total = $ratings->count();
+                            $avg = $total > 0 ? round($ratings->avg('rating'), 2) : null;
+                            $arr['ride']['driver_rating_summary'] = [
+                                'average_rating' => $avg,
+                                'total_ratings' => $total,
+                            ];
+                        }
+                    } catch (\Exception $e) {
+                    }
                     return $arr;
                 })->toArray();
             $results = array_merge($results, $mobil);
@@ -236,6 +265,7 @@ class BookingController extends Controller
                 'ride.originLocation',
                 'ride.destinationLocation',
                 'ride.kendaraanMitra',
+                'ride.user',
                 'user'
             ])
                 ->where('user_id', $user->id)
@@ -243,6 +273,19 @@ class BookingController extends Controller
                 ->map(function ($b) {
                     $arr = $b->toArray();
                     $arr['booking_type'] = 'barang';
+                    try {
+                        if (isset($arr['ride']['user']['id']) && $arr['ride']['user']['id']) {
+                            $driverId = $arr['ride']['user']['id'];
+                            $ratings = Rating::where('driver_id', $driverId)->get();
+                            $total = $ratings->count();
+                            $avg = $total > 0 ? round($ratings->avg('rating'), 2) : null;
+                            $arr['ride']['driver_rating_summary'] = [
+                                'average_rating' => $avg,
+                                'total_ratings' => $total,
+                            ];
+                        }
+                    } catch (\Exception $e) {
+                    }
                     return $arr;
                 })->toArray();
             $results = array_merge($results, $barang);
@@ -253,6 +296,7 @@ class BookingController extends Controller
                 'ride.originLocation',
                 'ride.destinationLocation',
                 'ride.kendaraanMitra',
+                'ride.user',
                 'user'
             ])
                 ->where('user_id', $user->id)
@@ -378,6 +422,20 @@ class BookingController extends Controller
 
         $data = $booking->toArray();
         $data['booking_type'] = $bookingType;
+        // attach driver rating summary if available
+        try {
+            if (isset($data['ride']['user']['id']) && $data['ride']['user']['id']) {
+                $driverId = $data['ride']['user']['id'];
+                $ratings = Rating::where('driver_id', $driverId)->get();
+                $total = $ratings->count();
+                $avg = $total > 0 ? round($ratings->avg('rating'), 2) : null;
+                $data['ride']['driver_rating_summary'] = [
+                    'average_rating' => $avg,
+                    'total_ratings' => $total,
+                ];
+            }
+        } catch (\Exception $e) {
+        }
         // Ensure origin/destination include explicit lat/lng keys for clients
         try {
             if (isset($data['ride']) && is_array($data['ride'])) {

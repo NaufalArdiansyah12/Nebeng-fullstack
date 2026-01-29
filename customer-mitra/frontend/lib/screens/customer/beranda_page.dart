@@ -13,6 +13,7 @@ import 'nebeng_barang/pages/nebeng_barang_page.dart';
 import 'barang_umum/pages/barang_umum_page.dart';
 import 'profile/profile_page.dart';
 import 'profile/verifikasi_intro_page.dart';
+import 'profile/reward_page.dart';
 import 'riwayat/riwayat_page.dart';
 import 'riwayat/booking_detail_riwayat_page.dart';
 
@@ -33,6 +34,8 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
   String _previousStatus = '';
   List<Map<String, dynamic>> _upcomingTebengan = [];
   bool _loadingUpcoming = true;
+  int _rewardPoints = 0;
+  String _userName = '';
 
   final List<Service> services = [
     Service(
@@ -76,6 +79,7 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
     _loadVerificationStatus();
     _startStatusPolling();
     _loadUpcomingTebengan();
+    _loadProfile();
   }
 
   @override
@@ -225,6 +229,38 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
     }
   }
 
+  Future<void> _loadProfile() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('api_token');
+      if (token == null || token.isEmpty) return;
+
+      final profile = await ApiService.getProfile(token: token);
+      int points = 0;
+      String name = prefs.getString('user_name') ?? '';
+      if (profile['success'] == true && profile['data'] != null) {
+        final user = profile['data']['user'] ?? profile['data'];
+        final rawPoints = user['reward_points'] ?? user['rewardPoints'] ?? 0;
+        if (rawPoints is num) {
+          points = rawPoints.toInt();
+        } else if (rawPoints is String) {
+          points = int.tryParse(rawPoints) ?? 0;
+        }
+
+        final rawName = user['name'] ?? user['full_name'] ?? user['username'];
+        if (rawName is String && rawName.isNotEmpty) name = rawName;
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _rewardPoints = points;
+        _userName = name;
+      });
+    } catch (e) {
+      // ignore errors silently; keep default points
+    }
+  }
+
   void _showStatusChangeNotification(String status) {
     if (!mounted) return;
 
@@ -318,18 +354,22 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
       child: Column(
         children: [
+          // Top row: greeting on left, notification on right
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Hallo Ailsa👋',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+              Expanded(
+                child: Text(
+                  'Hallo ${_userName.isNotEmpty ? _userName : 'Pengguna'}👋',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               Stack(
@@ -346,15 +386,15 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
                     icon: const Icon(
                       Icons.notifications_outlined,
                       color: Colors.white,
-                      size: 28,
+                      size: 26,
                     ),
                   ),
                   Positioned(
                     right: 8,
                     top: 8,
                     child: Container(
-                      width: 10,
-                      height: 10,
+                      width: 9,
+                      height: 9,
                       decoration: const BoxDecoration(
                         color: Colors.red,
                         shape: BoxShape.circle,
@@ -365,7 +405,8 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
+          // Search box
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
@@ -385,7 +426,7 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
-                  vertical: 14,
+                  vertical: 12,
                 ),
               ),
             ),
@@ -477,68 +518,82 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
     }
 
     // Show reward points if verified
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: const BoxDecoration(
-              color: Color(0xFFFEF3C7),
-              shape: BoxShape.circle,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const RewardPage()),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey[200]!),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.08),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
-            child: const Icon(
-              Icons.star,
-              color: Color(0xFFF59E0B),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: const BoxDecoration(
+                color: Color(0xFFFEF3C7),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.star,
+                color: Color(0xFFF59E0B),
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Reward Point',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.black87,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _formatPoints(_rewardPoints),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right,
+              color: Colors.grey,
               size: 24,
             ),
-          ),
-          const SizedBox(width: 12),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Reward Point',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.black87,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                Text(
-                  '1.000',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Icon(
-            Icons.chevron_right,
-            color: Colors.grey,
-            size: 24,
-          ),
-        ],
+          ],
+        ),
       ),
     );
+  }
+
+  String _formatPoints(int points) {
+    final s = points.toString();
+    return s.replaceAllMapped(RegExp(r"\B(?=(\d{3})+(?!\d))"), (m) => '.');
   }
 
   Widget _buildServicesSection() {
@@ -813,28 +868,31 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
               ],
             ),
           ),
-          // Illustration
+          // Illustration - move to right for better symmetry
           Positioned(
-            bottom: 20,
-            left: 20,
-            child: Image.asset(
-              'assets/motor_illustration.png', // Add your illustration asset
-              height: 80,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  height: 80,
-                  width: 80,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    FontAwesomeIcons.motorcycle,
-                    color: Colors.white,
-                    size: 40,
-                  ),
-                );
-              },
+            bottom: 12,
+            right: 12,
+            child: Opacity(
+              opacity: 0.95,
+              child: Image.asset(
+                'assets/motor_illustration.png',
+                height: 92,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    height: 92,
+                    width: 92,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.18),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      FontAwesomeIcons.motorcycle,
+                      color: Colors.white,
+                      size: 44,
+                    ),
+                  );
+                },
+              ),
             ),
           ),
         ],
@@ -904,6 +962,8 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
 
   Widget _buildEmptyUpcomingCard() {
     return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(minHeight: 120),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.grey[50],
@@ -911,6 +971,8 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
         border: Border.all(color: Colors.grey[200]!),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Icon(
             Icons.event_busy_outlined,
@@ -920,15 +982,17 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
           const SizedBox(height: 12),
           Text(
             'Belum ada tebengan mendatang',
+            textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
               color: Colors.grey[600],
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             'Pesan tebengan sekarang!',
+            textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 12,
               color: Colors.grey[500],

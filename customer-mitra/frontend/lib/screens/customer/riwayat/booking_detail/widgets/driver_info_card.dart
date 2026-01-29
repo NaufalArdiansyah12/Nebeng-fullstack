@@ -5,7 +5,10 @@ class DriverInfoCard extends StatelessWidget {
   final String driverName;
   final String driverPhoto;
   final String plateNumber;
+  final String mitraName; // Nama mitra yang membuat tebengan
   final Color accentColor;
+  final double? averageRating;
+  final int? totalRatings;
   final VoidCallback? onCallPressed;
   final VoidCallback? onChatPressed;
 
@@ -14,7 +17,10 @@ class DriverInfoCard extends StatelessWidget {
     required this.driverName,
     required this.driverPhoto,
     required this.plateNumber,
+    required this.mitraName,
     required this.accentColor,
+    this.averageRating,
+    this.totalRatings,
     this.onCallPressed,
     this.onChatPressed,
   }) : super(key: key);
@@ -61,11 +67,19 @@ class DriverInfoCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  driverName,
+                  mitraName,
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Mitra',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -74,11 +88,21 @@ class DriverInfoCard extends StatelessWidget {
                     const Icon(Icons.star, color: Colors.amber, size: 16),
                     const SizedBox(width: 4),
                     Text(
-                      '5.0',
+                      averageRating != null ? averageRating!.toString() : '-',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
                         color: Colors.grey[700],
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      totalRatings != null
+                          ? '(${totalRatings.toString()})'
+                          : '',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -116,7 +140,14 @@ class DriverInfoCard extends StatelessWidget {
   Widget _buildActionButton(
       IconData icon, Color color, VoidCallback? onPressed) {
     return InkWell(
-      onTap: onPressed ?? () {},
+      onTap: () {
+        print('🔘 Action button pressed, onPressed: $onPressed');
+        if (onPressed != null) {
+          onPressed();
+        } else {
+          print('⚠️ onPressed is null!');
+        }
+      },
       child: Container(
         width: 44,
         height: 44,

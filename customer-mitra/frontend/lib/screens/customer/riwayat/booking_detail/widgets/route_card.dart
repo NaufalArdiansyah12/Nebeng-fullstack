@@ -69,7 +69,7 @@ class RouteCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '$departureTime • $dateOnly',
+                      dateOnly,
                       style: TextStyle(
                         fontSize: 13,
                         color: Colors.grey[600],
@@ -117,7 +117,7 @@ class RouteCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '13:00 • $dateOnly',
+                      dateOnly,
                       style: TextStyle(
                         fontSize: 13,
                         color: Colors.grey[600],

@@ -247,71 +247,165 @@ class _CreateRidePageState extends State<CreateRidePage> {
       vehicles = [];
     }
 
-    final selected = await showDialog<Map<String, dynamic>?>(
+    final selected = await showModalBottomSheet<Map<String, dynamic>?>(
       context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: SizedBox(
-          width: 320,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+        ),
+        child: SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text('Pilih Kendaraan Mitra',
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-              if (vehicles.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Text(
-                      'Belum ada kendaraan. Tambah kendaraan terlebih dahulu.'),
-                ),
-              if (vehicles.isNotEmpty)
-                Flexible(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      children: vehicles.map((v) {
-                        return RadioListTile<int>(
-                          title: Text(v['name'] ?? ''),
-                          subtitle: Text(v['plate_number'] ?? ''),
-                          value: v['id'] as int,
-                          groupValue: _selectedKendaraanMitraId,
-                          onChanged: (val) {
-                            setState(() {
-                              _selectedKendaraanMitraId = val;
-                            });
-                            Navigator.of(context).pop(v);
-                          },
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ),
+              // Title
               Padding(
-                padding: const EdgeInsets.all(12.0),
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
                 child: Row(
                   children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () {
-                          Navigator.of(context).pop(null);
-                          Navigator.pushNamed(context, '/mitra/vehicles/add');
-                        },
-                        child: const Text('Tambah Kendaraan'),
+                    const Expanded(
+                      child: Text(
+                        'Pilih Kendaraan Mitra',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.of(context).pop(null);
-                      },
-                      child: const Text('Batal'),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.black54),
+                      onPressed: () => Navigator.pop(context),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
                     ),
                   ],
                 ),
               ),
+              const Divider(height: 1),
+              // Content
+              if (vehicles.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(32.0),
+                  child: Column(
+                    children: [
+                      Icon(Icons.directions_bike_outlined,
+                          size: 64, color: Colors.grey[400]),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Belum ada kendaraan',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Tambah kendaraan terlebih dahulu',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              if (vehicles.isNotEmpty)
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    itemCount: vehicles.length,
+                    separatorBuilder: (context, index) =>
+                        const Divider(height: 1),
+                    itemBuilder: (context, index) {
+                      final v = vehicles[index];
+                      final isSelected = _selectedKendaraanMitraId == v['id'];
+                      return InkWell(
+                        onTap: () {
+                          setState(() {
+                            _selectedKendaraanMitraId = v['id'];
+                          });
+                          Navigator.of(context).pop(v);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 16),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color:
+                                      const Color(0xFF1E40AF).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.motorcycle,
+                                  color: Color(0xFF1E40AF),
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      v['name'] ?? '',
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      v['plate_number'] ?? '',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (isSelected)
+                                const Icon(
+                                  Icons.check_circle,
+                                  color: Color(0xFF1E40AF),
+                                  size: 24,
+                                )
+                              else
+                                Icon(
+                                  Icons.circle_outlined,
+                                  color: Colors.grey[400],
+                                  size: 24,
+                                ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
             ],
           ),
         ),
@@ -434,19 +528,16 @@ class _CreateRidePageState extends State<CreateRidePage> {
 
     return InkWell(
       onTap: isEditable ? _selectJumlahBagasi : null,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 4,
-              offset: const Offset(0, 1),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Colors.black26,
+            width: 1.2,
+          ),
         ),
         child: Row(
           children: [
@@ -466,17 +557,17 @@ class _CreateRidePageState extends State<CreateRidePage> {
                 children: [
                   const Text('Jumlah Bagasi',
                       style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 15,
                           color: Colors.black87,
                           fontWeight: FontWeight.w500)),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Text(
                     _jumlahBagasi != null
                         ? '${_jumlahBagasi.toString()} buah'
                         : (isEditable
                             ? 'Belum ditentukan'
                             : '1 buah (otomatis)'),
-                    style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                    style: TextStyle(fontSize: 13, color: Colors.grey[700]),
                   ),
                 ],
               ),
@@ -555,49 +646,67 @@ class _CreateRidePageState extends State<CreateRidePage> {
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: iconColor,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: iconColor.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: iconColor,
+                    shape: BoxShape.circle,
                   ),
-                ],
-              ),
-              child: Icon(icon, color: Colors.white, size: 22),
-            ),
-            const SizedBox(width: 20),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      color: Colors.black87,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  child: Icon(
+                    icon == Icons.arrow_upward
+                        ? Icons.trip_origin
+                        : Icons.location_on,
+                    color: Colors.white,
+                    size: 20,
                   ),
-                  if (subtitle != null && subtitle.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
-                  ],
-                ],
-              ),
+                      if (subtitle != null && subtitle.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey[600],
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const SizedBox(width: 56),
+                Expanded(
+                  child: Container(
+                    height: 1,
+                    color: Colors.grey[300],
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -614,19 +723,16 @@ class _CreateRidePageState extends State<CreateRidePage> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 4,
-              offset: const Offset(0, 1),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Colors.black26,
+            width: 1.2,
+          ),
         ),
         child: Row(
           children: [
@@ -641,28 +747,15 @@ class _CreateRidePageState extends State<CreateRidePage> {
             ),
             const SizedBox(width: 16),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.black87,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  if (subtitle != null && subtitle.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
-                ],
+              child: Text(
+                subtitle != null && subtitle.isNotEmpty ? subtitle : title,
+                style: const TextStyle(
+                  fontSize: 15,
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w400,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -674,19 +767,16 @@ class _CreateRidePageState extends State<CreateRidePage> {
   Widget _buildVehicleCard() {
     return InkWell(
       onTap: _showVehicleDetailsDialog,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 4,
-              offset: const Offset(0, 1),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Colors.black26,
+            width: 1.2,
+          ),
         ),
         child: Row(
           children: [
@@ -707,7 +797,7 @@ class _CreateRidePageState extends State<CreateRidePage> {
                 children: [
                   const Text('Kendaraan',
                       style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 15,
                           color: Colors.black87,
                           fontWeight: FontWeight.w500)),
                   const SizedBox(height: 4),
@@ -715,7 +805,7 @@ class _CreateRidePageState extends State<CreateRidePage> {
                     _vehicleNameController.text.isNotEmpty
                         ? '${_vehicleNameController.text} • ${_vehiclePlateController.text}'
                         : 'Belum memilih kendaraan',
-                    style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                    style: TextStyle(fontSize: 13, color: Colors.grey[700]),
                   ),
                 ],
               ),
@@ -786,18 +876,16 @@ class _CreateRidePageState extends State<CreateRidePage> {
   Widget _buildPriceField() {
     return InkWell(
       onTap: () {},
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 4,
-                offset: const Offset(0, 1)),
-          ],
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Colors.black26,
+            width: 1.2,
+          ),
         ),
         child: Row(
           children: [
@@ -818,7 +906,7 @@ class _CreateRidePageState extends State<CreateRidePage> {
                 children: [
                   const Text('Nominal (Rp)',
                       style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 15,
                           color: Colors.black87,
                           fontWeight: FontWeight.w500)),
                   const SizedBox(height: 6),
@@ -869,7 +957,7 @@ class _CreateRidePageState extends State<CreateRidePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: const Color(0xFF1E40AF),
         elevation: 0,
@@ -895,19 +983,16 @@ class _CreateRidePageState extends State<CreateRidePage> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+                border: Border.all(
+                  color: Colors.black26,
+                  width: 1.2,
+                ),
               ),
               child: Column(
                 children: [
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
                   _buildLocationItem(
-                    icon: Icons.arrow_upward,
+                    icon: Icons.trip_origin,
                     iconColor: const Color(0xFF4CAF50),
                     title: 'Lokasi Awal',
                     subtitle: _originLocationName.isNotEmpty
@@ -915,31 +1000,7 @@ class _CreateRidePageState extends State<CreateRidePage> {
                         : null,
                     onTap: () => _selectLocation(true),
                   ),
-                  // Garis pemisah horizontal dan vertikal
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 40), // Posisi center dari icon
-                        Container(
-                          width: 2,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[300],
-                            borderRadius: BorderRadius.circular(1),
-                          ),
-                        ),
-                        const SizedBox(width: 36),
-                        Expanded(
-                          child: Container(
-                            height: 1,
-                            color: Colors.grey[300],
-                          ),
-                        ),
-                        const SizedBox(width: 20),
-                      ],
-                    ),
-                  ),
+                  const SizedBox(height: 16),
                   _buildLocationItem(
                     icon: Icons.location_on,
                     iconColor: const Color(0xFFFF9800),
@@ -950,7 +1011,7 @@ class _CreateRidePageState extends State<CreateRidePage> {
                     onTap: () => _selectLocation(false),
                     isLast: true,
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
@@ -1092,14 +1153,11 @@ class _CreateRidePageState extends State<CreateRidePage> {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.black26,
+          width: 1.2,
+        ),
       ),
       child: Row(
         children: [
@@ -1119,13 +1177,13 @@ class _CreateRidePageState extends State<CreateRidePage> {
               children: const [
                 Text('Jumlah Kursi',
                     style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 15,
                         color: Colors.black87,
                         fontWeight: FontWeight.w500)),
-                SizedBox(height: 6),
+                SizedBox(height: 4),
                 Text(
                   '1 kursi',
-                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                  style: TextStyle(fontSize: 13, color: Colors.grey),
                 ),
               ],
             ),

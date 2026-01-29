@@ -11,7 +11,7 @@ class MitraHomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
@@ -290,7 +290,7 @@ class MitraHomePage extends StatelessWidget {
                           Expanded(
                             child: _buildServiceIcon(
                               icon: Icons.local_shipping_outlined,
-                              label: 'Titip    Barang',
+                              label: 'Titip\nBarang',
                               onTap: () {
                                 Navigator.push(
                                   context,
@@ -338,33 +338,66 @@ class MitraHomePage extends StatelessWidget {
 
                     const SizedBox(height: 16),
 
-                    // No Rating State
+                    // Rating Display with Chart
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 40),
-                        alignment: Alignment.center,
-                        child: Column(
-                          children: [
-                            Container(
-                              width: 60,
-                              height: 60,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE0E0E0),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.close,
-                                color: Color(0xFF999999),
-                                size: 32,
-                              ),
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
                             ),
-                            const SizedBox(height: 12),
-                            const Text(
-                              'Tidak Ada Rating',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Color(0xFF999999),
+                          ],
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Rating Number with Stars
+                            Column(
+                              children: [
+                                const Text(
+                                  '4.0',
+                                  style: TextStyle(
+                                    fontSize: 48,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF10367d),
+                                    height: 1,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: List.generate(5, (index) {
+                                    return Icon(
+                                      index < 4
+                                          ? Icons.star
+                                          : Icons.star_border,
+                                      color: const Color(0xFF10367d),
+                                      size: 18,
+                                    );
+                                  }),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(width: 24),
+                            // Rating Bars
+                            Expanded(
+                              child: Column(
+                                children: [
+                                  _buildRatingBar(5, 0.85),
+                                  const SizedBox(height: 6),
+                                  _buildRatingBar(4, 0.90),
+                                  const SizedBox(height: 6),
+                                  _buildRatingBar(3, 0.45),
+                                  const SizedBox(height: 6),
+                                  _buildRatingBar(2, 0.15),
+                                  const SizedBox(height: 6),
+                                  _buildRatingBar(1, 0.10),
+                                ],
                               ),
                             ),
                           ],
@@ -526,15 +559,15 @@ class MitraHomePage extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            width: 60,
-            height: 60,
+            width: 64,
+            height: 64,
             decoration: BoxDecoration(
               color: const Color(0xFF10367d),
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF10367d).withOpacity(0.3),
-                  blurRadius: 8,
+                  color: const Color(0xFF10367d).withOpacity(0.25),
+                  blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
               ],
@@ -542,17 +575,17 @@ class MitraHomePage extends StatelessWidget {
             child: Icon(
               icon,
               color: Colors.white,
-              size: 28,
+              size: 30,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           SizedBox(
-            width: 70,
+            width: 75,
             child: Text(
               label,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontSize: 11,
+                fontSize: 12,
                 color: Color(0xFF1a1a1a),
                 fontWeight: FontWeight.w500,
               ),
@@ -560,6 +593,47 @@ class MitraHomePage extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildRatingBar(int stars, double percentage) {
+    return Row(
+      children: [
+        Text(
+          '$stars',
+          style: const TextStyle(
+            fontSize: 13,
+            color: Color(0xFF666666),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Stack(
+            children: [
+              // Background bar
+              Container(
+                height: 8,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE0E0E0),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              // Filled bar
+              FractionallySizedBox(
+                widthFactor: percentage,
+                child: Container(
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10367d),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

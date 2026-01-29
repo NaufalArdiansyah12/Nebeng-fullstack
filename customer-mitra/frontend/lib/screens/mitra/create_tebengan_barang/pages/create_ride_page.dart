@@ -56,19 +56,16 @@ class _CreateBarangRidePageState extends State<CreateBarangRidePage> {
   Widget _buildJumlahBagasiCard() {
     return InkWell(
       onTap: _selectJumlahBagasi,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 4,
-              offset: const Offset(0, 1),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Colors.black26,
+            width: 1.2,
+          ),
         ),
         child: Row(
           children: [
@@ -88,15 +85,15 @@ class _CreateBarangRidePageState extends State<CreateBarangRidePage> {
                 children: [
                   const Text('Jumlah Bagasi',
                       style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 15,
                           color: Colors.black87,
                           fontWeight: FontWeight.w500)),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Text(
                     _jumlahBagasi != null
                         ? '${_jumlahBagasi.toString()} buah'
                         : 'Belum ditentukan',
-                    style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                    style: TextStyle(fontSize: 13, color: Colors.grey[700]),
                   ),
                 ],
               ),
@@ -521,7 +518,7 @@ class _CreateBarangRidePageState extends State<CreateBarangRidePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: const Color(0xFF1E40AF),
         elevation: 0,
