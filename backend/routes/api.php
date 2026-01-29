@@ -185,6 +185,33 @@ Route::prefix('api/v1')->group(function () {
     Route::post('/customer/verification/upload-face-ktp', [\App\Http\Controllers\Api\VerifikasiCustomerController::class, 'uploadFaceKtpPhoto']);
     Route::post('/customer/verification/submit', [\App\Http\Controllers\Api\VerifikasiCustomerController::class, 'submitVerification']);
 
+    // Mitra Verification (requires auth via bearer token)
+    Route::get('/mitra/verification/ktp', [\App\Http\Controllers\VerifikasiKtpController::class, 'show']);
+    Route::post('/mitra/verification/ktp', [\App\Http\Controllers\VerifikasiKtpController::class, 'store']);
+    Route::put('/mitra/verification/ktp', [\App\Http\Controllers\VerifikasiKtpController::class, 'update']);
+    
+    Route::get('/mitra/verification/sim', [\App\Http\Controllers\VerifikasiSimController::class, 'show']);
+    Route::post('/mitra/verification/sim', [\App\Http\Controllers\VerifikasiSimController::class, 'store']);
+    Route::put('/mitra/verification/sim', [\App\Http\Controllers\VerifikasiSimController::class, 'update']);
+    
+    Route::get('/mitra/verification/skck', [\App\Http\Controllers\VerifikasiSkckController::class, 'show']);
+    Route::post('/mitra/verification/skck', [\App\Http\Controllers\VerifikasiSkckController::class, 'store']);
+    Route::put('/mitra/verification/skck', [\App\Http\Controllers\VerifikasiSkckController::class, 'update']);
+    
+    Route::get('/mitra/verification/bank', [\App\Http\Controllers\VerifikasiBankController::class, 'show']);
+    Route::post('/mitra/verification/bank', [\App\Http\Controllers\VerifikasiBankController::class, 'store']);
+    Route::put('/mitra/verification/bank', [\App\Http\Controllers\VerifikasiBankController::class, 'update']);
+    
+    // Link all verifications to mitra_verifikasi table
+    Route::post('/mitra/verification/link', [\App\Http\Controllers\MitraVerifikasiController::class, 'linkVerifications']);
+    
+    // Get verification status
+    Route::get('/mitra/verification/status', [\App\Http\Controllers\MitraVerifikasiController::class, 'getVerificationStatus']);
+    
+    Route::get('/mitra/verification/bank', [\App\Http\Controllers\VerifikasiBankController::class, 'show']);
+    Route::post('/mitra/verification/bank', [\App\Http\Controllers\VerifikasiBankController::class, 'store']);
+    Route::put('/mitra/verification/bank', [\App\Http\Controllers\VerifikasiBankController::class, 'update']);
+
     // Admin routes for managing locations (requires auth:sanctum)
     Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
         Route::post('/locations', [LocationController::class, 'store']);

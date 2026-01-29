@@ -7,6 +7,7 @@ import 'edit_profile_page.dart';
 import '../help/help_center_page.dart';
 import '../../pin/create_pin_page.dart';
 import 'package:nebeng/screens/mitra/riwayat_page.dart';
+import '../verification/verification_documents_page.dart';
 
 class MitraProfilePage extends StatefulWidget {
   const MitraProfilePage({Key? key}) : super(key: key);
@@ -191,6 +192,19 @@ class _MitraProfilePageState extends State<MitraProfilePage> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => const MitraEditProfilePage(),
+                ),
+              );
+            },
+          ),
+          _buildMenuItem(
+            icon: Icons.verified_user_outlined,
+            iconColor: const Color(0xFF1E40AF),
+            title: 'Verifikasi Dokumen',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const VerificationDocumentsPage(),
                 ),
               );
             },

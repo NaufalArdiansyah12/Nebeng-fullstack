@@ -20,12 +20,7 @@ class _MitraMainPageState extends State<MitraMainPage>
   int _currentIndex = 0;
   Timer? _locationTimer;
 
-  final List<Widget> _pages = [
-    const MitraHomePage(),
-    const MitraRiwayatPage(),
-    const MitraChatsPage(),
-    const MitraProfilePage(),
-  ];
+  final List<Widget> _pages = [];
 
   @override
   void initState() {
@@ -34,6 +29,14 @@ class _MitraMainPageState extends State<MitraMainPage>
     // report location once on page init
     _reportCurrentLocation();
     _startLocationTimer();
+
+    // initialize pages with callback so child can request opening history tab
+    _pages.addAll([
+      MitraHomePage(onOpenHistory: () => setState(() => _currentIndex = 1)),
+      const MitraRiwayatPage(),
+      const MitraChatsPage(),
+      const MitraProfilePage(),
+    ]);
   }
 
   @override
