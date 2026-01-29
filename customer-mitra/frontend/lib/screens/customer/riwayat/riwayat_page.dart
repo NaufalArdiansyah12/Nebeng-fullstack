@@ -123,7 +123,7 @@ class _RiwayatPageState extends State<RiwayatPage> with WidgetsBindingObserver {
   Widget _filterChips() {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 12),
       child: Row(
         children: tabs.map((c) {
           final isSelected = c == selected;
@@ -301,169 +301,264 @@ class _RiwayatPageState extends State<RiwayatPage> with WidgetsBindingObserver {
 
     // statusColor removed — badge rendering handled by _buildStatusBadge
 
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => BookingDetailRiwayatPage(booking: b),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+            spreadRadius: 1,
           ),
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey[200]!, width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: Offset(0, 2),
-            )
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header with icon, title and status
-            Row(
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => BookingDetailRiwayatPage(booking: b),
+              ),
+            );
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Color(0xFF0F4AA3),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Icon(
-                      Icons.directions_car,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ),
-                _buildStatusBadge(status),
-              ],
-            ),
-            SizedBox(height: 16),
-
-            // Route (show origin, clear arrow icon, destination)
-            if (route.isNotEmpty) ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      origin,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF0F4AA3),
+                // Header with icon and type
+                Row(
+                  children: [
+                    _buildBookingTypeIcon(bookingType),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          if (vehicle.isNotEmpty || plate.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                [vehicle, plate]
+                                    .where((s) => s.isNotEmpty)
+                                    .join(' • '),
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: Icon(
-                      Icons.arrow_forward,
-                      color: Color(0xFF0F4AA3),
+                    const Icon(
+                      Icons.arrow_forward_ios,
                       size: 18,
+                      color: Colors.grey,
                     ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // Dashed divider
+                CustomPaint(
+                  size: const Size(double.infinity, 1),
+                  painter: DashedLinePainter(
+                    color: Colors.grey[400]!,
                   ),
-                  Expanded(
-                    child: Text(
-                      destination,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.right,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF0F4AA3),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Route information
+                if (route.isNotEmpty) ...[
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Origin
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              origin,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.black87,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _formatDateOnly(rawDate),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
+
+                      // Arrow
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                        child: Icon(
+                          Icons.arrow_forward,
+                          color: Colors.blue[700],
+                          size: 24,
+                        ),
+                      ),
+
+                      // Destination
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              destination,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.black87,
+                              ),
+                              textAlign: TextAlign.end,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _formatDateOnly(rawDate),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
-              ),
-              SizedBox(height: 12),
-            ],
 
-            // Date and time
-            Text(
-              dateTimeStr,
-              style: TextStyle(
-                color: Colors.black87,
-                fontSize: 14,
-              ),
-            ),
-            SizedBox(height: 8),
-
-            // Vehicle info
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    '${vehicle.isNotEmpty ? vehicle : ''}${vehicle.isNotEmpty && plate.isNotEmpty ? ' • ' : ''}${plate.isNotEmpty ? plate : ''}',
-                    style: TextStyle(
-                      color: Colors.black87,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
+                // Passenger info
                 if (seats.isNotEmpty) ...[
-                  Icon(Icons.person, size: 18, color: Colors.grey[700]),
-                  SizedBox(width: 4),
-                  Text(
-                    '$seats Orang',
-                    style: TextStyle(
-                      color: Colors.black87,
-                      fontSize: 14,
-                    ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Icon(Icons.person, size: 18, color: Colors.grey[700]),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$seats Orang',
+                        style: TextStyle(
+                          color: Colors.grey[700],
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
-              ],
-            ),
-            SizedBox(height: 16),
 
-            // Total price
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Text(
-                  'Total Harga : ',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.black87,
-                  ),
-                ),
-                Text(
-                  priceStr,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 16,
-                    color: Colors.black,
-                  ),
+                // Status and amount section
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Total Harga',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          priceStr,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF0F4AA3),
+                          ),
+                        ),
+                      ],
+                    ),
+                    _buildStatusBadge(status),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );
+  }
+
+  String _formatDateOnly(String dateStr) {
+    if (dateStr.isEmpty) return '';
+    DateTime? dt;
+
+    try {
+      if (dateStr.length > 4) {
+        dt = DateTime.tryParse(dateStr);
+      }
+    } catch (_) {
+      dt = null;
+    }
+
+    if (dt != null) {
+      final days = [
+        'Minggu',
+        'Senin',
+        'Selasa',
+        'Rabu',
+        'Kamis',
+        'Jumat',
+        'Sabtu'
+      ];
+      final months = [
+        '',
+        'Januari',
+        'Februari',
+        'Maret',
+        'April',
+        'Mei',
+        'Juni',
+        'Juli',
+        'Agustus',
+        'September',
+        'Oktober',
+        'November',
+        'Desember'
+      ];
+      final dayName = days[dt.weekday % 7];
+      final day = dt.day.toString().padLeft(2, '0');
+      final month = months[dt.month];
+      final year = dt.year;
+      return '$dayName    $day $month $year';
+    }
+
+    return dateStr;
   }
 
   String _formatDateTime(String dateStr, String timeStr) {
@@ -569,57 +664,99 @@ class _RiwayatPageState extends State<RiwayatPage> with WidgetsBindingObserver {
     final s = status.toLowerCase();
     String label;
     Color bg;
+    Color textColor;
 
     if (s.contains('cancel') || s.contains('batalkan')) {
       label = 'Dibatalkan';
-      bg = Colors.red;
+      bg = const Color(0xFFFFEBEE);
+      textColor = const Color(0xFFEF4444);
     } else if (s.contains('completed') ||
         s.contains('selesai') ||
         s.contains('done') ||
         s.contains('success')) {
       label = 'Selesai';
-      bg = Colors.green;
+      bg = const Color(0xFFE8F5E9);
+      textColor = const Color(0xFF4CAF50);
     } else if (s == 'menuju_penjemputan') {
       label = 'Menuju Penjemputan';
-      bg = const Color(0xFF1E3A8A); // dark blue
+      bg = const Color(0xFFE3F2FD);
+      textColor = const Color(0xFF1E3A8A);
     } else if (s == 'sudah_di_penjemputan') {
       label = 'Di Penjemputan';
-      bg = const Color(0xFF1E3A8A); // dark blue
+      bg = const Color(0xFFE3F2FD);
+      textColor = const Color(0xFF1E3A8A);
     } else if (s == 'menuju_tujuan') {
       label = 'Menuju Tujuan';
-      bg = const Color(0xFF1E3A8A); // dark blue
+      bg = const Color(0xFFE3F2FD);
+      textColor = const Color(0xFF1E3A8A);
     } else if (s == 'sudah_sampai_tujuan') {
       label = 'Sampai Tujuan';
-      bg = const Color(0xFF1E3A8A); // dark blue
+      bg = const Color(0xFFE3F2FD);
+      textColor = const Color(0xFF1E3A8A);
     } else if (s == 'scheduled') {
       label = 'Dijadwalkan';
-      bg = Colors.purple;
+      bg = const Color(0xFFF3E5F5);
+      textColor = Colors.purple;
     } else if (s.contains('paid') || s.contains('confirmed')) {
       label = 'Menunggu';
-      bg = Colors.orange;
+      bg = const Color(0xFFFFF4E5);
+      textColor = const Color(0xFFFF9800);
     } else if (s == 'pending') {
       label = 'Pending';
-      bg = Colors.grey;
+      bg = Colors.grey[200]!;
+      textColor = Colors.grey[700]!;
     } else {
-      label = status; // Show original status if unknown
-      bg = Colors.grey;
+      label = status;
+      bg = Colors.grey[200]!;
+      textColor = Colors.grey[700]!;
     }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: bg.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: bg.withOpacity(0.25)),
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         label,
         style: TextStyle(
-          color: bg,
-          fontWeight: FontWeight.w700,
-          fontSize: 13,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: textColor,
         ),
       ),
+    );
+  }
+
+  Widget _buildBookingTypeIcon(String type) {
+    IconData icon;
+    Color color = const Color(0xFF0F4AA3);
+
+    switch (type) {
+      case 'motor':
+        icon = Icons.two_wheeler;
+        break;
+      case 'mobil':
+        icon = Icons.directions_car;
+        break;
+      case 'barang':
+        icon = Icons.local_shipping;
+        break;
+      case 'titip':
+        icon = Icons.inventory_2;
+        break;
+      default:
+        icon = Icons.directions_car;
+    }
+
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+      ),
+      child: Icon(icon, color: Colors.white, size: 28),
     );
   }
 
@@ -661,22 +798,21 @@ class _RiwayatPageState extends State<RiwayatPage> with WidgetsBindingObserver {
           // Tab bar
           Container(
             color: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding:
+                const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 8),
             child: Row(
               children: topTabs.map((t) {
                 final active = t == selectedTop;
-                return Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          selectedTop = t;
-                        });
-                      },
-                      child: _buildTabItem(t, active),
-                    ),
-                    SizedBox(width: 24),
-                  ],
+                return Padding(
+                  padding: const EdgeInsets.only(right: 24),
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        selectedTop = t;
+                      });
+                    },
+                    child: _buildTabItem(t, active),
+                  ),
                 );
               }).toList(),
             ),
@@ -748,4 +884,37 @@ class _RiwayatPageState extends State<RiwayatPage> with WidgetsBindingObserver {
       ],
     );
   }
+}
+
+// Custom painter for dashed line
+class DashedLinePainter extends CustomPainter {
+  final Color color;
+  final double dashWidth;
+  final double dashSpace;
+
+  DashedLinePainter({
+    required this.color,
+    this.dashWidth = 5.0,
+    this.dashSpace = 3.0,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1;
+
+    double startX = 0;
+    while (startX < size.width) {
+      canvas.drawLine(
+        Offset(startX, 0),
+        Offset(startX + dashWidth, 0),
+        paint,
+      );
+      startX += dashWidth + dashSpace;
+    }
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

@@ -16,6 +16,8 @@ class InProgressLayout extends StatefulWidget {
   final bool isDriverMoving;
   final DateTime? lastLocationUpdate;
   final String currentStatus; // NEW: to determine which route to show
+  final Map<String, dynamic>? mitraData;
+  final VoidCallback? onChatPressed;
 
   const InProgressLayout({
     Key? key,
@@ -25,6 +27,8 @@ class InProgressLayout extends StatefulWidget {
     this.isDriverMoving = false,
     this.lastLocationUpdate,
     required this.currentStatus, // NEW
+    this.mitraData,
+    this.onChatPressed,
   }) : super(key: key);
 
   @override
@@ -138,9 +142,13 @@ class _InProgressLayoutState extends State<InProgressLayout> {
   @override
   Widget build(BuildContext context) {
     final ride = widget.booking['ride'] ?? {};
-    final driver = ride['user'] ?? {};
+    final driverFromRide = ride['user'] ?? {};
+    final driverFromMitraKey = ride['mitra'] ?? {};
+    // Prefer mitraData, then ride['mitra'], then ride['user']. Do not fall back to booking['user'] (customer).
+    final driver =
+        widget.mitraData ?? driverFromMitraKey ?? driverFromRide ?? {};
     final driverName = driver['name'] ?? 'Jamal Driver';
-    final driverPhoto = driver['photo_url'] ?? '';
+    final driverPhoto = driver['photo_url'] ?? driver['photo'] ?? '';
     final kendaraan = ride['kendaraan_mitra'] ?? {};
     final vehicle =
         (kendaraan['brand'] ?? 'Bus') + ' ' + (kendaraan['model'] ?? '');
@@ -535,12 +543,49 @@ class _InProgressLayoutState extends State<InProgressLayout> {
                             ),
                             const SizedBox(width: 12),
                             Expanded(
-                              child: Text(
-                                driverName,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    driverName,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Builder(builder: (_) {
+                                    final ratingSummary =
+                                        ride['driver_rating_summary'] ?? {};
+                                    final avg = ratingSummary['average_rating'];
+                                    final total =
+                                        ratingSummary['total_ratings'];
+                                    return Row(
+                                      children: [
+                                        const Icon(Icons.star,
+                                            color: Colors.amber, size: 14),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          avg != null ? avg.toString() : '-',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey[700],
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          total != null
+                                              ? '(${total.toString()})'
+                                              : '',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  }),
+                                ],
                               ),
                             ),
                             Container(
@@ -571,7 +616,9 @@ class _InProgressLayoutState extends State<InProgressLayout> {
                               child: IconButton(
                                 icon: const Icon(Icons.chat_bubble, size: 20),
                                 color: Colors.white,
-                                onPressed: () => _openChatWithDriver(context),
+                                onPressed: widget.onChatPressed != null
+                                    ? () => widget.onChatPressed!()
+                                    : () => _openChatWithDriver(context),
                               ),
                             ),
                           ],

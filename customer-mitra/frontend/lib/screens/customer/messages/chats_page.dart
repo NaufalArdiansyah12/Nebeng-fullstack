@@ -344,8 +344,8 @@ class _ChatsPageState extends State<ChatsPage> {
                       decoration: BoxDecoration(
                         border: Border(
                           bottom: BorderSide(
-                            color: Colors.grey.shade200,
-                            width: 0.5,
+                            color: Colors.grey.shade300,
+                            width: 1.5,
                           ),
                         ),
                       ),

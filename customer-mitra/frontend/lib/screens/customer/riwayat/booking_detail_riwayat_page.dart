@@ -4,6 +4,9 @@ import 'dart:math';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../ubah_jadwal/ubah_jadwal_page.dart';
 import '../../../services/api_service.dart';
+import '../../../services/chat_service.dart';
+import '../../../utils/chat_helper.dart';
+import '../messages/chats_page.dart';
 
 // Import extracted components
 import 'booking_detail/widgets/booking_header.dart';
@@ -41,10 +44,18 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
   Duration? _timeUntilDeparture;
   AnimationController? _dotsAnimationController;
   int _currentDot = 0;
+  bool _driverSourceLogged = false;
 
   // Rating state
   Map<String, dynamic>? existingRating;
   bool isLoadingRating = false;
+
+  // Chat service
+  final ChatService _chatService = ChatService();
+
+  // Mitra data
+  Map<String, dynamic>? mitraData;
+  bool isLoadingMitra = false;
 
   // Movement tracking
   double? _previousLat;
@@ -61,7 +72,10 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
   @override
   void initState() {
     super.initState();
+    print('🚀 initState called');
     currentStatus = widget.booking['status'] ?? 'pending';
+    print('📞 Calling _fetchMitraData()');
+    _fetchMitraData();
     _fetchTrackingData();
     _startCountdown();
     _initDotsAnimation();
@@ -248,6 +262,85 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
     }
   }
 
+  Future<void> _fetchMitraData() async {
+    print('🔥 _fetchMitraData() started');
+    try {
+      setState(() {
+        isLoadingMitra = true;
+      });
+
+      final ride = widget.booking['ride'] ?? {};
+      final userId = ride['user_id'];
+
+      print('🔍 ride data: $ride');
+      print('🔍 user_id from ride: $userId');
+
+      if (userId == null) {
+        print('⚠️ user_id tidak ditemukan di ride');
+        setState(() {
+          isLoadingMitra = false;
+        });
+        return;
+      }
+
+      print('🔍 Fetching mitra data for user_id: $userId');
+
+      // Fetch user data by ID
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+
+      if (token == null) {
+        print(
+            '⚠️ Token tidak ditemukan — akan mencoba fallback dari booking data');
+
+        // Coba ambil nama mitra dari data booking/ride jika tersedia
+        final rideFallback = widget.booking['ride'] ?? {};
+        final possibleDriver = rideFallback['user'] ??
+            rideFallback['mitra'] ??
+            widget.booking['mitra'] ??
+            {};
+
+        if (possibleDriver != null &&
+            possibleDriver is Map &&
+            possibleDriver.isNotEmpty) {
+          setState(() {
+            mitraData = Map<String, dynamic>.from(possibleDriver);
+            isLoadingMitra = false;
+          });
+          print(
+              'ℹ️ Menggunakan fallback mitra dari booking: ${mitraData?['name']}');
+          return;
+        }
+
+        setState(() {
+          isLoadingMitra = false;
+        });
+        return;
+      }
+
+      print('🔐 Token found, calling API...');
+      final userData = await ApiService.getUserById(userId, token);
+
+      print('📦 Received userData: $userData');
+
+      if (mounted) {
+        setState(() {
+          mitraData = userData;
+          isLoadingMitra = false;
+        });
+        print('✅ Mitra data loaded: ${userData['name']}');
+      }
+    } catch (e, stackTrace) {
+      print('❌ Error fetching mitra data: $e');
+      print('📍 Stack trace: $stackTrace');
+      if (mounted) {
+        setState(() {
+          isLoadingMitra = false;
+        });
+      }
+    }
+  }
+
   Future<void> _fetchRating() async {
     setState(() {
       isLoadingRating = true;
@@ -375,6 +468,108 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
     }
   }
 
+  Future<void> _openChatWithDriver() async {
+    try {
+      // Show loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getInt('user_id');
+      final userName =
+          prefs.getString('user_name') ?? prefs.getString('name') ?? 'Customer';
+
+      if (userId == null) {
+        Navigator.pop(context); // Close loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('User ID tidak ditemukan. Silakan login kembali.')),
+        );
+        return;
+      }
+
+      // Get ride and driver info. Prefer `mitraData` if available.
+      final ride = widget.booking['ride'] ?? {};
+      final driverFromRide = ride['user'] ?? {};
+      final driverData = mitraData ?? driverFromRide;
+      final mitraId = driverData['id'];
+      final mitraName = driverData['name'] ?? 'Driver';
+      final mitraPhoto = driverData['photo_url'] ?? driverData['photo'];
+      final rideId = ride['id'] ?? widget.booking['ride_id'];
+      final bookingType =
+          (widget.booking['booking_type'] ?? 'motor').toString().toLowerCase();
+
+      if (mitraId == null || rideId == null) {
+        Navigator.pop(context); // Close loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Data driver tidak lengkap')),
+        );
+        return;
+      }
+
+      // Try to find existing conversation or create new one
+      String? conversationId;
+
+      // Check if conversation already exists
+      final existingConv = await _chatService.getConversationByRideAndUsers(
+        rideId: rideId,
+        customerId: userId,
+        mitraId: mitraId,
+      );
+
+      if (existingConv != null) {
+        conversationId = existingConv['id'];
+      } else {
+        // Create new conversation
+        conversationId = await ChatHelper.createConversationAfterBooking(
+          rideId: rideId,
+          bookingType: bookingType,
+          customerData: {
+            'id': userId,
+            'name': userName,
+            'photo': prefs.getString('photo_url'),
+          },
+          mitraData: {
+            'id': mitraId,
+            'name': mitraName,
+            'photo': mitraPhoto,
+          },
+        );
+      }
+
+      Navigator.pop(context); // Close loading
+
+      if (conversationId != null && conversationId.isNotEmpty) {
+        // Navigate to chat page
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatPage(
+              conversationId: conversationId!,
+              otherUserName: mitraName,
+              otherUserPhoto: mitraPhoto,
+            ),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gagal membuka chat')),
+        );
+      }
+    } catch (e) {
+      Navigator.pop(context); // Close loading
+      print('Error opening chat: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal membuka chat: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // Show different layout based on status
@@ -386,6 +581,8 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
         isDriverMoving: _isDriverMoving,
         lastLocationUpdate: _lastLocationUpdate,
         currentStatus: currentStatus,
+        mitraData: mitraData,
+        onChatPressed: _openChatWithDriver,
       );
     }
 
@@ -393,6 +590,8 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
       return WaitingAtPickupLayout(
         booking: widget.booking,
         trackingData: trackingData,
+        mitraData: mitraData,
+        onChatPressed: _openChatWithDriver,
       );
     }
 
@@ -404,6 +603,8 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
         isDriverMoving: _isDriverMoving,
         lastLocationUpdate: _lastLocationUpdate,
         currentStatus: currentStatus,
+        mitraData: mitraData,
+        onChatPressed: _openChatWithDriver,
       );
     }
 
@@ -478,9 +679,45 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
     final totalPrice = BookingFormatters.formatPrice(
         (double.tryParse(price.toString()) ?? 0) * (int.tryParse(seats) ?? 1));
 
-    final driver = ride['user'] ?? {};
+    // Use mitraData if available, otherwise prefer ride['mitra'] or ride['user'].
+    // Do NOT fallback to booking['user'] (that's the customer).
+    final driver = mitraData ?? ride['mitra'] ?? ride['user'] ?? {};
     final driverName = driver['name'] ?? 'Driver';
-    final driverPhoto = driver['photo_url'] ?? '';
+    final driverPhoto = driver['photo_url'] ?? driver['photo'] ?? '';
+    final driverRatingSummary = ride['driver_rating_summary'] ?? {};
+    final averageRating = driverRatingSummary['average_rating'] is num
+        ? (driverRatingSummary['average_rating'] as num).toDouble()
+        : null;
+    final totalRatings = driverRatingSummary['total_ratings'] is int
+        ? driverRatingSummary['total_ratings'] as int
+        : (driverRatingSummary['total_ratings'] is num
+            ? (driverRatingSummary['total_ratings'] as num).toInt()
+            : null);
+
+    // Debug: log driver source once
+    if (!_driverSourceLogged) {
+      _driverSourceLogged = true;
+      try {
+        if (mitraData != null) {
+          print('🔎 Driver source: mitraData loaded -> ${mitraData?['name']}');
+        } else if (ride['mitra'] != null) {
+          print('🔎 Driver source: ride["mitra"] -> ${ride['mitra']?['name']}');
+        } else if (ride['user'] != null) {
+          print('🔎 Driver source: ride["user"] -> ${ride['user']?['name']}');
+        } else {
+          print('🔎 Driver source: none, showing fallback');
+        }
+      } catch (e) {
+        print('🔎 Error logging driver source: $e');
+      }
+    }
+
+    // Debug log
+    // print('📊 Rendering UI:');
+    // print('   mitraData: $mitraData');
+    // print('   isLoadingMitra: $isLoadingMitra');
+    // print('   driverName: $driverName');
+    // print('   driverPhoto: $driverPhoto');
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
@@ -528,7 +765,11 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
               driverName: driverName,
               driverPhoto: driverPhoto,
               plateNumber: plate,
+              mitraName: driverName,
               accentColor: accentColor,
+              averageRating: averageRating,
+              totalRatings: totalRatings,
+              onChatPressed: _openChatWithDriver,
             ),
 
             const SizedBox(height: 16),
@@ -566,7 +807,9 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
                     bookingType == 'motor' ||
                     bookingType == 'barang' ||
                     bookingType == 'titip') &&
-                _canReschedule()) ...[
+                _canReschedule() &&
+                currentStatus != 'dibatalkan' &&
+                currentStatus != 'cancelled') ...[
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Column(

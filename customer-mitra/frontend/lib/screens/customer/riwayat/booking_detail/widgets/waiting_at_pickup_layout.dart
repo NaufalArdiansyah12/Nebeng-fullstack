@@ -9,11 +9,15 @@ import '../../../messages/chats_page.dart';
 class WaitingAtPickupLayout extends StatefulWidget {
   final Map<String, dynamic> booking;
   final Map<String, dynamic>? trackingData;
+  final Map<String, dynamic>? mitraData;
+  final VoidCallback? onChatPressed;
 
   const WaitingAtPickupLayout({
     Key? key,
     required this.booking,
     this.trackingData,
+    this.mitraData,
+    this.onChatPressed,
   }) : super(key: key);
 
   @override
@@ -127,9 +131,13 @@ class _WaitingAtPickupLayoutState extends State<WaitingAtPickupLayout> {
   @override
   Widget build(BuildContext context) {
     final ride = widget.booking['ride'] ?? {};
-    final driver = ride['user'] ?? {};
+    final driverFromRide = ride['user'] ?? {};
+    final driverFromMitraKey = ride['mitra'] ?? {};
+    // Prefer mitraData, then ride['mitra'], then ride['user']. Avoid booking['user'] (customer).
+    final driver =
+        widget.mitraData ?? driverFromMitraKey ?? driverFromRide ?? {};
     final driverName = driver['name'] ?? 'Driver';
-    final driverPhoto = driver['photo_url'] ?? '';
+    final driverPhoto = driver['photo_url'] ?? driver['photo'] ?? '';
     final driverPhone = driver['phone_number'] ?? '';
 
     final kendaraan = ride['kendaraan_mitra'] ?? {};
@@ -280,6 +288,35 @@ class _WaitingAtPickupLayoutState extends State<WaitingAtPickupLayout> {
                             color: Colors.black87,
                           ),
                         ),
+                        const SizedBox(height: 4),
+                        Builder(builder: (_) {
+                          final ratingSummary =
+                              ride['driver_rating_summary'] ?? {};
+                          final avg = ratingSummary['average_rating'];
+                          final total = ratingSummary['total_ratings'];
+                          return Row(
+                            children: [
+                              const Icon(Icons.star,
+                                  color: Colors.amber, size: 14),
+                              const SizedBox(width: 4),
+                              Text(
+                                avg != null ? avg.toString() : '-',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[700],
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                total != null ? '(${total.toString()})' : '',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          );
+                        }),
                         if (vehicle.trim().isNotEmpty) ...[
                           const SizedBox(height: 4),
                           Text(
@@ -306,7 +343,9 @@ class _WaitingAtPickupLayoutState extends State<WaitingAtPickupLayout> {
                         child: IconButton(
                           icon: const Icon(Icons.chat_bubble,
                               color: Colors.white, size: 22),
-                          onPressed: () => _openChatWithDriver(context),
+                          onPressed: widget.onChatPressed != null
+                              ? widget.onChatPressed
+                              : () => _openChatWithDriver(context),
                         ),
                       ),
                       const SizedBox(width: 8),

@@ -17,19 +17,16 @@ class BarangVehicleCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 4,
-              offset: const Offset(0, 1),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Colors.black26,
+            width: 1.2,
+          ),
         ),
         child: Row(
           children: [
@@ -50,7 +47,7 @@ class BarangVehicleCard extends StatelessWidget {
                 children: [
                   const Text('Kendaraan',
                       style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 15,
                           color: Colors.black87,
                           fontWeight: FontWeight.w500)),
                   const SizedBox(height: 4),
@@ -58,7 +55,7 @@ class BarangVehicleCard extends StatelessWidget {
                     vehicleName.isNotEmpty
                         ? '$vehicleName • $vehiclePlate'
                         : 'Belum memilih kendaraan',
-                    style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                    style: TextStyle(fontSize: 13, color: Colors.grey[700]),
                   ),
                 ],
               ),
@@ -86,16 +83,14 @@ class BarangPriceField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 4,
-              offset: const Offset(0, 1)),
-        ],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.black26,
+          width: 1.2,
+        ),
       ),
       child: Row(
         children: [
@@ -116,7 +111,7 @@ class BarangPriceField extends StatelessWidget {
               children: [
                 const Text('Nominal (Rp)',
                     style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 15,
                         color: Colors.black87,
                         fontWeight: FontWeight.w500)),
                 const SizedBox(height: 6),

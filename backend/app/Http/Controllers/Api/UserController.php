@@ -37,14 +37,27 @@ class UserController extends Controller
      */
     public function show($id)
     {
+        $user = \App\Models\User::find($id);
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User tidak ditemukan',
+            ], 404);
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Data user berhasil diambil',
             'data' => [
-                'id' => $id,
-                'name' => 'John Doe',
-                'email' => 'john@example.com',
-                'created_at' => now(),
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone ?? null,
+                'photo_url' => $user->photo_url ?? null,
+                'profile_photo' => $user->profile_photo ?? null,
+                'role' => $user->role ?? null,
+                'created_at' => $user->created_at,
             ]
         ]);
     }
