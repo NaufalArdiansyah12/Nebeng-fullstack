@@ -1586,4 +1586,205 @@ class ApiService {
 
     throw Exception('Failed to get driver ratings: ${resp.statusCode}');
   }
+
+  // ========== Mitra Verification APIs ==========
+
+  /// Submit KTP verification
+  static Future<Map<String, dynamic>> submitKtpVerification({
+    required String token,
+    required String ktpNumber,
+    required String ktpName,
+    required String ktpBirthDate,
+    required String ktpPhotoPath,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/mitra/verification/ktp');
+    final request = http.MultipartRequest('POST', uri);
+
+    request.headers['Authorization'] = 'Bearer $token';
+    request.headers['Accept'] = 'application/json';
+
+    request.fields['ktp_number'] = ktpNumber;
+    request.fields['ktp_name'] = ktpName;
+    request.fields['ktp_birth_date'] = ktpBirthDate;
+
+    final file = await http.MultipartFile.fromPath('ktp_photo', ktpPhotoPath);
+    request.files.add(file);
+
+    final streamedResp = await request.send();
+    final resp = await http.Response.fromStream(streamedResp);
+
+    if (resp.statusCode == 201 || resp.statusCode == 200) {
+      final body = json.decode(resp.body);
+      if (body is Map && body['success'] == true) {
+        return Map<String, dynamic>.from(body);
+      }
+      throw Exception(body['message'] ?? 'Failed to submit KTP verification');
+    }
+
+    final body = json.decode(resp.body);
+    throw Exception(body['message'] ??
+        'Failed to submit KTP verification: ${resp.statusCode}');
+  }
+
+  /// Submit SIM verification
+  static Future<Map<String, dynamic>> submitSimVerification({
+    required String token,
+    required String simNumber,
+    required String simType,
+    required String simExpiryDate,
+    required String simPhotoPath,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/mitra/verification/sim');
+    final request = http.MultipartRequest('POST', uri);
+
+    request.headers['Authorization'] = 'Bearer $token';
+    request.headers['Accept'] = 'application/json';
+
+    request.fields['sim_number'] = simNumber;
+    request.fields['sim_type'] = simType;
+    request.fields['sim_expiry_date'] = simExpiryDate;
+
+    final file = await http.MultipartFile.fromPath('sim_photo', simPhotoPath);
+    request.files.add(file);
+
+    final streamedResp = await request.send();
+    final resp = await http.Response.fromStream(streamedResp);
+
+    if (resp.statusCode == 201 || resp.statusCode == 200) {
+      final body = json.decode(resp.body);
+      if (body is Map && body['success'] == true) {
+        return Map<String, dynamic>.from(body);
+      }
+      throw Exception(body['message'] ?? 'Failed to submit SIM verification');
+    }
+
+    final body = json.decode(resp.body);
+    throw Exception(body['message'] ??
+        'Failed to submit SIM verification: ${resp.statusCode}');
+  }
+
+  /// Submit SKCK verification
+  static Future<Map<String, dynamic>> submitSkckVerification({
+    required String token,
+    required String skckNumber,
+    required String skckName,
+    required String skckExpiryDate,
+    required String skckPhotoPath,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/mitra/verification/skck');
+    final request = http.MultipartRequest('POST', uri);
+
+    request.headers['Authorization'] = 'Bearer $token';
+    request.headers['Accept'] = 'application/json';
+
+    request.fields['skck_number'] = skckNumber;
+    request.fields['skck_name'] = skckName;
+    request.fields['skck_expiry_date'] = skckExpiryDate;
+
+    final file = await http.MultipartFile.fromPath('skck_photo', skckPhotoPath);
+    request.files.add(file);
+
+    final streamedResp = await request.send();
+    final resp = await http.Response.fromStream(streamedResp);
+
+    if (resp.statusCode == 201 || resp.statusCode == 200) {
+      final body = json.decode(resp.body);
+      if (body is Map && body['success'] == true) {
+        return Map<String, dynamic>.from(body);
+      }
+      throw Exception(body['message'] ?? 'Failed to submit SKCK verification');
+    }
+
+    final body = json.decode(resp.body);
+    throw Exception(body['message'] ??
+        'Failed to submit SKCK verification: ${resp.statusCode}');
+  }
+
+  /// Submit Bank verification
+  static Future<Map<String, dynamic>> submitBankVerification({
+    required String token,
+    required String bankAccountNumber,
+    required String bankAccountName,
+    required String bankName,
+    required String bankPhotoPath,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/mitra/verification/bank');
+    final request = http.MultipartRequest('POST', uri);
+
+    request.headers['Authorization'] = 'Bearer $token';
+    request.headers['Accept'] = 'application/json';
+
+    request.fields['bank_account_number'] = bankAccountNumber;
+    request.fields['bank_account_name'] = bankAccountName;
+    request.fields['bank_name'] = bankName;
+
+    final file =
+        await http.MultipartFile.fromPath('bank_account_photo', bankPhotoPath);
+    request.files.add(file);
+
+    final streamedResp = await request.send();
+    final resp = await http.Response.fromStream(streamedResp);
+
+    if (resp.statusCode == 201 || resp.statusCode == 200) {
+      final body = json.decode(resp.body);
+      if (body is Map && body['success'] == true) {
+        return Map<String, dynamic>.from(body);
+      }
+      throw Exception(body['message'] ?? 'Failed to submit bank verification');
+    }
+
+    final body = json.decode(resp.body);
+    throw Exception(body['message'] ??
+        'Failed to submit bank verification: ${resp.statusCode}');
+  }
+
+  /// Link all mitra verifications to mitra_verifikasi table
+  static Future<Map<String, dynamic>> linkMitraVerifications(
+      String token) async {
+    final uri = Uri.parse('$baseUrl/api/v1/mitra/verification/link');
+    final request = http.Request('POST', uri);
+
+    request.headers['Authorization'] = 'Bearer $token';
+    request.headers['Accept'] = 'application/json';
+
+    final streamedResp = await request.send();
+    final resp = await http.Response.fromStream(streamedResp);
+
+    if (resp.statusCode == 200) {
+      final body = json.decode(resp.body);
+      if (body is Map && body['success'] == true) {
+        return Map<String, dynamic>.from(body);
+      }
+      throw Exception(body['message'] ?? 'Failed to link mitra verifications');
+    }
+
+    final body = json.decode(resp.body);
+    throw Exception(body['message'] ??
+        'Failed to link mitra verifications: ${resp.statusCode}');
+  }
+
+  /// Get mitra verification status
+  static Future<Map<String, dynamic>> getMitraVerificationStatus(
+      String token) async {
+    final uri = Uri.parse('$baseUrl/api/v1/mitra/verification/status');
+    final resp = await http.get(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      },
+    );
+
+    if (resp.statusCode == 200) {
+      final body = json.decode(resp.body);
+      if (body is Map && body['success'] == true) {
+        return Map<String, dynamic>.from(body);
+      }
+      throw Exception(body['message'] ?? 'Failed to get verification status');
+    }
+
+    final body = json.decode(resp.body);
+    throw Exception(body['message'] ??
+        'Failed to get verification status: ${resp.statusCode}');
+  }
 }
