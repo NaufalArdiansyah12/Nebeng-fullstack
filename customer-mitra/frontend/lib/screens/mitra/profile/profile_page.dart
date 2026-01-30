@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../services/api_service.dart';
+import '../main_page.dart';
 import '../../auth/splash_screen.dart';
-import 'security_page.dart';
-import 'edit_profile_page.dart';
+import 'settings/edit_profile_page.dart';
+import 'settings/settings_page.dart';
 import '../help/help_center_page.dart';
 import '../../pin/create_pin_page.dart';
-import 'package:nebeng/screens/mitra/riwayat_page.dart';
 import '../verification/verification_documents_page.dart';
+import 'documents/documents_page.dart';
+import 'account_status_page.dart';
 
 class MitraProfilePage extends StatefulWidget {
   const MitraProfilePage({Key? key}) : super(key: key);
@@ -17,253 +19,264 @@ class MitraProfilePage extends StatefulWidget {
 }
 
 class _MitraProfilePageState extends State<MitraProfilePage> {
+  Map<String, dynamic>? userData;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('api_token');
+      if (token != null) {
+        final profile = await ApiService.getProfile(token: token);
+        if (profile['success'] == true && profile['data'] != null) {
+          final user = profile['data']['user'] ?? profile['data'];
+
+          // Normalize profile_photo to absolute URL if needed
+          if (user != null && user['profile_photo'] != null) {
+            String? photoUrl = user['profile_photo'];
+            if (photoUrl != null && photoUrl.isNotEmpty) {
+              if (!photoUrl.startsWith('http')) {
+                final base = ApiService.baseUrl;
+                photoUrl = photoUrl.startsWith('/')
+                    ? '$base$photoUrl'
+                    : '$base/$photoUrl';
+              }
+              user['profile_photo'] = photoUrl;
+            }
+          }
+
+          setState(() {
+            userData = user;
+            isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading user data: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1E3A8A),
-      body: SafeArea(
-        child: Stack(
-          children: [
-            // Blue background extends to top
-            Container(
-              height: 280,
-              decoration: const BoxDecoration(
-                color: Color(0xFF1E3A8A),
-              ),
-            ),
-            Column(
-              children: [
-                _buildHeader(),
-                const SizedBox(height: 50),
-                Expanded(
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF5F5F5),
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(30),
-                        topRight: Radius.circular(30),
-                      ),
-                    ),
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.only(top: 80, bottom: 20),
-                      child: _buildMenuCard(),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            // Avatar positioned over the card
-            Positioned(
-              top: 140,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: _buildAvatar(),
-              ),
-            ),
-          ],
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              // If this page isn't pushed (it's part of main page), ensure we navigate
+              // to the main page instead of popping to an empty route.
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const MitraMainPage()),
+              );
+            }
+          },
         ),
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-              onPressed: () => Navigator.pop(context),
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(width: 16),
-          const Text(
-            'Profile',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAvatar() {
-    return Column(
-      children: [
-        Container(
-          width: 100,
-          height: 100,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 4),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(50),
-            child: Container(
-              color: const Color(0xFF1E3A8A),
-              child: const Icon(
-                Icons.person,
-                size: 50,
-                color: Colors.white,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        const Text(
-          'Kamado Tanjiro',
+        title: const Text(
+          'Akun',
           style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: Colors.black87,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 4),
-        const Text(
-          'mitra@example.com',
-          style: TextStyle(
-            fontSize: 13,
-            color: Colors.white,
-          ),
-        ),
-      ],
+        centerTitle: false,
+      ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              child: Column(
+                children: [
+                  const SizedBox(height: 20),
+                  _buildProfileHeader(),
+                  const SizedBox(height: 32),
+                  _buildMenuList(),
+                  const SizedBox(height: 24),
+                  _buildLogoutButton(),
+                  const SizedBox(height: 40),
+                ],
+              ),
+            ),
     );
   }
 
-  Widget _buildMenuCard() {
+  Widget _buildProfileHeader() {
+    final name = userData?['name'] ?? 'User';
+    final phone = userData?['phone'] ?? userData?['no_hp'] ?? '';
+    final email = userData?['email'] ?? '';
+    final address = userData?['address'] ?? userData?['alamat'] ?? '';
+
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24),
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey[300]!),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          // Akun Section
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-            child: Text(
-              'Akun',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[600],
-              ),
+          // Avatar
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E40AF),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: userData?['profile_photo'] != null &&
+                    userData!['profile_photo'].toString().isNotEmpty
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      userData!['profile_photo'],
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Icon(Icons.person,
+                            color: Colors.white, size: 30);
+                      },
+                    ),
+                  )
+                : const Icon(Icons.person, color: Colors.white, size: 30),
+          ),
+          const SizedBox(width: 16),
+          // User Info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                if (phone.isNotEmpty)
+                  Text(
+                    phone,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                if (email.isNotEmpty)
+                  Text(
+                    email,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                if (address.isNotEmpty)
+                  Text(
+                    address,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey[600],
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
             ),
           ),
-          _buildMenuItem(
-            icon: Icons.monetization_on,
-            iconColor: const Color(0xFFFFA500),
-            title: 'Reward Point',
-            onTap: () {},
-          ),
-          _buildMenuItem(
-            icon: Icons.person_outline,
-            iconColor: Colors.black87,
-            title: 'Edit Profile',
-            onTap: () async {
+          // Edit Icon
+          IconButton(
+            icon: const Icon(Icons.edit, size: 20),
+            color: Colors.grey[700],
+            onPressed: () async {
               await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => const MitraEditProfilePage(),
                 ),
               );
+              _loadUserData(); // Refresh data after edit
             },
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMenuList() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Column(
+        children: [
           _buildMenuItem(
-            icon: Icons.verified_user_outlined,
-            iconColor: const Color(0xFF1E40AF),
-            title: 'Verifikasi Dokumen',
-            onTap: () {
-              Navigator.push(
+            icon: Icons.settings_outlined,
+            title: 'Pengaturan',
+            onTap: () async {
+              await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const VerificationDocumentsPage(),
+                  builder: (context) => const SettingsPage(),
                 ),
               );
+              _loadUserData(); // Refresh data after returning from settings
             },
           ),
-          _buildMenuItem(
-            icon: Icons.receipt_long_outlined,
-            iconColor: Colors.black87,
-            title: 'Riwayat Transaksi',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const MitraRiwayatPage()),
-              );
-            },
-          ),
-          _buildMenuItem(
-            icon: Icons.language,
-            iconColor: Colors.black87,
-            title: 'Bahasa',
-            onTap: () {},
-          ),
+          _buildDivider(),
           _buildMenuItem(
             icon: Icons.lock_outline,
-            iconColor: Colors.black87,
-            title: 'Buat PIN',
+            title: 'PIN',
             onTap: () {
               _checkAndNavigateToPin();
             },
           ),
-          const SizedBox(height: 16),
-          // Lainnya Section
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-            child: Text(
-              'Lainnya',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[600],
-              ),
-            ),
-          ),
+          _buildDivider(),
           _buildMenuItem(
-            icon: Icons.shield_outlined,
-            iconColor: Colors.black87,
-            title: 'Keamanan',
+            icon: Icons.description_outlined,
+            title: 'Dokumen',
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const SecurityPage(),
+                  builder: (context) => const DocumentsPage(),
                 ),
               );
             },
           ),
+          _buildDivider(),
+          _buildMenuItem(
+            icon: Icons.person_outline,
+            title: 'Status akun',
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const AccountStatusPage()),
+              );
+            },
+          ),
+          _buildDivider(),
           _buildMenuItem(
             icon: Icons.help_outline,
-            iconColor: Colors.black87,
-            title: 'Pusat Bantuan',
+            title: 'Bantuan',
             onTap: () {
               Navigator.push(
                 context,
@@ -273,19 +286,6 @@ class _MitraProfilePageState extends State<MitraProfilePage> {
               );
             },
           ),
-          const SizedBox(height: 16),
-          // Logout
-          _buildMenuItem(
-            icon: Icons.logout,
-            iconColor: Colors.red,
-            title: 'Log out',
-            titleColor: Colors.red,
-            onTap: () {
-              _showLogoutDialog();
-            },
-            showArrow: false,
-          ),
-          const SizedBox(height: 8),
         ],
       ),
     );
@@ -293,40 +293,75 @@ class _MitraProfilePageState extends State<MitraProfilePage> {
 
   Widget _buildMenuItem({
     required IconData icon,
-    required Color iconColor,
     required String title,
-    Color? titleColor,
     required VoidCallback onTap,
-    bool showArrow = true,
   }) {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Row(
           children: [
-            Icon(
-              icon,
-              color: iconColor,
-              size: 22,
-            ),
+            Icon(icon, size: 24, color: Colors.black87),
             const SizedBox(width: 16),
             Expanded(
               child: Text(
                 title,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 15,
+                  color: Colors.black87,
                   fontWeight: FontWeight.w500,
-                  color: titleColor ?? Colors.black87,
                 ),
               ),
             ),
-            if (showArrow)
-              Icon(
-                Icons.chevron_right,
-                color: Colors.grey[400],
-                size: 24,
+            Icon(
+              Icons.chevron_right,
+              color: Colors.grey[400],
+              size: 24,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDivider() {
+    return Divider(
+      height: 1,
+      thickness: 1,
+      color: Colors.grey[200],
+      indent: 60,
+    );
+  }
+
+  Widget _buildLogoutButton() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      width: double.infinity,
+      height: 50,
+      child: OutlinedButton(
+        onPressed: () {
+          _showLogoutDialog();
+        },
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(color: Colors.red, width: 1.5),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.logout, color: Colors.red, size: 20),
+            const SizedBox(width: 8),
+            const Text(
+              'Keluar',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Colors.red,
               ),
+            ),
           ],
         ),
       ),

@@ -9,9 +9,21 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class RideController extends Controller
 {
+    /**
+     * Generate unique QR code data for a ride
+     * Format: RIDE-{type}-{id}-{random}
+     */
+    private function generateQrCode($rideType, $rideId)
+    {
+        $type = strtoupper($rideType);
+        $random = Str::upper(Str::random(8));
+        return "RIDE-{$type}-{$rideId}-{$random}";
+    }
+
     public function index(Request $request)
     {
         // If client requests mobil rides, fetch from CarRide (tebengan_mobil)
@@ -190,6 +202,11 @@ class RideController extends Controller
 
                     $r = Ride::create($data);
 
+                    // Generate and save QR code
+                    $qrCode = $this->generateQrCode('motor', $r->id);
+                    $r->qr_code_data = $qrCode;
+                    $r->save();
+
                     // If mitra provided kendaraan_mitra_id and jumlah_bagasi, persist jumlah_bagasi into kendaraan_mitra
                     try {
                         $kmId = $request->kendaraan_mitra_id ?? null;
@@ -238,6 +255,11 @@ class RideController extends Controller
 
                     $car = \App\Models\CarRide::create($data);
 
+                    // Generate and save QR code
+                    $qrCode = $this->generateQrCode('mobil', $car->id);
+                    $car->qr_code_data = $qrCode;
+                    $car->save();
+
                         // persist jumlah_bagasi into kendaraan_mitra if provided
                         try {
                             $kmId = $request->kendaraan_mitra_id ?? null;
@@ -278,6 +300,11 @@ class RideController extends Controller
                     }
 
                     $barang = \App\Models\BarangRide::create($data);
+
+                    // Generate and save QR code
+                    $qrCode = $this->generateQrCode('barang', $barang->id);
+                    $barang->qr_code_data = $qrCode;
+                    $barang->save();
 
                         // persist jumlah_bagasi into kendaraan_mitra if provided
                         try {

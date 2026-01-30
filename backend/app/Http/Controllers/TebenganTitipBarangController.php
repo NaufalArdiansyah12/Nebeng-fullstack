@@ -7,9 +7,20 @@ use App\Models\TebenganTitipBarang;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class TebenganTitipBarangController extends Controller
 {
+    /**
+     * Generate unique QR code data for a ride
+     * Format: RIDE-TITIP-{id}-{random}
+     */
+    private function generateQrCode($rideId)
+    {
+        $random = Str::upper(Str::random(8));
+        return "RIDE-TITIP-{$rideId}-{$random}";
+    }
+
     /**
      * Get all tebengan titip barang (with filters)
      */
@@ -152,6 +163,11 @@ class TebenganTitipBarangController extends Controller
             }
 
             $tebengan = TebenganTitipBarang::create($data);
+
+            // Generate and save QR code
+            $qrCode = $this->generateQrCode($tebengan->id);
+            $tebengan->qr_code_data = $qrCode;
+            $tebengan->save();
 
             $tebengan->load(['user', 'originLocation', 'destinationLocation']);
 

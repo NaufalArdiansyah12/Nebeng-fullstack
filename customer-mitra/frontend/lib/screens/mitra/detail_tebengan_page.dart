@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../../services/api_service.dart';
 import 'mitra_tracking_map_page.dart';
 
@@ -271,6 +272,8 @@ class _MitraTebenganDetailPageState extends State<MitraTebenganDetailPage> {
               else if (rideType == 'titip')
                 _buildPenumpangTitipBarang(ride),
               const SizedBox(height: 20),
+              // QR Code Section (moved below passenger info)
+              _buildQRCodeSection(ride),
             ],
           ),
         ),
@@ -475,6 +478,85 @@ class _MitraTebenganDetailPageState extends State<MitraTebenganDetailPage> {
               _infoRow('Tipe', vehicleModel),
               _infoRow('Warna', warna),
               _infoRow('Jumlah Kursi', kursi, isLast: true),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // QR Code Section
+  Widget _buildQRCodeSection(Map<String, dynamic> ride) {
+    final qrCodeData = ride['qr_code_data'] as String?;
+
+    if (qrCodeData == null || qrCodeData.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'QR Code Tebangan',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[300]!),
+            color: Colors.white,
+          ),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey[200]!, width: 2),
+                ),
+                child: QrImageView(
+                  data: qrCodeData,
+                  version: QrVersions.auto,
+                  size: 200.0,
+                  backgroundColor: Colors.white,
+                  errorCorrectionLevel: QrErrorCorrectLevel.H,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Scan QR code ini di pos mitra untuk menyelesaikan tebangan',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey[600],
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  qrCodeData,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey[700],
+                    fontFamily: 'monospace',
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
             ],
           ),
         ),
@@ -776,6 +858,42 @@ class _MitraTebenganDetailPageState extends State<MitraTebenganDetailPage> {
                 ? (meta['sender_phone']?.toString() ?? customerPhone)
                 : customerPhone;
 
+            // Try to determine receiver info (address may be in several fields)
+            String receiverName = '-';
+            String receiverPhone = '';
+            String receiverAddress = booking?['address']?.toString() ??
+                booking?['alamat_tujuan']?.toString() ??
+                booking?['destination_address']?.toString() ??
+                (booking?['destination_location'] is Map
+                    ? booking?['destination_location']?['name']?.toString()
+                    : '') ??
+                '-';
+
+            if (booking?['penerima'] != null) {
+              final p = booking?['penerima'];
+              if (p is String && p.isNotEmpty) {
+                if (p.startsWith('{')) {
+                  try {
+                    final decoded = jsonDecode(p);
+                    if (decoded is Map) {
+                      receiverName = decoded['name']?.toString() ?? '-';
+                      receiverPhone = decoded['phone']?.toString() ?? '';
+                      receiverAddress =
+                          decoded['address']?.toString() ?? receiverAddress;
+                    }
+                  } catch (e) {}
+                } else {
+                  final parts = p.split('|');
+                  receiverName = parts.isNotEmpty ? parts[0].trim() : '-';
+                  if (parts.length > 1) receiverPhone = parts[1].trim();
+                }
+              } else if (p is Map) {
+                receiverName = p['name']?.toString() ?? '-';
+                receiverPhone = p['phone']?.toString() ?? '';
+                receiverAddress = p['address']?.toString() ?? receiverAddress;
+              }
+            }
+
             // Convert relative photo URL to absolute URL
             String photo = booking?['photo']?.toString() ?? '';
             if (photo.isNotEmpty && !photo.startsWith('http')) {
@@ -923,6 +1041,10 @@ class _MitraTebenganDetailPageState extends State<MitraTebenganDetailPage> {
                             color: Colors.grey[700],
                           ),
                         ),
+                        const SizedBox(height: 12),
+                        // Receiver info card
+                        _buildReceiverInfoCard('Informasi Penerima Barang',
+                            receiverName, receiverPhone, receiverAddress),
                       ],
                     ),
                   ),
@@ -1022,6 +1144,15 @@ class _MitraTebenganDetailPageState extends State<MitraTebenganDetailPage> {
               receiverPhone = meta['receiver_phone']?.toString() ?? '';
             }
 
+            // Determine receiver address (may be stored under different keys)
+            String receiverAddress = booking?['address']?.toString() ??
+                booking?['alamat_tujuan']?.toString() ??
+                booking?['destination_address']?.toString() ??
+                (booking?['destination_location'] is Map
+                    ? booking?['destination_location']?['name']?.toString()
+                    : '') ??
+                '-';
+
             // Convert relative photo URL to absolute URL
             String photo = booking?['photo']?.toString() ?? '';
             if (photo.isNotEmpty && !photo.startsWith('http')) {
@@ -1103,51 +1234,11 @@ class _MitraTebenganDetailPageState extends State<MitraTebenganDetailPage> {
                       ],
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(color: Colors.grey[200]!),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF10B981),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.person_outline,
-                              color: Colors.white, size: 24),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                receiverName,
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'Penerima${receiverPhone.isNotEmpty ? ' • $receiverPhone' : ''}',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                  // Receiver info card
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                    child: _buildReceiverInfoCard('Informasi Penerima Barang',
+                        receiverName, receiverPhone, receiverAddress),
                   ),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
@@ -1215,6 +1306,10 @@ class _MitraTebenganDetailPageState extends State<MitraTebenganDetailPage> {
                             color: Colors.grey[700],
                           ),
                         ),
+                        const SizedBox(height: 12),
+                        // Receiver info card
+                        _buildReceiverInfoCard('Informasi Penerima Barang',
+                            receiverName, receiverPhone, receiverAddress),
                       ],
                     ),
                   ),
@@ -1382,6 +1477,82 @@ class _MitraTebenganDetailPageState extends State<MitraTebenganDetailPage> {
             Icons.chevron_right,
             color: Colors.grey[400],
             size: 24,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReceiverInfoCard(
+      String title, String name, String phone, String address) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+        color: Colors.white,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                flex: 4,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text('Nama :',
+                        style: TextStyle(fontSize: 14, color: Colors.grey)),
+                    SizedBox(height: 8),
+                    Text('No. Tlp :',
+                        style: TextStyle(fontSize: 14, color: Colors.grey)),
+                    SizedBox(height: 8),
+                    Text('Alamat Tujuan :',
+                        style: TextStyle(fontSize: 14, color: Colors.grey)),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 6,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(name.isNotEmpty ? name : '-',
+                        textAlign: TextAlign.right,
+                        style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87)),
+                    const SizedBox(height: 8),
+                    Text(phone.isNotEmpty ? phone : '-',
+                        textAlign: TextAlign.right,
+                        style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87)),
+                    const SizedBox(height: 8),
+                    Text(address.isNotEmpty ? address : '-',
+                        textAlign: TextAlign.right,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[800],
+                        )),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),

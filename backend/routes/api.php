@@ -137,6 +137,14 @@ Route::prefix('api/v1')->group(function () {
     Route::get('/vehicles/{id}', [VehicleController::class, 'show']);
     Route::put('/vehicles/{id}', [VehicleController::class, 'update']);
     Route::delete('/vehicles/{id}', [VehicleController::class, 'destroy']);
+    
+    // Vehicle approval (admin only)
+    Route::post('/vehicles/{id}/approve', [VehicleController::class, 'approve']);
+    Route::post('/vehicles/{id}/reject', [VehicleController::class, 'reject']);
+    
+    // Vehicle deletion approval (admin only)
+    Route::post('/vehicles/{id}/approve-deletion', [VehicleController::class, 'approveDeletion']);
+    Route::post('/vehicles/{id}/reject-deletion', [VehicleController::class, 'rejectDeletion']);
 
     // Payment routes
     Route::post('/payments', [PaymentController::class, 'createPayment']);
@@ -207,6 +215,8 @@ Route::prefix('api/v1')->group(function () {
     
     // Get verification status
     Route::get('/mitra/verification/status', [\App\Http\Controllers\MitraVerifikasiController::class, 'getVerificationStatus']);
+    // Sync individual verifications into mitra_verifikasi (development helper)
+    Route::post('/mitra/verification/sync', [\App\Http\Controllers\MitraVerifikasiController::class, 'syncLinks']);
     
     Route::get('/mitra/verification/bank', [\App\Http\Controllers\VerifikasiBankController::class, 'show']);
     Route::post('/mitra/verification/bank', [\App\Http\Controllers\VerifikasiBankController::class, 'store']);
