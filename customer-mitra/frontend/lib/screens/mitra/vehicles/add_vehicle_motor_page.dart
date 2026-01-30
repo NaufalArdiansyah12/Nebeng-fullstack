@@ -283,7 +283,12 @@ class _AddVehicleMotorPageState extends State<AddVehicleMotorPage> {
         Navigator.pop(context); // Go back
         Navigator.pop(context); // Go back to main
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Kendaraan berhasil ditambahkan!')),
+          const SnackBar(
+            content: Text(
+                'Kendaraan berhasil ditambahkan! Menunggu persetujuan admin.'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 4),
+          ),
         );
       }
     } catch (e) {

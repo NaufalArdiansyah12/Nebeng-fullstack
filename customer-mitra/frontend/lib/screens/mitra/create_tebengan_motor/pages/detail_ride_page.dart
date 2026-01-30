@@ -95,7 +95,7 @@ class DetailRidePage extends StatelessWidget {
       final timeString =
           '${departureTime.hour.toString().padLeft(2, '0')}:${departureTime.minute.toString().padLeft(2, '0')}:00';
 
-      await ApiService.createRide(
+      final response = await ApiService.createRide(
         token: token!,
         originLocationId: originLocationId,
         destinationLocationId: destinationLocationId,
@@ -115,12 +115,15 @@ class DetailRidePage extends StatelessWidget {
         availableSeats: availableSeats,
       );
 
+      // Extract QR code from response
+      final qrCodeData = response['data']?['qr_code_data'] as String?;
+
       if (context.mounted) {
         Navigator.pop(context); // Close loading
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => const RideSuccessPage(),
+            builder: (context) => RideSuccessPage(qrCodeData: qrCodeData),
           ),
         );
       }

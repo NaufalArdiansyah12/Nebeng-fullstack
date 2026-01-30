@@ -24,6 +24,7 @@ class Ride extends Model
         'available_seats',
         'kendaraan_mitra_id',
         'status',
+        'qr_code_data',
     ];
 
     protected $casts = [

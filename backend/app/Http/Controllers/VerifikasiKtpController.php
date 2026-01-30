@@ -144,20 +144,22 @@ class VerifikasiKtpController extends Controller
             ], 404);
         }
 
+        $updateData = [
+            'nik' => $request->ktp_number,
+            'nama_lengkap' => $request->ktp_name,
+            'tanggal_lahir' => $request->ktp_birth_date,
+            'status' => 'pending',
+        ];
+
         if ($request->hasFile('ktp_photo')) {
             if ($verification->photo_ktp) {
                 Storage::disk('public')->delete($verification->photo_ktp);
             }
             $photoPath = $request->file('ktp_photo')->store('verifikasi/ktp', 'public');
-            $verification->photo_ktp = $photoPath;
+            $updateData['photo_ktp'] = $photoPath;
         }
 
-        $verification->update([
-            'nik' => $request->ktp_number,
-            'nama_lengkap' => $request->ktp_name,
-            'tanggal_lahir' => $request->ktp_birth_date,
-            'status' => 'pending',
-        ]);
+        $verification->update($updateData);
 
         return response()->json([
             'success' => true,

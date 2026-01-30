@@ -215,12 +215,12 @@ class _UbahJadwalDetailPageState extends State<UbahJadwalDetailPage> {
       // Use absolute value of price diff + admin fee
       // Or minimum reschedule fee if price goes down
       final rescheduleAmount = priceDiff.abs(); // Always positive
-      final adminFee = 15000; // Always charge admin fee for reschedule
+      final adminFee = 15000.0; // Always charge admin fee for reschedule
 
       final payData = await ApiService.createPayment(
         rideId: targetId,
         userId: userId,
-        bookingNumber: widget.booking['booking_number']?.toString(),
+        bookingNumber: widget.booking['booking_number']?.toString() ?? '',
         bookingId: widget.booking['id'],
         paymentMethod: 'bri',
         amount: rescheduleAmount,

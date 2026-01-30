@@ -11,6 +11,7 @@ use App\Models\CarRide;
 use App\Models\BarangRide;
 use App\Models\TebenganTitipBarang;
 use App\Models\Payment;
+use Illuminate\Support\Facades\Log;
 
 class MitraHistoryController extends Controller
 {
@@ -19,13 +20,13 @@ class MitraHistoryController extends Controller
         // Authenticate via bearer token (same method used elsewhere)
         $bearer = $request->bearerToken();
         
-        \Log::info('MitraHistory: Bearer token received', [
+        Log::info('MitraHistory: Bearer token received', [
             'has_bearer' => !empty($bearer),
             'bearer_length' => $bearer ? strlen($bearer) : 0
         ]);
         
         if (!$bearer) {
-            \Log::warning('MitraHistory: No bearer token provided');
+            Log::warning('MitraHistory: No bearer token provided');
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
@@ -33,12 +34,12 @@ class MitraHistoryController extends Controller
         $apiToken = ApiToken::where('token', $hashed)->first();
         
         if (!$apiToken) {
-            \Log::warning('MitraHistory: Invalid token', ['hashed' => substr($hashed, 0, 10) . '...']);
+            Log::warning('MitraHistory: Invalid token', ['hashed' => substr($hashed, 0, 10) . '...']);
             return response()->json(['success' => false, 'message' => 'Invalid token'], 401);
         }
         
         if ($apiToken->expires_at < now()) {
-            \Log::warning('MitraHistory: Token expired', [
+            Log::warning('MitraHistory: Token expired', [
                 'user_id' => $apiToken->user_id,
                 'expires_at' => $apiToken->expires_at
             ]);
@@ -47,7 +48,7 @@ class MitraHistoryController extends Controller
 
         $userId = $apiToken->user_id;
         
-        \Log::info('MitraHistory: Authenticated user', ['user_id' => $userId]);
+        Log::info('MitraHistory: Authenticated user', ['user_id' => $userId]);
 
         // Optional status filter mapping from UI friendly values
         $statusFilter = $request->query('status');
@@ -66,7 +67,8 @@ class MitraHistoryController extends Controller
         $items = [];
 
         // Motor rides (tebengan_motor)
-        $rQuery = Ride::with(['originLocation', 'destinationLocation', 'kendaraanMitra'])
+        // Include the `user` relation so frontend can read mitra (owner) information
+        $rQuery = Ride::with(['user', 'originLocation', 'destinationLocation', 'kendaraanMitra'])
             ->where('user_id', $userId);
         if ($mappedStatus) $rQuery->where('status', $mappedStatus);
         $r = $rQuery->get();
@@ -90,11 +92,37 @@ class MitraHistoryController extends Controller
                     });
             }
             
+            $rideArr = $row->toArray();
+            // Ensure kendaraan_mitra key exists in snake_case for frontend compatibility
+            $rideArr['kendaraan_mitra'] = $row->kendaraanMitra ? $row->kendaraanMitra->toArray() : null;
+            // Expose seat info both on kendaraan_mitra and on ride as seat_count for frontend
+            if ($row->kendaraanMitra && isset($row->kendaraanMitra->seats)) {
+                $rideArr['kendaraan_mitra']['seats'] = intval($row->kendaraanMitra->seats);
+            }
+            // Also include available_seats / seat_count on ride level
+            $rideArr['seat_count'] = $row->available_seats ?? $row->availableSeats ?? null;
+
+            // Get first booking with customer data
+            $firstBooking = \App\Models\Booking::with('user')
+                ->where('ride_id', $row->id)
+                ->first();
+            
+            $bookingNumber = $firstBooking ? $firstBooking->booking_number : null;
+            $customerName = null;
+            $customerUser = null;
+            if ($firstBooking && $firstBooking->user) {
+                $customerName = $firstBooking->user->name;
+                $customerUser = $firstBooking->user->toArray();
+            }
+
             $items[] = [
                 'id' => $row->id,
                 'type' => 'motor',
-                'ride' => $row->toArray(),
+                'ride' => $rideArr,
                 'income' => (float) $income,
+                'booking_number' => $bookingNumber,
+                'customer_name' => $customerName,
+                'customer' => $customerUser,
             ];
         }
 
@@ -123,16 +151,40 @@ class MitraHistoryController extends Controller
                     });
             }
             
+            $rideArr = $row->toArray();
+            $rideArr['kendaraan_mitra'] = $row->kendaraanMitra ? $row->kendaraanMitra->toArray() : null;
+            if ($row->kendaraanMitra && isset($row->kendaraanMitra->seats)) {
+                $rideArr['kendaraan_mitra']['seats'] = intval($row->kendaraanMitra->seats);
+            }
+            $rideArr['seat_count'] = $row->available_seats ?? $row->availableSeats ?? null;
+
+            // Get first booking with customer data
+            $firstBooking = \App\Models\BookingMobil::with('user')
+                ->where('ride_id', $row->id)
+                ->first();
+            
+            $bookingNumber = $firstBooking ? $firstBooking->booking_number : null;
+            $customerName = null;
+            $customerUser = null;
+            if ($firstBooking && $firstBooking->user) {
+                $customerName = $firstBooking->user->name;
+                $customerUser = $firstBooking->user->toArray();
+            }
+
             $items[] = [
                 'id' => $row->id,
                 'type' => 'mobil',
-                'ride' => $row->toArray(),
+                'ride' => $rideArr,
                 'income' => (float) $income,
+                'booking_number' => $bookingNumber,
+                'customer_name' => $customerName,
+                'customer' => $customerUser,
             ];
         }
 
         // Barang rides
-        $bQuery = BarangRide::with(['originLocation', 'destinationLocation', 'kendaraanMitra'])
+        // Barang rides - include `user` as well to expose mitra information
+        $bQuery = BarangRide::with(['user', 'originLocation', 'destinationLocation', 'kendaraanMitra'])
             ->where('user_id', $userId);
         if ($mappedStatus) $bQuery->where('status', $mappedStatus);
         $b = $bQuery->get();
@@ -156,16 +208,40 @@ class MitraHistoryController extends Controller
                     });
             }
             
+            $rideArr = $row->toArray();
+            $rideArr['kendaraan_mitra'] = $row->kendaraanMitra ? $row->kendaraanMitra->toArray() : null;
+            if ($row->kendaraanMitra && isset($row->kendaraanMitra->seats)) {
+                $rideArr['kendaraan_mitra']['seats'] = intval($row->kendaraanMitra->seats);
+            }
+            $rideArr['seat_count'] = $row->available_seats ?? $row->availableSeats ?? null;
+
+            // Get first booking with customer data
+            $firstBooking = \App\Models\BookingBarang::with('user')
+                ->where('ride_id', $row->id)
+                ->first();
+            
+            $bookingNumber = $firstBooking ? $firstBooking->booking_number : null;
+            $customerName = null;
+            $customerUser = null;
+            if ($firstBooking && $firstBooking->user) {
+                $customerName = $firstBooking->user->name;
+                $customerUser = $firstBooking->user->toArray();
+            }
+
             $items[] = [
                 'id' => $row->id,
                 'type' => 'barang',
-                'ride' => $row->toArray(),
+                'ride' => $rideArr,
                 'income' => (float) $income,
+                'booking_number' => $bookingNumber,
+                'customer_name' => $customerName,
+                'customer' => $customerUser,
             ];
         }
 
         // Titip Barang (if any)
-        $tQuery = TebenganTitipBarang::with(['originLocation', 'destinationLocation', 'kendaraanMitra'])
+        // Titip Barang - include `user` relation
+        $tQuery = TebenganTitipBarang::with(['user', 'originLocation', 'destinationLocation', 'kendaraanMitra'])
             ->where('user_id', $userId);
         if ($mappedStatus) $tQuery->where('status', $mappedStatus);
         $t = $tQuery->get();
@@ -189,11 +265,34 @@ class MitraHistoryController extends Controller
                     });
             }
             
+            $rideArr = $row->toArray();
+            $rideArr['kendaraan_mitra'] = $row->kendaraanMitra ? $row->kendaraanMitra->toArray() : null;
+            if ($row->kendaraanMitra && isset($row->kendaraanMitra->seats)) {
+                $rideArr['kendaraan_mitra']['seats'] = intval($row->kendaraanMitra->seats);
+            }
+            $rideArr['seat_count'] = $row->available_seats ?? $row->availableSeats ?? null;
+
+            // Get first booking with customer data
+            $firstBooking = \App\Models\BookingTitipBarang::with('user')
+                ->where('ride_id', $row->id)
+                ->first();
+            
+            $bookingNumber = $firstBooking ? $firstBooking->booking_number : null;
+            $customerName = null;
+            $customerUser = null;
+            if ($firstBooking && $firstBooking->user) {
+                $customerName = $firstBooking->user->name;
+                $customerUser = $firstBooking->user->toArray();
+            }
+
             $items[] = [
                 'id' => $row->id,
                 'type' => 'titip',
-                'ride' => $row->toArray(),
+                'ride' => $rideArr,
                 'income' => (float) $income,
+                'booking_number' => $bookingNumber,
+                'customer_name' => $customerName,
+                'customer' => $customerUser,
             ];
         }
 

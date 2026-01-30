@@ -24,6 +24,7 @@ class BarangRide extends Model
         'kendaraan_mitra_id',
         'extra',
         'status',
+        'qr_code_data',
     ];
 
     protected $casts = [

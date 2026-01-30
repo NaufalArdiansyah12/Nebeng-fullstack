@@ -20,6 +20,7 @@ class TebenganTitipBarang extends Model
         'jumlah_bagasi',
         'price',
         'status',
+        'qr_code_data',
     ];
 
     protected $casts = [

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../../main_page.dart';
 
 class TitipBarangSuccessPage extends StatelessWidget {
-  const TitipBarangSuccessPage({Key? key}) : super(key: key);
+  final String? qrCodeData;
+
+  const TitipBarangSuccessPage({Key? key, this.qrCodeData}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -96,7 +99,62 @@ class TitipBarangSuccessPage extends StatelessWidget {
                   height: 1.5,
                 ),
               ),
+              const SizedBox(height: 40),
 
+              // QR Code Section
+              if (qrCodeData != null && qrCodeData!.isNotEmpty) ...[
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.grey[300]!, width: 1),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        'QR Code Tebangan',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[800],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: QrImageView(
+                          data: qrCodeData!,
+                          version: QrVersions.auto,
+                          size: 200.0,
+                          backgroundColor: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Scan QR ini di pos mitra untuk menyelesaikan tebangan',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 30),
+              ],
               const Spacer(),
 
               // Button
