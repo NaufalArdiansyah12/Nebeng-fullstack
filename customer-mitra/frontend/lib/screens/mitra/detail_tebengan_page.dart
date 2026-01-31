@@ -1,6 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/api_service.dart';
 import 'mitra_tracking_map_page.dart';
 
@@ -16,10 +19,159 @@ class MitraTebenganDetailPage extends StatefulWidget {
 }
 
 class _MitraTebenganDetailPageState extends State<MitraTebenganDetailPage> {
+  bool _isCheckingRating = true;
+  bool _hasRating = false;
+  int _selectedRating = 0;
+  final Set<String> _selectedFeedback = {};
+  File? _proofImage;
+  bool _isSubmittingRating = false;
+
+  final List<String> _feedbackOptions = [
+    'Tidak jemput sesuai',
+    'Ramah banget!',
+    'Tepat Waktu',
+  ];
+
   @override
   void initState() {
     super.initState();
     print('🔍 widget.item structure: ${jsonEncode(widget.item)}');
+    _checkExistingRating();
+  }
+
+  Future<void> _checkExistingRating() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('api_token');
+
+      print('DEBUG: Checking rating - token exists: ${token != null}');
+
+      if (token == null) {
+        setState(() => _isCheckingRating = false);
+        return;
+      }
+
+      // Get booking_number from item
+      final bookingNumber = widget.item['booking_number'] as String?;
+      print('DEBUG: Booking number: $bookingNumber');
+
+      if (bookingNumber == null || bookingNumber.isEmpty) {
+        print('DEBUG: No booking number found');
+        setState(() => _isCheckingRating = false);
+        return;
+      }
+
+      print(
+          'DEBUG: Calling API to check rating for booking number: $bookingNumber');
+      final response = await ApiService.getCustomerRatingByBookingNumber(
+        bookingNumber: bookingNumber,
+        token: token,
+      );
+
+      print('DEBUG: Rating check response: $response');
+
+      if (mounted) {
+        setState(() {
+          _hasRating = response != null && response['success'] == true;
+          _isCheckingRating = false;
+        });
+        print('DEBUG: Has rating: $_hasRating');
+      }
+    } catch (e) {
+      print('ERROR checking rating: $e');
+      if (mounted) {
+        setState(() => _isCheckingRating = false);
+      }
+    }
+  }
+
+  Future<void> _submitRating() async {
+    if (_selectedRating == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Silakan pilih rating terlebih dahulu')),
+      );
+      return;
+    }
+
+    setState(() => _isSubmittingRating = true);
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('api_token');
+      final mitraId = prefs.getInt('user_id');
+
+      if (token == null || mitraId == null) {
+        throw Exception('Token atau user ID tidak ditemukan');
+      }
+
+      // Get booking info
+      final bookingNumber = widget.item['booking_number'] as String?;
+      if (bookingNumber == null) {
+        throw Exception('Booking number tidak ditemukan');
+      }
+
+      final parts = bookingNumber.split('-');
+      final bookingId = int.tryParse(parts.last);
+      if (bookingId == null) {
+        throw Exception('Invalid booking ID');
+      }
+
+      // Get customer info from ride
+      final ride = widget.item['ride'] ?? {};
+      final customerId = widget.item['customer']?['id'] as int? ?? 0;
+
+      if (customerId == 0) {
+        throw Exception('Customer ID tidak ditemukan');
+      }
+
+      final response = await ApiService.submitCustomerRating(
+        bookingId: bookingId,
+        customerId: customerId,
+        mitraId: mitraId,
+        rating: _selectedRating,
+        feedback: _selectedFeedback.join(', '),
+        proofImage: _proofImage,
+        token: token,
+      );
+
+      if (response['success'] == true) {
+        if (mounted) {
+          setState(() {
+            _hasRating = true;
+            _isSubmittingRating = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Rating berhasil dikirim'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        throw Exception(response['message'] ?? 'Gagal mengirim rating');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSubmittingRating = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal mengirim rating: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+    if (image != null) {
+      setState(() {
+        _proofImage = File(image.path);
+      });
+    }
   }
 
   String _formatPrice(dynamic price) {
@@ -216,10 +368,23 @@ class _MitraTebenganDetailPageState extends State<MitraTebenganDetailPage> {
               Builder(builder: (context) {
                 final ride = widget.item['ride'] ?? {};
                 final status = (ride['status'] ?? '').toString().toLowerCase();
-                final showTrackingButton = status.contains('active') ||
-                    status.contains('progress') ||
-                    status == 'paid' ||
-                    status == 'confirmed';
+
+                // Don't show tracking button if tebengan is completed or cancelled
+                final isFinished = status == 'completed' ||
+                    status == 'selesai' ||
+                    status == 'cancelled' ||
+                    status == 'dibatalkan';
+
+                // Show tracking button for all active statuses
+                final showTrackingButton = !isFinished &&
+                    (status.contains('active') ||
+                        status.contains('progress') ||
+                        status == 'paid' ||
+                        status == 'confirmed' ||
+                        status == 'menuju_penjemputan' ||
+                        status == 'sudah_di_penjemputan' ||
+                        status == 'menuju_tujuan' ||
+                        status == 'sudah_sampai_tujuan');
 
                 if (showTrackingButton) {
                   return Container(
@@ -272,6 +437,8 @@ class _MitraTebenganDetailPageState extends State<MitraTebenganDetailPage> {
               else if (rideType == 'titip')
                 _buildPenumpangTitipBarang(ride),
               const SizedBox(height: 20),
+              // Customer Rating Section (only show if completed and not rated yet)
+              _buildCustomerRatingSection(ride),
               // QR Code Section (moved below passenger info)
               _buildQRCodeSection(ride),
             ],
@@ -482,6 +649,255 @@ class _MitraTebenganDetailPageState extends State<MitraTebenganDetailPage> {
           ),
         ),
       ],
+    );
+  }
+
+  // Customer Rating Section
+  Widget _buildCustomerRatingSection(Map<String, dynamic> ride) {
+    final status = (ride['status'] ?? '').toString().toLowerCase();
+
+    // Only show for completed rides
+    if (status != 'completed' && status != 'selesai') {
+      return const SizedBox.shrink();
+    }
+
+    // Show loading while checking
+    if (_isCheckingRating) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 20),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey[300]!),
+          color: Colors.white,
+        ),
+        child: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    // Don't show if already rated
+    if (_hasRating) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 20),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: const Color(0xFFD1FAE5),
+          border: Border.all(color: const Color(0xFF059669)),
+        ),
+        child: Row(
+          children: const [
+            Icon(Icons.check_circle, color: Color(0xFF059669)),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Customer sudah diberi rating',
+                style: TextStyle(
+                  color: Color(0xFF059669),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final customerName = widget.item['customer_name'] as String? ?? 'Customer';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+        color: Colors.white,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.star, color: Color(0xFFFBBF24), size: 24),
+              const SizedBox(width: 8),
+              const Text(
+                'Beri Rating Customer',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Gimana $customerName ?',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Star Rating
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(5, (index) {
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedRating = index + 1;
+                  });
+                },
+                child: Icon(
+                  index < _selectedRating ? Icons.star : Icons.star_border,
+                  size: 48,
+                  color: const Color(0xFFFBBF24),
+                ),
+              );
+            }),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Feedback chips
+          const Text(
+            'Apa yang kamu suka dari pelanggannya?',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _feedbackOptions.map((option) {
+              final isSelected = _selectedFeedback.contains(option);
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    if (isSelected) {
+                      _selectedFeedback.remove(option);
+                    } else {
+                      _selectedFeedback.add(option);
+                    }
+                  });
+                },
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isSelected ? const Color(0xFF1E40AF) : Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isSelected
+                          ? const Color(0xFF1E40AF)
+                          : Colors.grey[300]!,
+                    ),
+                  ),
+                  child: Text(
+                    option,
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : Colors.black87,
+                      fontSize: 13,
+                      fontWeight:
+                          isSelected ? FontWeight.w500 : FontWeight.normal,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Photo upload
+          const Text(
+            'Kirim bukti foto barang yang sudah di kirim',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 12),
+          GestureDetector(
+            onTap: _pickImage,
+            child: Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: _proofImage != null
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.file(
+                        _proofImage!,
+                        fit: BoxFit.cover,
+                      ),
+                    )
+                  : Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.add_photo_alternate,
+                            size: 40, color: Colors.grey[400]),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Tambah Foto',
+                          style:
+                              TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        ),
+                      ],
+                    ),
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Submit button - only show if not rated yet
+          if (!_hasRating)
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: _isSubmittingRating ? null : _submitRating,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1E40AF),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+                child: _isSubmittingRating
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Text(
+                        'KIRIM RATING',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 

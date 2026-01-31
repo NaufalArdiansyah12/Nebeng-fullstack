@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../../services/api_service.dart';
 
 class ChangePasswordPage extends StatefulWidget {
@@ -42,7 +43,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       final token = prefs.getString('api_token');
 
       if (token == null) {
-        throw Exception('Token tidak ditemukan');
+        throw Exception('required_field'.tr());
       }
 
       final result = await ApiService.changePassword(
@@ -55,7 +56,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       if (result['success'] == true) {
         _showSuccessDialog();
       } else {
-        _showErrorDialog(result['message'] ?? 'Gagal mengubah kata sandi');
+        _showErrorDialog(result['message'] ?? 'error_occurred'.tr());
       }
     } catch (e) {
       _showErrorDialog(e.toString());
@@ -94,9 +95,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                const Text(
-                  'Sandi Sudah Di ubah',
-                  style: TextStyle(
+                Text(
+                  'change_password_success'.tr(),
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                     color: Colors.black87,
@@ -120,9 +121,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                       ),
                       elevation: 0,
                     ),
-                    child: const Text(
-                      'Selesai',
-                      style: TextStyle(
+                    child: Text(
+                      'finish'.tr(),
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -169,9 +170,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Ubah Kata Sandi',
-          style: TextStyle(
+        title: Text(
+          'change_password'.tr(),
+          style: const TextStyle(
             color: Colors.black,
             fontSize: 20,
             fontWeight: FontWeight.w600,
@@ -193,9 +194,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
               ),
             ),
             const SizedBox(height: 32),
-            const Text(
-              'Kata sandi lama',
-              style: TextStyle(
+            Text(
+              'old_password'.tr(),
+              style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: Colors.black87,
@@ -251,9 +252,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
               },
             ),
             const SizedBox(height: 24),
-            const Text(
-              'Kata sandi baru',
-              style: TextStyle(
+            Text(
+              'new_password'.tr(),
+              style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: Colors.black87,
@@ -303,18 +304,18 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Kata sandi baru harus diisi';
+                  return 'required_field'.tr();
                 }
                 if (value.length < 6) {
-                  return 'Kata sandi minimal 6 karakter';
+                  return 'password_min_length'.tr();
                 }
                 return null;
               },
             ),
             const SizedBox(height: 24),
-            const Text(
-              'Ulangi kata sandi baru',
-              style: TextStyle(
+            Text(
+              'confirm_password'.tr(),
+              style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: Colors.black87,
@@ -364,10 +365,10 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Konfirmasi kata sandi harus diisi';
+                  return 'required_field'.tr();
                 }
                 if (value != _newPasswordController.text) {
-                  return 'Kata sandi tidak sama';
+                  return 'password_not_match'.tr();
                 }
                 return null;
               },
@@ -396,9 +397,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                           strokeWidth: 2,
                         ),
                       )
-                    : const Text(
-                        'Simpan',
-                        style: TextStyle(
+                    : Text(
+                        'save'.tr(),
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),

@@ -131,6 +131,13 @@ Route::prefix('api/v1')->group(function () {
     Route::get('/ratings/booking/{bookingId}', [\App\Http\Controllers\Api\RatingController::class, 'show']);
     Route::get('/ratings/driver/{driverId}', [\App\Http\Controllers\Api\RatingController::class, 'getDriverRatings']);
 
+    // Customer rating routes (mitra rates customer)
+    Route::post('/customer-ratings', [\App\Http\Controllers\Api\V1\CustomerRatingController::class, 'store']);
+    Route::get('/customer-ratings/booking/{bookingId}', [\App\Http\Controllers\Api\V1\CustomerRatingController::class, 'getByBooking']);
+    Route::get('/customer-ratings/booking-number/{bookingNumber}', [\App\Http\Controllers\Api\V1\CustomerRatingController::class, 'getByBookingNumber']);
+    Route::get('/customer-ratings/customer/{customerId}', [\App\Http\Controllers\Api\V1\CustomerRatingController::class, 'getByCustomer']);
+    Route::get('/customer-ratings/mitra/{mitraId}', [\App\Http\Controllers\Api\V1\CustomerRatingController::class, 'getByMitra']);
+
     // Vehicles (requires auth via bearer token)
     Route::get('/vehicles', [VehicleController::class, 'index']);
     Route::post('/vehicles', [VehicleController::class, 'store']);

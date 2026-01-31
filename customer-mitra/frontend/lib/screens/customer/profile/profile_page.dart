@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../../services/api_service.dart';
 import '../../auth/splash_screen.dart';
 import 'security_page.dart';
@@ -135,9 +136,9 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ),
           const SizedBox(width: 16),
-          const Text(
-            'Profile',
-            style: TextStyle(
+          Text(
+            'profile'.tr(),
+            style: const TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w600,
               color: Colors.white,
@@ -232,7 +233,7 @@ class _ProfilePageState extends State<ProfilePage> {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
             child: Text(
-              'Akun',
+              'account'.tr(),
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -243,7 +244,7 @@ class _ProfilePageState extends State<ProfilePage> {
           _buildMenuItem(
             icon: Icons.monetization_on,
             iconColor: const Color(0xFFFFA500),
-            title: 'Reward Point',
+            title: 'reward_point'.tr(),
             onTap: () async {
               await Navigator.push(
                 context,
@@ -254,7 +255,7 @@ class _ProfilePageState extends State<ProfilePage> {
           _buildMenuItem(
             icon: Icons.person_outline,
             iconColor: Colors.black87,
-            title: 'Edit Profile',
+            title: 'edit_profile'.tr(),
             onTap: () async {
               await Navigator.push(
                 context,
@@ -269,7 +270,7 @@ class _ProfilePageState extends State<ProfilePage> {
           _buildMenuItem(
             icon: Icons.verified_user,
             iconColor: const Color(0xFF1E40AF),
-            title: 'Verifikasi Akun',
+            title: 'verification'.tr(),
             onTap: () {
               Navigator.push(
                 context,
@@ -282,7 +283,7 @@ class _ProfilePageState extends State<ProfilePage> {
           _buildMenuItem(
             icon: Icons.receipt_long_outlined,
             iconColor: Colors.black87,
-            title: 'Riwayat Transaksi',
+            title: 'transaction_history'.tr(),
             onTap: () {
               Navigator.push(
                 context,
@@ -295,7 +296,7 @@ class _ProfilePageState extends State<ProfilePage> {
           _buildMenuItem(
             icon: Icons.monetization_on_outlined,
             iconColor: Colors.black87,
-            title: 'Refund',
+            title: 'refund'.tr(),
             onTap: () {
               Navigator.push(
                 context,
@@ -308,7 +309,7 @@ class _ProfilePageState extends State<ProfilePage> {
           _buildMenuItem(
             icon: Icons.language,
             iconColor: Colors.black87,
-            title: 'Bahasa',
+            title: 'language'.tr(),
             onTap: () {
               Navigator.push(
                 context,
@@ -321,7 +322,7 @@ class _ProfilePageState extends State<ProfilePage> {
           _buildMenuItem(
             icon: Icons.lock_outline,
             iconColor: Colors.black87,
-            title: 'Buat PIN',
+            title: 'create_pin'.tr(),
             onTap: () {
               _checkAndNavigateToPin();
             },
@@ -331,7 +332,7 @@ class _ProfilePageState extends State<ProfilePage> {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
             child: Text(
-              'Lainnya',
+              'others'.tr(),
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -342,7 +343,7 @@ class _ProfilePageState extends State<ProfilePage> {
           _buildMenuItem(
             icon: Icons.shield_outlined,
             iconColor: Colors.black87,
-            title: 'Keamanan',
+            title: 'security'.tr(),
             onTap: () {
               Navigator.push(
                 context,
@@ -355,7 +356,7 @@ class _ProfilePageState extends State<ProfilePage> {
           _buildMenuItem(
             icon: Icons.help_outline,
             iconColor: Colors.black87,
-            title: 'Pusat Bantuan',
+            title: 'help_center'.tr(),
             onTap: () {
               Navigator.push(
                 context,
@@ -370,7 +371,7 @@ class _ProfilePageState extends State<ProfilePage> {
           _buildMenuItem(
             icon: Icons.logout,
             iconColor: Colors.red,
-            title: 'Log out',
+            title: 'logout'.tr(),
             titleColor: Colors.red,
             onTap: () {
               _showLogoutDialog();

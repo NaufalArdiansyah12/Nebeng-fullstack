@@ -1,4 +1,4 @@
-#Fri Jan 30 15:15:00 WIB 2026
+#Sat Jan 31 13:13:09 WIB 2026
 base.2=/home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/app/intermediates/dex/debug/mergeDexDebug/classes3.dex
 path.2=classes3.dex
 base.1=/home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/app/intermediates/dex/debug/mergeDexDebug/classes2.dex

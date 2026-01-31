@@ -173,9 +173,8 @@ class _MitraRiwayatPageState extends State<MitraRiwayatPage> {
                   c,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: isSelected
-                        ? const Color(0xFF1E40AF)
-                        : Colors.grey[600],
+                    color:
+                        isSelected ? const Color(0xFF1E40AF) : Colors.grey[600],
                     fontSize: 14,
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   ),
@@ -210,7 +209,8 @@ class _MitraRiwayatPageState extends State<MitraRiwayatPage> {
                 },
                 borderRadius: BorderRadius.circular(20),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
                   decoration: BoxDecoration(
                     color: isSelected ? const Color(0xFF1E40AF) : Colors.white,
                     borderRadius: BorderRadius.circular(20),
@@ -227,7 +227,8 @@ class _MitraRiwayatPageState extends State<MitraRiwayatPage> {
                       style: TextStyle(
                         color: isSelected ? Colors.white : Colors.grey[700],
                         fontSize: 14,
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.w500,
                       ),
                     ),
                   ),
@@ -257,21 +258,37 @@ class _MitraRiwayatPageState extends State<MitraRiwayatPage> {
 
   Widget _card(Map<String, dynamic> item) {
     final ride = item['ride'] ?? {};
-    final status = (ride['status'] ?? '').toString().toLowerCase();
+    // Try multiple places to get status
+    final rideStatus = ride['status'];
+    final topLevelStatus = item['status'];
+    final status =
+        (rideStatus ?? topLevelStatus ?? '').toString().toLowerCase();
+
+    print(
+        'DEBUG Riwayat: ride status = $rideStatus, top level status = $topLevelStatus, final = $status');
 
     String statusLabel = 'Proses';
     Color statusBgColor = const Color(0xFFDDD6FE);
     Color statusTextColor = const Color(0xFF7C3AED);
 
-    if (status == 'completed' || status.contains('completed')) {
+    if (status == 'completed' ||
+        status == 'selesai' ||
+        status.contains('completed')) {
       statusLabel = 'Selesai';
       statusBgColor = const Color(0xFFD1FAE5);
       statusTextColor = const Color(0xFF059669);
-    } else if (status == 'active' || status.contains('active')) {
+    } else if (status == 'active' ||
+        status.contains('active') ||
+        status == 'menuju_penjemputan' ||
+        status == 'sudah_di_penjemputan' ||
+        status == 'menuju_tujuan' ||
+        status == 'sudah_sampai_tujuan') {
       statusLabel = 'Proses';
       statusBgColor = const Color(0xFFDDD6FE);
       statusTextColor = const Color(0xFF7C3AED);
-    } else if (status == 'cancelled' || status.contains('cancel')) {
+    } else if (status == 'cancelled' ||
+        status == 'dibatalkan' ||
+        status.contains('cancel')) {
       statusLabel = 'Dibatalkan';
       statusBgColor = const Color(0xFFFEE2E2);
       statusTextColor = const Color(0xFFDC2626);
