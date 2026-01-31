@@ -110,9 +110,17 @@ class MitraHistoryController extends Controller
             $bookingNumber = $firstBooking ? $firstBooking->booking_number : null;
             $customerName = null;
             $customerUser = null;
+            $bookingStatus = null;
             if ($firstBooking && $firstBooking->user) {
                 $customerName = $firstBooking->user->name;
                 $customerUser = $firstBooking->user->toArray();
+                // Use booking status as it's more accurate than ride status
+                $bookingStatus = $firstBooking->status;
+            }
+
+            // Override ride status with booking status if available (booking status is more accurate)
+            if ($bookingStatus) {
+                $rideArr['status'] = $bookingStatus;
             }
 
             $items[] = [
@@ -166,9 +174,16 @@ class MitraHistoryController extends Controller
             $bookingNumber = $firstBooking ? $firstBooking->booking_number : null;
             $customerName = null;
             $customerUser = null;
+            $bookingStatus = null;
             if ($firstBooking && $firstBooking->user) {
                 $customerName = $firstBooking->user->name;
                 $customerUser = $firstBooking->user->toArray();
+                $bookingStatus = $firstBooking->status;
+            }
+
+            // Override ride status with booking status if available
+            if ($bookingStatus) {
+                $rideArr['status'] = $bookingStatus;
             }
 
             $items[] = [
@@ -223,9 +238,16 @@ class MitraHistoryController extends Controller
             $bookingNumber = $firstBooking ? $firstBooking->booking_number : null;
             $customerName = null;
             $customerUser = null;
+            $bookingStatus = null;
             if ($firstBooking && $firstBooking->user) {
                 $customerName = $firstBooking->user->name;
                 $customerUser = $firstBooking->user->toArray();
+                $bookingStatus = $firstBooking->status;
+            }
+
+            // Override ride status with booking status if available
+            if ($bookingStatus) {
+                $rideArr['status'] = $bookingStatus;
             }
 
             $items[] = [
@@ -280,9 +302,16 @@ class MitraHistoryController extends Controller
             $bookingNumber = $firstBooking ? $firstBooking->booking_number : null;
             $customerName = null;
             $customerUser = null;
+            $bookingStatus = null;
             if ($firstBooking && $firstBooking->user) {
                 $customerName = $firstBooking->user->name;
                 $customerUser = $firstBooking->user->toArray();
+                $bookingStatus = $firstBooking->status;
+            }
+
+            // Override ride status with booking status if available
+            if ($bookingStatus) {
+                $rideArr['status'] = $bookingStatus;
             }
 
             $items[] = [

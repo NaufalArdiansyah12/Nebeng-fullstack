@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'change_password_page.dart';
 
 class SecurityPage extends StatefulWidget {
@@ -36,9 +37,9 @@ class _SecurityPageState extends State<SecurityPage> {
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Keamanan',
-          style: TextStyle(
+        title: Text(
+          'security'.tr(),
+          style: const TextStyle(
             color: Colors.black,
             fontSize: 20,
             fontWeight: FontWeight.w600,
@@ -50,7 +51,7 @@ class _SecurityPageState extends State<SecurityPage> {
         children: [
           _buildMenuItem(
             icon: Icons.lock_outline,
-            title: 'Ubah Kata Sandi',
+            title: 'change_password'.tr(),
             onTap: () {
               Navigator.push(
                 context,
@@ -63,7 +64,7 @@ class _SecurityPageState extends State<SecurityPage> {
           const Divider(height: 1),
           _buildMenuItem(
             icon: Icons.phone_android_outlined,
-            title: 'Nomor ponsel terverifikasi',
+            title: 'verified_phone'.tr(),
             subtitle: _phone,
             onTap: () {
               // TODO: Implement phone verification

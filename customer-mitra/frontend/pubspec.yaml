@@ -49,6 +49,7 @@ dependencies:
   latlong2: ^0.9.0
   geolocator: ^9.0.2
   qr_flutter: ^4.1.0
+  easy_localization: ^3.0.7
 
 dev_dependencies:
   flutter_test:
@@ -76,6 +77,7 @@ flutter:
   assets:
     - assets/
     - assets/image.png
+    - assets/translations/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware

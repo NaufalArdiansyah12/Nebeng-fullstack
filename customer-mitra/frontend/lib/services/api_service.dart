@@ -373,6 +373,43 @@ class ApiService {
         review: review,
       );
 
+  static Future<Map<String, dynamic>> submitCustomerRating({
+    required int bookingId,
+    required int customerId,
+    required int mitraId,
+    required int rating,
+    required String token,
+    String? feedback,
+    dynamic proofImage,
+  }) =>
+      RatingService.submitCustomerRating(
+        bookingId: bookingId,
+        customerId: customerId,
+        mitraId: mitraId,
+        rating: rating,
+        token: token,
+        feedback: feedback,
+        proofImage: proofImage,
+      );
+
+  static Future<Map<String, dynamic>?> getCustomerRatingByBooking({
+    required int bookingId,
+    required String token,
+  }) =>
+      RatingService.getCustomerRatingByBooking(
+        bookingId: bookingId,
+        token: token,
+      );
+
+  static Future<Map<String, dynamic>?> getCustomerRatingByBookingNumber({
+    required String bookingNumber,
+    required String token,
+  }) =>
+      RatingService.getCustomerRatingByBookingNumber(
+        bookingNumber: bookingNumber,
+        token: token,
+      );
+
   static Future<Map<String, dynamic>?> getRating({
     required int bookingId,
     required String bookingType,

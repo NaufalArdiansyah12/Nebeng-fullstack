@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'beranda_page.dart';
 import 'profile/profile_page.dart';
 import 'messages/chats_page.dart';
@@ -23,10 +24,10 @@ class _MainPageState extends State<MainPage> {
   ];
 
   final List<Map<String, dynamic>> _navItems = [
-    {'icon': FontAwesomeIcons.house, 'label': 'Beranda'},
-    {'icon': FontAwesomeIcons.receipt, 'label': 'Riwayat'},
+    {'icon': FontAwesomeIcons.house, 'label': 'home'},
+    {'icon': FontAwesomeIcons.receipt, 'label': 'history'},
     {'icon': FontAwesomeIcons.comment, 'label': 'Pesan'},
-    {'icon': FontAwesomeIcons.user, 'label': 'Profil'},
+    {'icon': FontAwesomeIcons.user, 'label': 'profile'},
   ];
 
   @override
@@ -87,7 +88,7 @@ class _MainPageState extends State<MainPage> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      item['label'] as String,
+                      (item['label'] as String).tr(),
                       style: TextStyle(
                         fontSize: active ? 13 : 12,
                         fontWeight: active ? FontWeight.w700 : FontWeight.w600,
