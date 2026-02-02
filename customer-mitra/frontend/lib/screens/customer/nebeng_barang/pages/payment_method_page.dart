@@ -634,6 +634,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
             final mitraId = driver['id'];
             final mitraName = driver['name'] ?? 'Driver';
             final mitraPhoto = driver['photo_url'];
+            final mitraPhone = driver['phone'] ?? driver['phone_number'] ?? '';
 
             // Debug: Print booking structure
             print('🔍 Booking data for conversation: ${booking.keys}');
@@ -646,6 +647,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
               final userName = prefs.getString('user_name') ??
                   prefs.getString('name') ??
                   widget.passengerName;
+              final userPhone = prefs.getString('phone') ?? '';
               await ChatHelper.createConversationAfterBooking(
                 rideId: int.tryParse(widget.trip.id) ?? 1,
                 bookingType: widget.rideType,
@@ -653,11 +655,13 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
                   'id': userId,
                   'name': userName,
                   'photo': prefs.getString('photo_url'),
+                  'phone': userPhone,
                 },
                 mitraData: {
                   'id': mitraId,
                   'name': mitraName,
                   'photo': mitraPhoto,
+                  'phone': mitraPhone,
                 },
               );
               print(
@@ -764,6 +768,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
           final mitraId = driver['id'];
           final mitraName = driver['name'] ?? 'Driver';
           final mitraPhoto = driver['photo_url'];
+          final mitraPhone = driver['phone'] ?? driver['phone_number'] ?? '';
 
           // Debug: Print booking structure
           print('🔍 Booking data for conversation: ${booking.keys}');
@@ -776,6 +781,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
             final userName = prefs.getString('user_name') ??
                 prefs.getString('name') ??
                 widget.passengerName;
+            final userPhone = prefs.getString('phone') ?? '';
             await ChatHelper.createConversationAfterBooking(
               rideId: int.tryParse(widget.trip.id) ?? 1,
               bookingType: widget.rideType,
@@ -783,11 +789,13 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
                 'id': userId,
                 'name': userName,
                 'photo': prefs.getString('photo_url'),
+                'phone': userPhone,
               },
               mitraData: {
                 'id': mitraId,
                 'name': mitraName,
                 'photo': mitraPhoto,
+                'phone': mitraPhone,
               },
             );
             print(

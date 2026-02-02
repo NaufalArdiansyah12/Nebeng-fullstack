@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.nebeng.app-mergeDebugResources-27:/values-uz/values-uz.xml",
+            "outputFile": "com.example.nebeng.app-mergeDebugResources-28:/values-uz/values-uz.xml",
             "map": [
                 {
                     "source": "/home/naufal/.gradle/caches/transforms-3/65235f76a9e044798db35ae3ab34c640/transformed/jetified-play-services-basement-18.3.0/res/values-uz/values.xml",
@@ -47,11 +47,28 @@
                         "endOffsets": "152,254,355,455,563,667,786,887"
                     },
                     "to": {
-                        "startLines": "2,3,4,5,6,7,8,27",
+                        "startLines": "2,3,4,5,6,7,8,31",
                         "startColumns": "4,4,4,4,4,4,4,4",
-                        "startOffsets": "55,157,259,360,460,568,672,3032",
+                        "startOffsets": "55,157,259,360,460,568,672,3475",
                         "endColumns": "101,101,100,99,107,103,118,100",
-                        "endOffsets": "152,254,355,455,563,667,786,3128"
+                        "endOffsets": "152,254,355,455,563,667,786,3571"
+                    }
+                },
+                {
+                    "source": "/home/naufal/.gradle/caches/transforms-3/fdb1be1f7b877d72f6e0543dded7a73c/transformed/browser-1.5.0/res/values-uz/values-uz.xml",
+                    "from": {
+                        "startLines": "2,3,4,5",
+                        "startColumns": "4,4,4,4",
+                        "startOffsets": "55,173,282,392",
+                        "endColumns": "117,108,109,105",
+                        "endOffsets": "168,277,387,493"
+                    },
+                    "to": {
+                        "startLines": "27,28,29,30",
+                        "startColumns": "4,4,4,4",
+                        "startOffsets": "3032,3150,3259,3369",
+                        "endColumns": "117,108,109,105",
+                        "endOffsets": "3145,3254,3364,3470"
                     }
                 }
             ]

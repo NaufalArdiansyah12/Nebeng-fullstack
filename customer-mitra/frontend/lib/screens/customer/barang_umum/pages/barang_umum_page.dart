@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../nebeng_motor/widgets/form_section.dart';
 import '../../nebeng_motor/pages/location_picker_page.dart';
@@ -62,7 +63,8 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal memilih foto: $e'),
+            content: Text('failed_to_select_photo'
+                .tr(namedArgs: {'error': e.toString()})),
             backgroundColor: Colors.red,
           ),
         );
@@ -79,7 +81,9 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
       context,
       MaterialPageRoute(
         builder: (context) => LocationPickerPage(
-          title: isOrigin ? 'Pilih Lokasi Awal' : 'Pilih Lokasi Tujuan',
+          title: isOrigin
+              ? 'select_origin_location'.tr()
+              : 'select_destination_location'.tr(),
           daftarLokasi: locations,
           onLocationSelected: (location) {
             // Don't call Navigator.pop here, LocationPickerPage already handles it
@@ -112,7 +116,8 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal memuat lokasi: $e'),
+            content: Text('failed_to_load_locations'
+                .tr(namedArgs: {'error': e.toString()})),
             backgroundColor: Colors.red,
           ),
         );
@@ -153,8 +158,8 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
   void _handleLanjut() {
     if (lokasiAwalId == null || lokasiTujuanId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Mohon pilih lokasi awal dan tujuan'),
+        SnackBar(
+          content: Text('please_select_origin_destination'.tr()),
           backgroundColor: Colors.red,
         ),
       );
@@ -163,8 +168,8 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
 
     if (tanggalBerangkat == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Mohon pilih tanggal berangkat'),
+        SnackBar(
+          content: Text('please_select_departure_date'.tr()),
           backgroundColor: Colors.red,
         ),
       );
@@ -173,8 +178,8 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
 
     if (ukuranBarang == null || ukuranBarang!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Mohon pilih ukuran barang'),
+        SnackBar(
+          content: Text('please_select_package_size'.tr()),
           backgroundColor: Colors.red,
         ),
       );
@@ -183,8 +188,8 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
 
     if (keteranganBarang == null || keteranganBarang!.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Mohon isi keterangan barang'),
+        SnackBar(
+          content: Text('please_enter_package_notes'.tr()),
           backgroundColor: Colors.red,
         ),
       );
@@ -279,7 +284,7 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             _buildFieldLabel(
-                                'Data Penerima', Icons.person_rounded),
+                                'recipient_data'.tr(), Icons.person_rounded),
                             const SizedBox(height: 10),
                             _buildDataPenerimaField(),
                           ],
@@ -316,13 +321,13 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
             ),
           ),
           const SizedBox(width: 16),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Nebeng Titip Barang',
-                  style: TextStyle(
+                  'nebeng_titip_barang_title'.tr(),
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -546,7 +551,7 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Tambah Foto Barang',
+                    'add_package_photo'.tr(),
                     style: TextStyle(
                       color: Colors.grey[600],
                       fontSize: 14,
@@ -575,7 +580,7 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
           children: [
             Expanded(
               child: Text(
-                dataPenerima ?? 'Data Penerima',
+                dataPenerima ?? 'recipient_data_placeholder'.tr(),
                 style: TextStyle(
                   fontSize: 14,
                   color:
@@ -657,9 +662,10 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Text(
-                  'Pilih Kapasitas Bagasi',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                Text(
+                  'select_luggage_capacity'.tr(),
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 12),
                 // Options
@@ -697,13 +703,13 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
                             const SizedBox(width: 12),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
-                              children: const [
-                                Text('Kecil',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.w600)),
-                                SizedBox(height: 4),
-                                Text('Maksimal 5 Kg',
-                                    style: TextStyle(color: Colors.grey)),
+                              children: [
+                                Text('small'.tr(),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w600)),
+                                const SizedBox(height: 4),
+                                Text('max_5kg'.tr(),
+                                    style: const TextStyle(color: Colors.grey)),
                               ],
                             )
                           ],
@@ -742,13 +748,13 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
                             const SizedBox(width: 12),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
-                              children: const [
-                                Text('Sedang',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.w600)),
-                                SizedBox(height: 4),
-                                Text('Maksimal 10 Kg',
-                                    style: TextStyle(color: Colors.grey)),
+                              children: [
+                                Text('medium'.tr(),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w600)),
+                                const SizedBox(height: 4),
+                                Text('max_10kg'.tr(),
+                                    style: const TextStyle(color: Colors.grey)),
                               ],
                             )
                           ],
@@ -787,13 +793,13 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
                             const SizedBox(width: 12),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
-                              children: const [
-                                Text('Besar',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.w600)),
-                                SizedBox(height: 4),
-                                Text('Maksimal 20 Kg',
-                                    style: TextStyle(color: Colors.grey)),
+                              children: [
+                                Text('large'.tr(),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w600)),
+                                const SizedBox(height: 4),
+                                Text('max_20kg'.tr(),
+                                    style: const TextStyle(color: Colors.grey)),
                               ],
                             )
                           ],
@@ -835,9 +841,9 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
             ),
             elevation: 0,
           ),
-          child: const Text(
-            'Lanjutnya',
-            style: TextStyle(
+          child: Text(
+            'continue'.tr(),
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),

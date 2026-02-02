@@ -90,9 +90,11 @@ class ChatService {
     required int customerId,
     required String customerName,
     String? customerPhoto,
+    String? customerPhone,
     required int mitraId,
     required String mitraName,
     String? mitraPhoto,
+    String? mitraPhone,
   }) async {
     // Check if conversation already exists
     final existing = await _firestore
@@ -114,9 +116,11 @@ class ChatService {
       'customerId': customerId,
       'customerName': customerName,
       'customerPhoto': customerPhoto,
+      'customerPhone': customerPhone,
       'mitraId': mitraId,
       'mitraName': mitraName,
       'mitraPhoto': mitraPhoto,
+      'mitraPhone': mitraPhone,
       'lastMessage': '',
       'lastMessageAt': FieldValue.serverTimestamp(),
       'unreadCustomer': 0,
@@ -241,6 +245,24 @@ class ChatService {
     }
     if (messages.docs.isNotEmpty) {
       await batch.commit();
+    }
+  }
+
+  /// Update conversation phone numbers (untuk fallback update conversation lama)
+  Future<void> updateConversationPhone(
+    String conversationId, {
+    String? customerPhone,
+    String? mitraPhone,
+  }) async {
+    final Map<String, dynamic> updates = {};
+    if (customerPhone != null) updates['customerPhone'] = customerPhone;
+    if (mitraPhone != null) updates['mitraPhone'] = mitraPhone;
+
+    if (updates.isNotEmpty) {
+      await _firestore
+          .collection('conversations')
+          .doc(conversationId)
+          .update(updates);
     }
   }
 

@@ -82,6 +82,27 @@ Future<void> main() async {
         // ignore errors
       }
 
+      // Listen for token refreshes and update backend when it happens
+      FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
+        try {
+          print('FCM token refreshed: $newToken');
+          final prefs = await SharedPreferences.getInstance();
+          final apiToken = prefs.getString('api_token');
+          if (newToken != null && apiToken != null && apiToken.isNotEmpty) {
+            final uri = Uri.parse(
+                '${const String.fromEnvironment('API_BASE_URL', defaultValue: 'http://10.0.2.2:8000')}/api/v1/user/fcm-token');
+            await http.post(uri,
+                headers: {
+                  'Authorization': 'Bearer $apiToken',
+                  'Content-Type': 'application/json'
+                },
+                body: '{"fcm_token":"$newToken"}');
+          }
+        } catch (e) {
+          // ignore
+        }
+      });
+
       // Foreground message handler
       FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
         final n = message.notification;

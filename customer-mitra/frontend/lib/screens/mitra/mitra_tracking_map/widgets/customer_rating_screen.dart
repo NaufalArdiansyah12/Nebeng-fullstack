@@ -64,7 +64,6 @@ class _CustomerRatingScreenState extends State<CustomerRatingScreen> {
 
       if (response != null && response['success'] == true) {
         // Rating already exists, show success screen
-        print('DEBUG: Rating already exists for booking ${widget.bookingId}');
         if (mounted) {
           setState(() {
             _showSuccessScreen = true;
@@ -77,7 +76,6 @@ class _CustomerRatingScreenState extends State<CustomerRatingScreen> {
         }
       }
     } catch (e) {
-      print('DEBUG: No existing rating found: $e');
       if (mounted) {
         setState(() => _isCheckingExisting = false);
       }
@@ -114,9 +112,6 @@ class _CustomerRatingScreenState extends State<CustomerRatingScreen> {
         throw Exception('Token atau user ID tidak ditemukan');
       }
 
-      print(
-          'DEBUG: Submitting rating - bookingId: ${widget.bookingId}, customerId: ${widget.customerId}, mitraId: $mitraId, rating: $_rating');
-
       // Submit rating via API
       final response = await ApiService.submitCustomerRating(
         bookingId: widget.bookingId,
@@ -128,8 +123,6 @@ class _CustomerRatingScreenState extends State<CustomerRatingScreen> {
         token: token,
       );
 
-      print('DEBUG: Rating response: $response');
-
       if (response['success'] == true) {
         if (mounted) {
           setState(() {
@@ -140,7 +133,6 @@ class _CustomerRatingScreenState extends State<CustomerRatingScreen> {
         throw Exception(response['message'] ?? 'Gagal submit rating');
       }
     } catch (e) {
-      print('ERROR: Submit rating failed: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

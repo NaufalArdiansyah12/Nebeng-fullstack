@@ -8,6 +8,7 @@ use App\Models\BookingMobil;
 use App\Models\BookingBarang;
 use App\Models\BookingTitipBarang;
 use App\Models\ApiToken;
+use App\Services\BookingNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -57,6 +58,10 @@ class BookingTrackingController extends Controller
                             $booking->status = 'menuju_penjemputan';
                             $booking->trip_started_at = $booking->trip_started_at ?? now();
                             $booking->save();
+                            
+                            // Send notification
+                            BookingNotificationService::sendStatusNotification($booking, 'menuju_penjemputan');
+                            
                             Log::info('Auto set booking to menuju_penjemputan based on departure time', ['booking_id' => $booking->id]);
                         }
                     }
@@ -208,6 +213,9 @@ class BookingTrackingController extends Controller
         $booking->trip_started_at = now();
         $booking->save();
 
+        // Send notification
+        BookingNotificationService::sendStatusNotification($booking, 'menuju_penjemputan');
+
         Log::info('Trip started (menuju_penjemputan)', ['booking_id' => $booking->id, 'driver_id' => $userId]);
 
         return response()->json(['success' => true, 'data' => $booking]);
@@ -246,6 +254,9 @@ class BookingTrackingController extends Controller
         $booking->status = 'completed';
         $booking->trip_completed_at = now();
         $booking->save();
+
+        // Send notification
+        BookingNotificationService::sendStatusNotification($booking, 'completed');
 
         Log::info('Trip completed', ['booking_id' => $booking->id, 'driver_id' => $userId]);
 

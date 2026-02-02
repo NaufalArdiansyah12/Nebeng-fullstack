@@ -589,6 +589,8 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
           final userName = prefs.getString('user_name') ??
               prefs.getString('name') ??
               widget.passengerName;
+          final userPhone = prefs.getString('phone') ?? '';
+          final mitraPhone = driver['phone'] ?? driver['phone_number'] ?? '';
           await ChatHelper.createConversationAfterBooking(
             rideId: int.parse(widget.trip.id),
             bookingType: 'mobil',
@@ -596,11 +598,13 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
               'id': userId,
               'name': userName,
               'photo': prefs.getString('photo_url'),
+              'phone': userPhone,
             },
             mitraData: {
               'id': mitraId,
               'name': mitraName,
               'photo': mitraPhoto,
+              'phone': mitraPhone,
             },
           );
           print(

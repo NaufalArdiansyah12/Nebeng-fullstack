@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\BookingBarang;
 use App\Models\ApiToken;
+use App\Services\BookingNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -95,6 +96,9 @@ class BookingBarangTrackingController extends Controller
         $booking->status = 'menuju_tujuan';
         $booking->save();
 
+        // Send notification
+        BookingNotificationService::sendStatusNotification($booking, 'menuju_tujuan');
+
         return response()->json([
             'success' => true,
             'message' => 'Perjalanan dimulai',
@@ -125,6 +129,9 @@ class BookingBarangTrackingController extends Controller
 
         $booking->status = 'selesai';
         $booking->save();
+
+        // Send notification
+        BookingNotificationService::sendStatusNotification($booking, 'selesai');
 
         return response()->json([
             'success' => true,

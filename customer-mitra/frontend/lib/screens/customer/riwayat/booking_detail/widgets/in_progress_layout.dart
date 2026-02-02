@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import '../widgets/map_placeholder.dart';
 import '../widgets/location_card.dart';
 import '../utils/booking_formatters.dart';
@@ -57,8 +58,7 @@ class _InProgressLayoutState extends State<InProgressLayout> {
       if (userId == null) {
         Navigator.pop(context); // Close loading
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('User ID tidak ditemukan. Silakan login kembali.')),
+          SnackBar(content: Text('user_id_not_found'.tr())),
         );
         return;
       }
@@ -69,6 +69,7 @@ class _InProgressLayoutState extends State<InProgressLayout> {
       final mitraId = driver['id'];
       final mitraName = driver['name'] ?? 'Driver';
       final mitraPhoto = driver['photo_url'];
+      final mitraPhone = driver['phone'] ?? driver['phone_number'] ?? '';
       final rideId = ride['id'] ?? widget.booking['ride_id'];
       final bookingType =
           (widget.booking['booking_type'] ?? 'motor').toString().toLowerCase();
@@ -76,7 +77,7 @@ class _InProgressLayoutState extends State<InProgressLayout> {
       if (mitraId == null || rideId == null) {
         Navigator.pop(context); // Close loading
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Data driver tidak lengkap')),
+          SnackBar(content: Text('driver_data_incomplete'.tr())),
         );
         return;
       }
@@ -95,6 +96,7 @@ class _InProgressLayoutState extends State<InProgressLayout> {
         conversationId = existingConv['id'];
       } else {
         // Create new conversation
+        final userPhone = prefs.getString('phone') ?? '';
         conversationId = await ChatHelper.createConversationAfterBooking(
           rideId: rideId,
           bookingType: bookingType,
@@ -102,11 +104,13 @@ class _InProgressLayoutState extends State<InProgressLayout> {
             'id': userId,
             'name': userName,
             'photo': prefs.getString('photo_url'),
+            'phone': userPhone,
           },
           mitraData: {
             'id': mitraId,
             'name': mitraName,
             'photo': mitraPhoto,
+            'phone': mitraPhone,
           },
         );
       }
@@ -127,14 +131,14 @@ class _InProgressLayoutState extends State<InProgressLayout> {
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Gagal membuka chat')),
+          SnackBar(content: Text('failed_open_chat'.tr())),
         );
       }
     } catch (e) {
       Navigator.pop(context); // Close loading if still open
       print('Error opening chat: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+        SnackBar(content: Text('${'error_occurred'.tr()}: $e')),
       );
     }
   }
@@ -168,14 +172,14 @@ class _InProgressLayoutState extends State<InProgressLayout> {
     String statusMessage;
     String statusTitle;
     if (widget.currentStatus == 'menuju_penjemputan') {
-      statusMessage = 'DRIVER MENUJU LOKASI PENJEMPUTAN';
-      statusTitle = 'Menuju Penjemputan';
+      statusMessage = 'in_progress_status_pickup'.tr();
+      statusTitle = 'in_progress_title_pickup'.tr();
     } else if (widget.currentStatus == 'menuju_tujuan') {
-      statusMessage = 'PERJALANAN SEDANG BERLANGSUNG';
-      statusTitle = 'Menuju Tujuan';
+      statusMessage = 'in_progress_status_destination'.tr();
+      statusTitle = 'in_progress_title_destination'.tr();
     } else {
-      statusMessage = 'PERJALANAN SEDANG BERLANGSUNG';
-      statusTitle = 'Perjalanan';
+      statusMessage = 'in_progress_status_default'.tr();
+      statusTitle = 'on_progress'.tr();
     }
 
     return Scaffold(
@@ -326,8 +330,8 @@ class _InProgressLayoutState extends State<InProgressLayout> {
 
               return MapPlaceholder(
                 statusText: widget.currentStatus == 'menuju_penjemputan'
-                    ? 'Driver menuju lokasi penjemputan Anda'
-                    : 'Driver dalam perjalanan menuju tujuan',
+                    ? 'in_progress_map_status_pickup'.tr()
+                    : 'in_progress_map_status_destination'.tr(),
                 lat: mapLat,
                 lng: mapLng,
                 originLat: originLat,
@@ -379,10 +383,10 @@ class _InProgressLayoutState extends State<InProgressLayout> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            'No Pesanan :',
-                            style:
-                                TextStyle(fontSize: 14, color: Colors.black87),
+                          Text(
+                            'in_progress_order_number'.tr(),
+                            style: const TextStyle(
+                                fontSize: 14, color: Colors.black87),
                           ),
                           Text(
                             widget.booking['booking_number'] ??
@@ -447,8 +451,8 @@ class _InProgressLayoutState extends State<InProgressLayout> {
                                 const SizedBox(width: 6),
                                 Text(
                                   widget.isDriverMoving
-                                      ? 'Driver Bergerak'
-                                      : 'Driver Diam',
+                                      ? 'in_progress_driver_moving'.tr()
+                                      : 'in_progress_driver_stopped'.tr(),
                                   style: TextStyle(
                                     fontSize: 11,
                                     color: widget.isDriverMoving
@@ -459,7 +463,7 @@ class _InProgressLayoutState extends State<InProgressLayout> {
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  '• Update: ${widget.isDriverMoving ? "5 detik" : "1 menit"}',
+                                  '• ${'in_progress_update'.tr()} ${widget.isDriverMoving ? "5 detik" : "1 menit"}',
                                   style: const TextStyle(
                                       fontSize: 10, color: Colors.grey),
                                 ),
@@ -507,9 +511,9 @@ class _InProgressLayoutState extends State<InProgressLayout> {
                                     ),
                                   ),
                                   const SizedBox(height: 4),
-                                  const Text(
-                                    'Transportasi Umum',
-                                    style: TextStyle(
+                                  Text(
+                                    'in_progress_public_transport'.tr(),
+                                    style: const TextStyle(
                                       fontSize: 12,
                                       color: Colors.grey,
                                     ),
@@ -596,15 +600,9 @@ class _InProgressLayoutState extends State<InProgressLayout> {
                               child: IconButton(
                                 icon: const Icon(Icons.phone, size: 20),
                                 color: Colors.white,
-                                onPressed: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                          'Fitur panggilan akan segera tersedia'),
-                                      duration: Duration(seconds: 2),
-                                    ),
-                                  );
-                                },
+                                onPressed: widget.onChatPressed != null
+                                    ? () => widget.onChatPressed!()
+                                    : () => _openChatWithDriver(context),
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -645,9 +643,9 @@ class _InProgressLayoutState extends State<InProgressLayout> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            'Biaya',
-                            style: TextStyle(fontSize: 14),
+                          Text(
+                            'in_progress_cost'.tr(),
+                            style: const TextStyle(fontSize: 14),
                           ),
                           Text(
                             BookingFormatters.formatPrice(price),

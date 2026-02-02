@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../../../../services/api_service.dart';
 
 class RatingDialog extends StatefulWidget {
@@ -30,9 +31,9 @@ class _RatingDialogState extends State<RatingDialog> {
   Future<void> _submitRating() async {
     if (selectedRating == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Silakan pilih rating terlebih dahulu'),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text('rating_select_first'.tr()),
+          duration: const Duration(seconds: 2),
         ),
       );
       return;
@@ -47,7 +48,7 @@ class _RatingDialogState extends State<RatingDialog> {
       final token = prefs.getString('api_token');
 
       if (token == null) {
-        throw Exception('Token tidak ditemukan');
+        throw Exception('token_not_found'.tr());
       }
 
       // Get driver ID from ride
@@ -55,7 +56,7 @@ class _RatingDialogState extends State<RatingDialog> {
       final driverId = ride['user_id'] ?? ride['mitra_id'];
 
       if (driverId == null) {
-        throw Exception('Driver ID tidak ditemukan');
+        throw Exception('driver_id_not_found'.tr());
       }
 
       // Get booking type
@@ -77,9 +78,9 @@ class _RatingDialogState extends State<RatingDialog> {
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Rating berhasil dikirim!'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text('rating_submitted_success'.tr()),
+            duration: const Duration(seconds: 2),
             backgroundColor: Colors.green,
           ),
         );
@@ -89,7 +90,7 @@ class _RatingDialogState extends State<RatingDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal mengirim rating: ${e.toString()}'),
+            content: Text('${'rating_submit_failed'.tr()}: ${e.toString()}'),
             duration: const Duration(seconds: 3),
             backgroundColor: Colors.red,
           ),
@@ -138,9 +139,9 @@ class _RatingDialogState extends State<RatingDialog> {
                     size: 48,
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'Beri Rating Driver',
-                    style: TextStyle(
+                  Text(
+                    'rating_dialog_title'.tr(),
+                    style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
@@ -148,7 +149,7 @@ class _RatingDialogState extends State<RatingDialog> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Bagaimana pengalaman Anda dengan $driverName?',
+                    '${'rating_dialog_experience'.tr()} $driverName?',
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 14,
@@ -197,7 +198,7 @@ class _RatingDialogState extends State<RatingDialog> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Driver/Mitra',
+                                'rating_dialog_driver_mitra'.tr(),
                                 style: TextStyle(
                                   fontSize: 13,
                                   color: Colors.grey[600],
@@ -212,9 +213,9 @@ class _RatingDialogState extends State<RatingDialog> {
                     const SizedBox(height: 32),
 
                     // Rating Stars
-                    const Text(
-                      'Pilih Rating',
-                      style: TextStyle(
+                    Text(
+                      'rating_dialog_select'.tr(),
+                      style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                         color: Colors.black87,
@@ -265,9 +266,9 @@ class _RatingDialogState extends State<RatingDialog> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Review (Opsional)',
-                          style: TextStyle(
+                        Text(
+                          'rating_dialog_review_optional'.tr(),
+                          style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                             color: Colors.black87,
@@ -279,8 +280,7 @@ class _RatingDialogState extends State<RatingDialog> {
                           maxLines: 4,
                           maxLength: 500,
                           decoration: InputDecoration(
-                            hintText:
-                                'Ceritakan pengalaman Anda dengan driver...',
+                            hintText: 'rating_dialog_review_placeholder'.tr(),
                             hintStyle: TextStyle(
                               fontSize: 14,
                               color: Colors.grey[400],
@@ -327,9 +327,9 @@ class _RatingDialogState extends State<RatingDialog> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            child: const Text(
-                              'Batal',
-                              style: TextStyle(
+                            child: Text(
+                              'cancel'.tr(),
+                              style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -360,9 +360,9 @@ class _RatingDialogState extends State<RatingDialog> {
                                           Colors.white),
                                     ),
                                   )
-                                : const Text(
-                                    'Kirim Rating',
-                                    style: TextStyle(
+                                : Text(
+                                    'rating_dialog_submit'.tr(),
+                                    style: const TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -384,15 +384,15 @@ class _RatingDialogState extends State<RatingDialog> {
   String _getRatingText(int rating) {
     switch (rating) {
       case 1:
-        return 'Sangat Buruk';
+        return 'rating_very_bad'.tr();
       case 2:
-        return 'Buruk';
+        return 'rating_bad'.tr();
       case 3:
-        return 'Cukup';
+        return 'rating_average'.tr();
       case 4:
-        return 'Baik';
+        return 'rating_good'.tr();
       case 5:
-        return 'Sangat Baik';
+        return 'rating_very_good'.tr();
       default:
         return '';
     }

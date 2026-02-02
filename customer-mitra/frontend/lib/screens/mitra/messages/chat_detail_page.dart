@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../services/chat_service.dart';
+import '../../../services/api_service.dart';
+import '../../../utils/phone_helper.dart';
 
 class MitraChatDetailPage extends StatefulWidget {
   final String conversationId;
@@ -27,11 +29,13 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
   int? _userId;
   String? _userName;
   String _userRole = 'mitra';
+  String? _customerPhone; // Nomor telepon customer
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
+    _loadConversationData();
   }
 
   Future<void> _loadUserData() async {
@@ -49,6 +53,81 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
     // Mark as read when opening chat
     if (_userId != null) {
       _chatService.markAsRead(widget.conversationId, _userId!, _userRole);
+    }
+  }
+
+  Future<void> _loadConversationData() async {
+    try {
+      print('🔍 Loading conversation data for: ${widget.conversationId}');
+      final conv = await _chatService.getConversation(widget.conversationId);
+
+      if (conv == null) {
+        print('❌ Conversation not found');
+        return;
+      }
+
+      print('📦 Conversation data: ${conv.keys}');
+
+      if (mounted) {
+        // Mitra chat, maka ambil customerPhone
+        String? phone = conv['customerPhone'] as String?;
+        print('📞 Phone from conversation: $phone');
+
+        // Fallback: Jika phone tidak ada di conversation (conversation lama),
+        // ambil dari API berdasarkan customerId
+        if (phone == null || phone.isEmpty) {
+          final customerId = conv['customerId'] as int?;
+          print('👤 CustomerId from conversation: $customerId');
+
+          if (customerId != null) {
+            try {
+              final prefs = await SharedPreferences.getInstance();
+              final token = prefs.getString('api_token');
+              print('🔑 Token exists: ${token != null}');
+
+              if (token != null) {
+                print(
+                    '📞 Fetching customer phone from API for customerId: $customerId');
+                final userData =
+                    await ApiService.getUserById(customerId, token);
+                print('📦 User data keys: ${userData.keys}');
+
+                phone = userData['phone'] as String? ??
+                    userData['phone_number'] as String?;
+                print('✅ Phone from API: $phone');
+
+                // Update Firestore conversation with phone number for future use
+                if (phone != null && phone.isNotEmpty) {
+                  try {
+                    await _chatService.updateConversationPhone(
+                      widget.conversationId,
+                      customerPhone: phone,
+                    );
+                    print('✅ Updated conversation with phone number');
+                  } catch (e) {
+                    print('⚠️ Failed to update conversation: $e');
+                  }
+                }
+              } else {
+                print('❌ No token available');
+              }
+            } catch (e) {
+              print('⚠️ Error fetching phone from API: $e');
+              print('⚠️ Stack trace: ${StackTrace.current}');
+            }
+          } else {
+            print('❌ No customerId in conversation');
+          }
+        }
+
+        setState(() {
+          _customerPhone = phone;
+        });
+        print('📱 Final phone loaded: $_customerPhone');
+      }
+    } catch (e) {
+      print('❌ Error loading conversation data: $e');
+      print('❌ Stack trace: ${StackTrace.current}');
     }
   }
 
@@ -140,7 +219,23 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
         ),
         actions: [
           IconButton(
-            onPressed: () {},
+            onPressed: () {
+              if (_customerPhone != null && _customerPhone!.isNotEmpty) {
+                PhoneHelper.showCallDialog(
+                  context: context,
+                  phoneNumber: _customerPhone!,
+                  userName: widget.otherUserName,
+                  userPhoto: widget.otherUserPhoto,
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Nomor telepon tidak tersedia'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+              }
+            },
             icon: Icon(Icons.call, color: Colors.black87),
           ),
         ],

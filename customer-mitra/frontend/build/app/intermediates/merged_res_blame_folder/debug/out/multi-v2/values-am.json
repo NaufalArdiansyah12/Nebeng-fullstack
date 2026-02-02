@@ -1,8 +1,25 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.nebeng.app-mergeDebugResources-27:/values-am/values-am.xml",
+            "outputFile": "com.example.nebeng.app-mergeDebugResources-28:/values-am/values-am.xml",
             "map": [
+                {
+                    "source": "/home/naufal/.gradle/caches/transforms-3/fdb1be1f7b877d72f6e0543dded7a73c/transformed/browser-1.5.0/res/values-am/values-am.xml",
+                    "from": {
+                        "startLines": "2,3,4,5",
+                        "startColumns": "4,4,4,4",
+                        "startOffsets": "55,151,246,352",
+                        "endColumns": "95,94,105,96",
+                        "endOffsets": "146,241,347,444"
+                    },
+                    "to": {
+                        "startLines": "27,28,29,30",
+                        "startColumns": "4,4,4,4",
+                        "startOffsets": "2748,2844,2939,3045",
+                        "endColumns": "95,94,105,96",
+                        "endOffsets": "2839,2934,3040,3137"
+                    }
+                },
                 {
                     "source": "/home/naufal/.gradle/caches/transforms-3/abd335cf229f14b9b90c619ca3159806/transformed/core-1.13.0/res/values-am/values-am.xml",
                     "from": {
@@ -13,11 +30,11 @@
                         "endOffsets": "143,243,340,439,535,637,737,838"
                     },
                     "to": {
-                        "startLines": "2,3,4,5,6,7,8,27",
+                        "startLines": "2,3,4,5,6,7,8,31",
                         "startColumns": "4,4,4,4,4,4,4,4",
-                        "startOffsets": "55,148,248,345,444,540,642,2748",
+                        "startOffsets": "55,148,248,345,444,540,642,3142",
                         "endColumns": "92,99,96,98,95,101,99,100",
-                        "endOffsets": "143,243,340,439,535,637,737,2844"
+                        "endOffsets": "143,243,340,439,535,637,737,3238"
                     }
                 },
                 {

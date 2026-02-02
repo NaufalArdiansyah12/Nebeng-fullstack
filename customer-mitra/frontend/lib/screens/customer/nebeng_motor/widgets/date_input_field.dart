@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 
 class DateInputField extends StatelessWidget {
   final DateTime? selectedDate;
@@ -11,12 +12,33 @@ class DateInputField extends StatelessWidget {
   }) : super(key: key);
 
   String _getDayName(DateTime date) {
-    const days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
-    return days[date.weekday - 1];
+    const dayKeys = [
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+      'saturday',
+      'sunday'
+    ];
+    return dayKeys[date.weekday - 1].tr();
   }
 
   String _getMonthName(int month) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Ags',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des'
+    ];
     return months[month - 1];
   }
 
@@ -64,14 +86,14 @@ class DateInputField extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 14),
-            
+
             // Date Content
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Tanggal Keberangkatan',
+                    'departure_date_label'.tr(),
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey[600],
@@ -111,7 +133,7 @@ class DateInputField extends StatelessWidget {
                     )
                   else
                     Text(
-                      'Pilih tanggal keberangkatan',
+                      'select_departure_date_placeholder'.tr(),
                       style: TextStyle(
                         fontSize: 15,
                         color: Colors.grey[500],
@@ -121,7 +143,7 @@ class DateInputField extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             // Arrow Icon
             Icon(
               Icons.arrow_forward_ios_rounded,

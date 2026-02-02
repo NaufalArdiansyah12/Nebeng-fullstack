@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../main_page.dart';
 import '../../../services/api_service.dart';
 import 'booking_detail_riwayat_page.dart';
@@ -787,7 +788,7 @@ class _RiwayatPageState extends State<RiwayatPage> with WidgetsBindingObserver {
                     (route) => false);
               }
             }),
-        title: Text('Pesanan',
+        title: Text('order'.tr(),
             style: TextStyle(
                 color: Colors.black87,
                 fontSize: 18,
@@ -843,7 +844,7 @@ class _RiwayatPageState extends State<RiwayatPage> with WidgetsBindingObserver {
               final visible = _applyTopFilter(bookings);
               if (visible.isEmpty) {
                 return Center(
-                  child: Text('Belum ada data untuk filter ini',
+                  child: Text('no_data'.tr(),
                       style: TextStyle(color: Colors.grey[600])),
                 );
               }

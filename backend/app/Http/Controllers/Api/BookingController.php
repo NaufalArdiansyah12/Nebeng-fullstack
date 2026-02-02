@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use App\Models\Rating;
+use App\Services\BookingNotificationService;
 
 class BookingController extends Controller
 {
@@ -354,9 +355,15 @@ class BookingController extends Controller
             'user'
         ])->find($id);
         if ($booking) {
-            // If user is authenticated, verify ownership
-            if ($user && $booking->user_id !== $user->id) {
-                $booking = null;
+            // If user is authenticated, verify ownership (either customer or driver)
+            if ($user) {
+                $isCustomer = $booking->user_id === $user->id;
+                $isDriver = $booking->ride && $booking->ride->user_id === $user->id;
+                if (!$isCustomer && !$isDriver) {
+                    $booking = null;
+                } else {
+                    $bookingType = 'motor';
+                }
             } else {
                 $bookingType = 'motor';
             }
@@ -372,8 +379,14 @@ class BookingController extends Controller
                 'user'
             ])->find($id);
             if ($booking) {
-                if ($user && $booking->user_id !== $user->id) {
-                    $booking = null;
+                if ($user) {
+                    $isCustomer = $booking->user_id === $user->id;
+                    $isDriver = $booking->ride && $booking->ride->user_id === $user->id;
+                    if (!$isCustomer && !$isDriver) {
+                        $booking = null;
+                    } else {
+                        $bookingType = 'mobil';
+                    }
                 } else {
                     $bookingType = 'mobil';
                 }
@@ -390,8 +403,14 @@ class BookingController extends Controller
                 'user'
             ])->find($id);
             if ($booking) {
-                if ($user && $booking->user_id !== $user->id) {
-                    $booking = null;
+                if ($user) {
+                    $isCustomer = $booking->user_id === $user->id;
+                    $isDriver = $booking->ride && $booking->ride->user_id === $user->id;
+                    if (!$isCustomer && !$isDriver) {
+                        $booking = null;
+                    } else {
+                        $bookingType = 'barang';
+                    }
                 } else {
                     $bookingType = 'barang';
                 }
@@ -408,8 +427,14 @@ class BookingController extends Controller
                 'user'
             ])->find($id);
             if ($booking) {
-                if ($user && $booking->user_id !== $user->id) {
-                    $booking = null;
+                if ($user) {
+                    $isCustomer = $booking->user_id === $user->id;
+                    $isDriver = $booking->ride && $booking->ride->user_id === $user->id;
+                    if (!$isCustomer && !$isDriver) {
+                        $booking = null;
+                    } else {
+                        $bookingType = 'titip';
+                    }
                 } else {
                     $bookingType = 'titip';
                 }
@@ -533,29 +558,57 @@ class BookingController extends Controller
         // Try to find and update booking in all tables
         $booking = \App\Models\Booking::find($id);
         if ($booking && ($booking->user_id === $apiToken->user_id || ($booking->ride && $booking->ride->user_id === $apiToken->user_id))) {
+            $oldStatus = $booking->status;
             $booking->status = $request->status;
             $booking->save();
+            
+            // Send notification if status changed
+            if ($oldStatus !== $request->status) {
+                BookingNotificationService::sendStatusNotification($booking, $request->status);
+            }
+            
             return response()->json(['success' => true, 'data' => $booking]);
         }
 
         $booking = \App\Models\BookingMobil::find($id);
         if ($booking && ($booking->user_id === $apiToken->user_id || ($booking->ride && $booking->ride->user_id === $apiToken->user_id))) {
+            $oldStatus = $booking->status;
             $booking->status = $request->status;
             $booking->save();
+            
+            // Send notification if status changed
+            if ($oldStatus !== $request->status) {
+                BookingNotificationService::sendStatusNotification($booking, $request->status);
+            }
+            
             return response()->json(['success' => true, 'data' => $booking]);
         }
 
         $booking = \App\Models\BookingBarang::find($id);
         if ($booking && ($booking->user_id === $apiToken->user_id || ($booking->ride && $booking->ride->user_id === $apiToken->user_id))) {
+            $oldStatus = $booking->status;
             $booking->status = $request->status;
             $booking->save();
+            
+            // Send notification if status changed
+            if ($oldStatus !== $request->status) {
+                BookingNotificationService::sendStatusNotification($booking, $request->status);
+            }
+            
             return response()->json(['success' => true, 'data' => $booking]);
         }
 
         $booking = \App\Models\BookingTitipBarang::find($id);
         if ($booking && ($booking->user_id === $apiToken->user_id || ($booking->ride && $booking->ride->user_id === $apiToken->user_id))) {
+            $oldStatus = $booking->status;
             $booking->status = $request->status;
             $booking->save();
+            
+            // Send notification if status changed
+            if ($oldStatus !== $request->status) {
+                BookingNotificationService::sendStatusNotification($booking, $request->status);
+            }
+            
             return response()->json(['success' => true, 'data' => $booking]);
         }
 

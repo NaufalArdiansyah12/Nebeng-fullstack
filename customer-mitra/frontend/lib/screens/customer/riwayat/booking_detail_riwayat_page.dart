@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../ubah_jadwal/ubah_jadwal_page.dart';
 import '../../../services/api_service.dart';
 import '../../../services/chat_service.dart';
@@ -428,9 +429,8 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
   Future<void> _onReschedulePressed() async {
     if (!_canReschedule()) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-              'Ubah jadwal hanya dapat dilakukan minimal 1x24 jam sebelum keberangkatan'),
+        SnackBar(
+          content: Text('reschedule_minimum_time'.tr()),
           duration: Duration(seconds: 3),
         ),
       );
@@ -458,8 +458,8 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
       // Refresh atau kembali ke halaman sebelumnya
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Booking berhasil dibatalkan'),
+          SnackBar(
+            content: Text('booking_cancelled_success'.tr()),
             duration: Duration(seconds: 2),
           ),
         );
@@ -487,8 +487,7 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
       if (userId == null) {
         Navigator.pop(context); // Close loading
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('User ID tidak ditemukan. Silakan login kembali.')),
+          SnackBar(content: Text('user_id_not_found'.tr())),
         );
         return;
       }
@@ -500,6 +499,8 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
       final mitraId = driverData['id'];
       final mitraName = driverData['name'] ?? 'Driver';
       final mitraPhoto = driverData['photo_url'] ?? driverData['photo'];
+      final mitraPhone =
+          driverData['phone'] ?? driverData['phone_number'] ?? '';
       final rideId = ride['id'] ?? widget.booking['ride_id'];
       final bookingType =
           (widget.booking['booking_type'] ?? 'motor').toString().toLowerCase();
@@ -507,7 +508,7 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
       if (mitraId == null || rideId == null) {
         Navigator.pop(context); // Close loading
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Data driver tidak lengkap')),
+          SnackBar(content: Text('driver_data_incomplete'.tr())),
         );
         return;
       }
@@ -526,6 +527,7 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
         conversationId = existingConv['id'];
       } else {
         // Create new conversation
+        final userPhone = prefs.getString('phone') ?? '';
         conversationId = await ChatHelper.createConversationAfterBooking(
           rideId: rideId,
           bookingType: bookingType,
@@ -533,11 +535,13 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
             'id': userId,
             'name': userName,
             'photo': prefs.getString('photo_url'),
+            'phone': userPhone,
           },
           mitraData: {
             'id': mitraId,
             'name': mitraName,
             'photo': mitraPhoto,
+            'phone': mitraPhone,
           },
         );
       }
@@ -728,8 +732,8 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
           icon: const Icon(Icons.arrow_back, color: Colors.black87),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Detail Perjalanan',
+        title: Text(
+          'trip_detail'.tr(),
           style: TextStyle(
             color: Colors.black87,
             fontSize: 18,
@@ -769,6 +773,7 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
               accentColor: accentColor,
               averageRating: averageRating,
               totalRatings: totalRatings,
+              onCallPressed: _openChatWithDriver,
               onChatPressed: _openChatWithDriver,
             ),
 
@@ -789,7 +794,7 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
-                  'Informasi Penumpang',
+                  'passenger_info_title'.tr(),
                   style: TextStyle(
                     fontSize: 15,
                     color: Colors.grey[700],
@@ -828,8 +833,8 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text(
-                          'Ubah Jadwal',
+                        child: Text(
+                          'reschedule_trip'.tr(),
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -856,8 +861,8 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text(
-                          'Batalkan Booking',
+                        child: Text(
+                          'cancel_trip'.tr(),
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -993,8 +998,8 @@ class _CancellationDialogState extends State<_CancellationDialog> {
   Future<void> _cancelBooking() async {
     if (selectedReason == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Silakan pilih alasan pembatalan'),
+        SnackBar(
+          content: Text('select_cancellation_reason'.tr()),
           duration: Duration(seconds: 2),
         ),
       );
@@ -1039,7 +1044,7 @@ class _CancellationDialogState extends State<_CancellationDialog> {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    'Pembatalan pada bulan ini: $cancellationCount/3',
+                    '${'cancellation_this_month'.tr()}: $cancellationCount/3',
                     style: const TextStyle(
                       color: Color(0xFF0F4AA3),
                       fontSize: 13,
@@ -1050,8 +1055,8 @@ class _CancellationDialogState extends State<_CancellationDialog> {
                 const SizedBox(height: 20),
 
                 // Title
-                const Text(
-                  'Anda telah membatalkan tebengan ini',
+                Text(
+                  'cancelled_trip_title'.tr(),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 18,
@@ -1063,7 +1068,7 @@ class _CancellationDialogState extends State<_CancellationDialog> {
 
                 // Description
                 Text(
-                  'Harap diperhatikan bahwa jika Anda melakukan lebih dari 3 pembatalan dalam satu bulan, akun Anda akan otomatis diblokir sementara dari layanan kami. Apakah Anda yakin ingin melanjutkan pembatalan ini?',
+                  'cancellation_warning'.tr(),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14,
@@ -1089,8 +1094,8 @@ class _CancellationDialogState extends State<_CancellationDialog> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text(
-                          'Batalkan tebengan',
+                        child: Text(
+                          'cancel_trip_confirm'.tr(),
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -1112,8 +1117,8 @@ class _CancellationDialogState extends State<_CancellationDialog> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text(
-                          'Kembali',
+                        child: Text(
+                          'back_button'.tr(),
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -1147,7 +1152,7 @@ class _CancellationDialogState extends State<_CancellationDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal membatalkan booking: ${e.toString()}'),
+            content: Text('${'failed_cancel_booking'.tr()}: ${e.toString()}'),
             duration: const Duration(seconds: 3),
           ),
         );

@@ -63,21 +63,16 @@ class _MitraTrackingMapPageState extends State<MitraTrackingMapPage> {
       // Check current status first - if final, stop refreshing
       final currentStatus = _getCurrentStatus();
       if (_isFinalStatus(currentStatus)) {
-        print(
-            'DEBUG: Status is final ($currentStatus), stopping refresh timer');
         _statusRefreshTimer?.cancel();
         return;
       }
 
       final bookingId = await _resolveBookingId();
       if (bookingId == null) {
-        print(
-            'DEBUG: Could not resolve booking ID, checking ride status from item');
         // If booking ID not found, check ride status from the passed item
         final ride = widget.item['ride'] ?? {};
         if (ride['status'] != null) {
           final rideStatus = ride['status'].toString().toLowerCase();
-          print('DEBUG: Using ride status from item: $rideStatus');
 
           // Only update if status actually changed
           if (rideStatus != currentStatus) {
@@ -105,7 +100,6 @@ class _MitraTrackingMapPageState extends State<MitraTrackingMapPage> {
           token: token,
         );
         final status = (booking['status'] ?? '').toString().toLowerCase();
-        print('DEBUG: Status refreshed from server: $status');
 
         // Only update if status actually changed
         if (status != currentStatus && mounted) {
@@ -122,13 +116,10 @@ class _MitraTrackingMapPageState extends State<MitraTrackingMapPage> {
       } catch (e) {
         // If 404, booking might be completed/archived, check ride status
         if (e.toString().contains('404')) {
-          print(
-              'DEBUG: Booking not found (404), trying alternative status resolution');
           final ride = widget.item['ride'] ?? {};
           // Try to get status from ride
           if (ride['status'] != null) {
             final rideStatus = ride['status'].toString().toLowerCase();
-            print('DEBUG: Using ride status: $rideStatus');
             // Only update if status changed
             if (rideStatus != currentStatus && mounted) {
               setState(() {
@@ -141,14 +132,12 @@ class _MitraTrackingMapPageState extends State<MitraTrackingMapPage> {
             }
           } else {
             // If no status available, check booking status history
-            print('DEBUG: Checking booking status from booking table');
             // Try to fetch from booking_motor table directly
             final motorBooking = await _trackingService
                 .getMotorBooking(widget.item['ride']?['id']);
             if (motorBooking != null && motorBooking['status'] != null) {
               final bookingStatus =
                   motorBooking['status'].toString().toLowerCase();
-              print('DEBUG: Found status from motor booking: $bookingStatus');
               // Only update if status changed
               if (bookingStatus != currentStatus && mounted) {
                 setState(() {
@@ -163,12 +152,10 @@ class _MitraTrackingMapPageState extends State<MitraTrackingMapPage> {
               }
             }
           }
-        } else {
-          print('Error refreshing status from API: $e');
         }
       }
     } catch (e) {
-      print('Error in _refreshStatusFromServer: $e');
+      // Ignore errors in status refresh
     }
   }
 
@@ -194,8 +181,6 @@ class _MitraTrackingMapPageState extends State<MitraTrackingMapPage> {
     final topLevelStatus = widget.item['status'];
     final status =
         (rideStatus ?? topLevelStatus ?? '').toString().toLowerCase();
-    print(
-        'DEBUG: Current status - ride: $rideStatus, topLevel: $topLevelStatus, final: $status');
     return status;
   }
 
@@ -545,8 +530,6 @@ class _MitraTrackingMapPageState extends State<MitraTrackingMapPage> {
             token: token,
           );
           final status = (booking['status'] ?? '').toString().toLowerCase();
-          print(
-              'DEBUG: Status fetched from API in _loadPersistentState: $status');
 
           if (mounted) {
             setState(() {
@@ -575,11 +558,7 @@ class _MitraTrackingMapPageState extends State<MitraTrackingMapPage> {
           }
         } catch (e) {
           // Handle 404 or other errors
-          print('DEBUG: Error fetching booking in _loadPersistentState: $e');
-
           if (e.toString().contains('404')) {
-            print(
-                'DEBUG: Booking not found, trying alternative status resolution');
             // Try to get status from motor booking table
             final rideId = widget.item['ride']?['id'];
             if (rideId != null) {
@@ -588,8 +567,6 @@ class _MitraTrackingMapPageState extends State<MitraTrackingMapPage> {
               if (motorBooking != null && motorBooking['status'] != null) {
                 final bookingStatus =
                     motorBooking['status'].toString().toLowerCase();
-                print(
-                    'DEBUG: Found status from motor booking table: $bookingStatus');
                 if (mounted) {
                   setState(() {
                     if (widget.item['ride'] is Map) {
@@ -712,7 +689,6 @@ class _MitraTrackingMapPageState extends State<MitraTrackingMapPage> {
       };
     } catch (e) {
       // If 404, try to get from motor booking
-      print('DEBUG: Failed to fetch booking, trying motor booking: $e');
       final motorBooking =
           await _trackingService.getMotorBooking(widget.item['ride']?['id']);
       if (motorBooking != null) {
@@ -989,6 +965,11 @@ class _MitraTrackingMapPageState extends State<MitraTrackingMapPage> {
       } else {
         final customerName = widget.item['user_name'] as String? ?? 'Customer';
         final customerPhoto = widget.item['user_photo'] as String?;
+        final customerPhone = widget.item['user_phone'] as String? ?? '';
+
+        // Get mitra phone from SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        final mitraPhone = prefs.getString('phone') ?? '';
 
         final newConvId = await ChatHelper.createConversationAfterBooking(
           rideId: rideId,
@@ -997,11 +978,13 @@ class _MitraTrackingMapPageState extends State<MitraTrackingMapPage> {
             'id': customerId,
             'name': customerName,
             'photo': customerPhoto,
+            'phone': customerPhone,
           },
           mitraData: {
             'id': mitraId,
             'name': mitraName,
             'photo': null,
+            'phone': mitraPhone,
           },
         );
 
@@ -1039,11 +1022,9 @@ class _MitraTrackingMapPageState extends State<MitraTrackingMapPage> {
   @override
   Widget build(BuildContext context) {
     final status = _getCurrentStatus();
-    print('DEBUG: Building UI with status: $status');
 
     // Show rating screen when completed/selesai
     if (status == 'completed' || status == 'selesai') {
-      print('DEBUG: Showing rating screen');
       return FutureBuilder<Map<String, dynamic>>(
         future: _getBookingDetails(),
         builder: (context, snapshot) {
@@ -1089,7 +1070,6 @@ class _MitraTrackingMapPageState extends State<MitraTrackingMapPage> {
 
     // Show QR only screen when sudah_sampai_tujuan
     if (status == 'sudah_sampai_tujuan') {
-      print('DEBUG: Showing QR only screen');
       return QROnlyScreen(
         qrCodeData: BookingInfoHelper.getQRCodeData(widget.item),
         bookingNumber: BookingInfoHelper.getBookingNumber(widget.item),

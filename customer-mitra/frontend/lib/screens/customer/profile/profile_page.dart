@@ -432,7 +432,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     if (token == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Token tidak ditemukan')),
+        SnackBar(content: Text('error_occurred'.tr())),
       );
       return;
     }
@@ -556,7 +556,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                         elevation: 0,
                       ),
-                      child: const Text('Tidak',
+                      child: Text('no'.tr(),
                           style: TextStyle(fontWeight: FontWeight.w700)),
                     ),
                   ),
@@ -576,7 +576,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                         elevation: 0,
                       ),
-                      child: const Text('Iya',
+                      child: Text('yes'.tr(),
                           style: TextStyle(fontWeight: FontWeight.w700)),
                     ),
                   ),

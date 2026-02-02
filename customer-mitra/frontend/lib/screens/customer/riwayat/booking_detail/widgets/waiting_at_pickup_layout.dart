@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import '../../../../../services/chat_service.dart';
 import '../../../../../utils/chat_helper.dart';
 import '../../../messages/chats_page.dart';
@@ -46,8 +47,7 @@ class _WaitingAtPickupLayoutState extends State<WaitingAtPickupLayout> {
       if (userId == null) {
         Navigator.pop(context); // Close loading
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('User ID tidak ditemukan. Silakan login kembali.')),
+          SnackBar(content: Text('user_id_not_found'.tr())),
         );
         return;
       }
@@ -58,6 +58,7 @@ class _WaitingAtPickupLayoutState extends State<WaitingAtPickupLayout> {
       final mitraId = driver['id'];
       final mitraName = driver['name'] ?? 'Driver';
       final mitraPhoto = driver['photo_url'];
+      final mitraPhone = driver['phone'] ?? driver['phone_number'] ?? '';
       final rideId = ride['id'] ?? widget.booking['ride_id'];
       final bookingType =
           (widget.booking['booking_type'] ?? 'motor').toString().toLowerCase();
@@ -65,7 +66,7 @@ class _WaitingAtPickupLayoutState extends State<WaitingAtPickupLayout> {
       if (mitraId == null || rideId == null) {
         Navigator.pop(context); // Close loading
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Data driver tidak lengkap')),
+          SnackBar(content: Text('driver_data_incomplete'.tr())),
         );
         return;
       }
@@ -84,6 +85,7 @@ class _WaitingAtPickupLayoutState extends State<WaitingAtPickupLayout> {
         conversationId = existingConv['id'];
       } else {
         // Create new conversation
+        final userPhone = prefs.getString('phone') ?? '';
         conversationId = await ChatHelper.createConversationAfterBooking(
           rideId: rideId,
           bookingType: bookingType,
@@ -91,11 +93,13 @@ class _WaitingAtPickupLayoutState extends State<WaitingAtPickupLayout> {
             'id': userId,
             'name': userName,
             'photo': prefs.getString('photo_url'),
+            'phone': userPhone,
           },
           mitraData: {
             'id': mitraId,
             'name': mitraName,
             'photo': mitraPhoto,
+            'phone': mitraPhone,
           },
         );
       }
@@ -116,14 +120,14 @@ class _WaitingAtPickupLayoutState extends State<WaitingAtPickupLayout> {
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Gagal membuka chat')),
+          SnackBar(content: Text('failed_open_chat'.tr())),
         );
       }
     } catch (e) {
       Navigator.pop(context); // Close loading if still open
       print('Error opening chat: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+        SnackBar(content: Text('${'error_occurred'.tr()}: $e')),
       );
     }
   }
@@ -157,9 +161,9 @@ class _WaitingAtPickupLayoutState extends State<WaitingAtPickupLayout> {
           icon: const Icon(Icons.arrow_back, color: Colors.black87),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Driver Menunggu',
-          style: TextStyle(
+        title: Text(
+          'waiting_pickup_title'.tr(),
+          style: const TextStyle(
             color: Colors.black87,
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -207,9 +211,9 @@ class _WaitingAtPickupLayoutState extends State<WaitingAtPickupLayout> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Driver Sudah Tiba!',
-                    style: TextStyle(
+                  Text(
+                    'waiting_pickup_arrived'.tr(),
+                    style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
@@ -225,9 +229,9 @@ class _WaitingAtPickupLayoutState extends State<WaitingAtPickupLayout> {
                       color: Colors.white.withOpacity(0.25),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Text(
-                      'Menunggu di Lokasi Penjemputan',
-                      style: TextStyle(
+                    child: Text(
+                      'waiting_pickup_waiting_at'.tr(),
+                      style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: Colors.white,
@@ -272,9 +276,9 @@ class _WaitingAtPickupLayoutState extends State<WaitingAtPickupLayout> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Driver Anda',
-                          style: TextStyle(
+                        Text(
+                          'waiting_pickup_your_driver'.tr(),
+                          style: const TextStyle(
                             fontSize: 12,
                             color: Colors.grey,
                           ),
@@ -359,16 +363,9 @@ class _WaitingAtPickupLayoutState extends State<WaitingAtPickupLayout> {
                           child: IconButton(
                             icon: const Icon(Icons.phone,
                                 color: Colors.white, size: 22),
-                            onPressed: () {
-                              // TODO: Implement phone call
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                      'Fitur panggilan akan segera tersedia'),
-                                  duration: Duration(seconds: 2),
-                                ),
-                              );
-                            },
+                            onPressed: widget.onChatPressed != null
+                                ? widget.onChatPressed
+                                : () => _openChatWithDriver(context),
                           ),
                         ),
                     ],
@@ -411,10 +408,10 @@ class _WaitingAtPickupLayoutState extends State<WaitingAtPickupLayout> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          'Lokasi Penjemputan',
-                          style: TextStyle(
+                          'waiting_pickup_location'.tr(),
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                             color: Colors.black87,
@@ -462,7 +459,7 @@ class _WaitingAtPickupLayoutState extends State<WaitingAtPickupLayout> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Segera temui driver Anda di lokasi penjemputan',
+                      'waiting_pickup_info'.tr(),
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.amber[900],

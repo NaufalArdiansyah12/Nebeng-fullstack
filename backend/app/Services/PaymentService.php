@@ -13,6 +13,7 @@ use Xendit\PaymentMethod\PaymentMethodParameters;
 use Xendit\PaymentMethod\VirtualAccountParameters;
 use Xendit\PaymentMethod\VirtualAccountChannelProperties;
 use App\Services\FcmService;
+use App\Services\BookingNotificationService;
 
 class PaymentService
 {
@@ -424,6 +425,17 @@ class PaymentService
                             'payment_id' => $payment->id,
                             'booking_number' => $payment->booking_number,
                         ]);
+                    }
+                    
+                    // Send booking status notification if booking exists
+                    if ($bookingFound && isset($bookingModel)) {
+                        BookingNotificationService::sendStatusNotification($bookingModel, 'paid');
+                    } elseif ($bookingFound && isset($bookingMobil)) {
+                        BookingNotificationService::sendStatusNotification($bookingMobil, 'paid');
+                    } elseif ($bookingFound && isset($bookingBarang)) {
+                        BookingNotificationService::sendStatusNotification($bookingBarang, 'paid');
+                    } elseif ($bookingFound && isset($bookingTitip)) {
+                        BookingNotificationService::sendStatusNotification($bookingTitip, 'paid');
                     }
                 } catch (\Exception $e) {
                     Log::error('Failed to send FCM: ' . $e->getMessage());

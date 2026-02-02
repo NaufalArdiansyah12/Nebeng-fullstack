@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 /// Widget to display driver information
 class DriverInfoCard extends StatelessWidget {
@@ -76,7 +77,7 @@ class DriverInfoCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Mitra',
+                  'mitra_label'.tr(),
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey[600],
