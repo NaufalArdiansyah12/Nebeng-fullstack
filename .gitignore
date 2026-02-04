@@ -7,6 +7,21 @@
 **/build/
 
 # =========================
+# Android build
+# =========================
+**/*.apk
+**/*.aab
+**/app/build/
+**/app/outputs/
+
+# =========================
+# Firebase / Google Secrets
+# =========================
+**/keys/
+**/*firebase-adminsdk*.json
+**/*serviceAccount*.json
+
+# =========================
 # Node / Vite / React
 # =========================
 **/node_modules/
@@ -21,7 +36,7 @@
 **/storage/*.key
 
 # =========================
-# IDE
+# IDE / OS
 # =========================
 .idea/
 .vscode/
