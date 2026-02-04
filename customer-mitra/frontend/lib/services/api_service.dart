@@ -12,6 +12,7 @@ import 'api/rating_service.dart';
 import 'api/verification_service.dart';
 import 'api/credit_service.dart';
 import 'api/reschedule_service.dart';
+import 'api/saved_passenger_service.dart';
 import 'payment_service.dart';
 
 class ApiService {
@@ -45,6 +46,9 @@ class ApiService {
 
   static Future<Map<String, dynamic>> getUserById(int userId, String token) =>
       ProfileService.getUserById(userId, token);
+
+  static Future<Map<String, dynamic>> getBalance({required String token}) =>
+      ProfileService.getBalance(token: token);
 
   static Future<Map<String, dynamic>> updateProfile({
     required String token,
@@ -846,6 +850,30 @@ class ApiService {
     }
     throw Exception('Failed to get refund detail: ${resp.statusCode}');
   }
+
+  // ========== Saved Passenger Service Methods ==========
+  static Future<List<Map<String, dynamic>>> getSavedPassengers({
+    required String token,
+  }) =>
+      SavedPassengerService.getSavedPassengers(token: token);
+
+  static Future<Map<String, dynamic>> savePassenger({
+    required String token,
+    required String name,
+    required String phone,
+  }) =>
+      SavedPassengerService.savePassenger(
+        token: token,
+        name: name,
+        phone: phone,
+      );
+
+  static Future<bool> deletePassenger({
+    required String token,
+    required int passengerId,
+  }) =>
+      SavedPassengerService.deletePassenger(
+          token: token, passengerId: passengerId);
 }
 
 // Note: For direct PaymentService usage (non-static methods):

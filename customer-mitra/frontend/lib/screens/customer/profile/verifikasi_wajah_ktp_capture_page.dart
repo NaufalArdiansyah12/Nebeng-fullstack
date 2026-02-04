@@ -375,6 +375,7 @@ class _VerifikasiWajahKtpCapturePageState
       final namaLengkap = _verifikasiData!.namaLengkap ?? '';
       final nik = _verifikasiData!.nik ?? '';
       final tanggalLahir = _verifikasiData!.tanggalLahir ?? '';
+      final jenisKelamin = _verifikasiData!.jenisKelamin ?? 'Laki-laki';
       final alamat = _verifikasiData!.alamat ?? 'Alamat sesuai KTP';
 
       await VerifikasiService.uploadFaceKtpPhoto(
@@ -383,6 +384,7 @@ class _VerifikasiWajahKtpCapturePageState
         namaLengkap: namaLengkap,
         nik: nik,
         tanggalLahir: tanggalLahir,
+        jenisKelamin: jenisKelamin,
         alamat: alamat,
       );
 

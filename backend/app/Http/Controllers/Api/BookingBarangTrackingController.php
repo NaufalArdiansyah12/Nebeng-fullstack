@@ -130,6 +130,28 @@ class BookingBarangTrackingController extends Controller
         $booking->status = 'selesai';
         $booking->save();
 
+        // Add balance to driver using amount from payment (not total_amount to exclude admin fee)
+        if ($booking->ride && $booking->ride->user_id) {
+            $driver = \App\Models\User::find($booking->ride->user_id);
+            if ($driver) {
+                // Find payment for this booking
+                $payment = \App\Models\Payment::where('booking_number', $booking->booking_number)
+                    ->where('status', 'paid')
+                    ->first();
+                
+                if ($payment && $payment->amount) {
+                    $driver->balance = ($driver->balance ?? 0) + $payment->amount;
+                    $driver->save();
+                    Log::info('Balance added to driver (barang)', [
+                        'booking_id' => $booking->id,
+                        'driver_id' => $driver->id,
+                        'amount' => $payment->amount,
+                        'new_balance' => $driver->balance
+                    ]);
+                }
+            }
+        }
+
         // Send notification
         BookingNotificationService::sendStatusNotification($booking, 'selesai');
 

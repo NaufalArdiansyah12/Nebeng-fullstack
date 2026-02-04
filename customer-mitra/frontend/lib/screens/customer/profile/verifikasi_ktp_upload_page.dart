@@ -472,6 +472,7 @@ class _VerifikasiKtpUploadPageState extends State<VerifikasiKtpUploadPage> {
           namaLengkap: widget.namaLengkap,
           nik: widget.nik,
           tanggalLahir: widget.tanggalLahir,
+          jenisKelamin: widget.jenisKelamin,
           alamat: alamat,
         );
       } else {
@@ -482,6 +483,7 @@ class _VerifikasiKtpUploadPageState extends State<VerifikasiKtpUploadPage> {
           namaLengkap: widget.namaLengkap,
           nik: widget.nik,
           tanggalLahir: widget.tanggalLahir,
+          jenisKelamin: widget.jenisKelamin,
           alamat: alamat,
         );
       }

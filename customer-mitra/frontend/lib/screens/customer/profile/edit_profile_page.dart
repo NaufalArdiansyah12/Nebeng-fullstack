@@ -20,7 +20,6 @@ class _CustomerEditProfilePageState extends State<CustomerEditProfilePage> {
   final _nameController = TextEditingController();
   final _addressController = TextEditingController();
   final _phoneController = TextEditingController();
-  String? _gender;
   final ImagePicker _picker = ImagePicker();
   XFile? _pickedImage;
   bool _isSaving = false;
@@ -74,7 +73,6 @@ class _CustomerEditProfilePageState extends State<CustomerEditProfilePage> {
           _nameController.text = userData['name'] ?? '';
           _addressController.text = userData['address'] ?? '';
           _phoneController.text = userData['phone'] ?? '';
-          _gender = userData['gender'];
           _currentProfilePhotoUrl = photoUrl;
           _isLoading = false;
         });
@@ -116,7 +114,6 @@ class _CustomerEditProfilePageState extends State<CustomerEditProfilePage> {
         email: _emailController.text.trim(),
         address: _addressController.text.trim(),
         phone: _phoneController.text.trim(),
-        gender: _gender,
         photoFilePath: _pickedImage?.path,
       );
 
@@ -319,8 +316,6 @@ class _CustomerEditProfilePageState extends State<CustomerEditProfilePage> {
                     validator: (v) =>
                         (v == null || v.isEmpty) ? 'required_field'.tr() : null,
                   ),
-                  const SizedBox(height: 16),
-                  _buildGenderField(),
                   const SizedBox(height: 32),
                   SizedBox(
                     width: double.infinity,
@@ -383,38 +378,6 @@ class _CustomerEditProfilePageState extends State<CustomerEditProfilePage> {
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      ),
-    );
-  }
-
-  Widget _buildGenderField() {
-    return InputDecorator(
-      decoration: InputDecoration(
-        hintText: 'gender'.tr(),
-        hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
-        filled: true,
-        fillColor: Colors.grey[50],
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: _gender,
-          items: [
-            DropdownMenuItem(value: 'Laki-laki', child: Text('male'.tr())),
-            DropdownMenuItem(value: 'Perempuan', child: Text('female'.tr())),
-          ],
-          hint: Text('gender'.tr()),
-          onChanged: (val) => setState(() => _gender = val),
-          isExpanded: true,
-        ),
       ),
     );
   }

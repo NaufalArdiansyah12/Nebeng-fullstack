@@ -163,4 +163,25 @@ class ProfileService {
       }
     }
   }
+
+  /// Get balance for authenticated user
+  static Future<Map<String, dynamic>> getBalance({
+    required String token,
+  }) async {
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/balance');
+    final resp = await http.get(uri, headers: {
+      'Accept': 'application/json',
+      'Authorization': 'Bearer $token',
+    });
+
+    if (resp.statusCode == 200) {
+      final body = json.decode(resp.body);
+      return Map<String, dynamic>.from(body);
+    } else {
+      final preview =
+          resp.body.length > 300 ? resp.body.substring(0, 300) : resp.body;
+      throw Exception(
+          'Failed to get balance: ${resp.statusCode}. Preview: $preview');
+    }
+  }
 }

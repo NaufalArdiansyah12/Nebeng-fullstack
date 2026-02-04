@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'dart:math' as math;
 
 /// Custom painter for map-like pattern placeholder
 class MapPatternPainter extends CustomPainter {
@@ -64,6 +65,12 @@ class MapPlaceholder extends StatefulWidget {
 
 class _MapPlaceholderState extends State<MapPlaceholder> {
   List<LatLng>? _routePoints;
+  final MapController _mapController = MapController();
+  
+  // Variables to store last known camera position
+  double? _lastZoom;
+  LatLng? _lastCenter;
+  double? _lastRotation;
 
   @override
   void initState() {
@@ -81,6 +88,12 @@ class _MapPlaceholderState extends State<MapPlaceholder> {
         oldWidget.destinationLng != widget.destinationLng) {
       _fetchRoute();
     }
+  }
+
+  @override
+  void dispose() {
+    _mapController.dispose();
+    super.dispose();
   }
 
   /// Fetch route from OSRM API
@@ -112,9 +125,11 @@ class _MapPlaceholderState extends State<MapPlaceholder> {
             return LatLng(coord[1] as double, coord[0] as double);
           }).toList();
 
-          setState(() {
-            _routePoints = routePoints;
-          });
+          if (mounted) {
+            setState(() {
+              _routePoints = routePoints;
+            });
+          }
         } else {
           _useFallbackRoute();
         }
@@ -132,12 +147,14 @@ class _MapPlaceholderState extends State<MapPlaceholder> {
         widget.originLng != null &&
         widget.destinationLat != null &&
         widget.destinationLng != null) {
-      setState(() {
-        _routePoints = _generateSimpleRoute(
-          LatLng(widget.originLat!, widget.originLng!),
-          LatLng(widget.destinationLat!, widget.destinationLng!),
-        );
-      });
+      if (mounted) {
+        setState(() {
+          _routePoints = _generateSimpleRoute(
+            LatLng(widget.originLat!, widget.originLng!),
+            LatLng(widget.destinationLat!, widget.destinationLng!),
+          );
+        });
+      }
     }
   }
 
@@ -160,11 +177,78 @@ class _MapPlaceholderState extends State<MapPlaceholder> {
     return points;
   }
 
+  /// Calculate bearing (direction) between two points in degrees
+  double _calculateBearing(LatLng from, LatLng to) {
+    final lat1 = from.latitude * math.pi / 180;
+    final lat2 = to.latitude * math.pi / 180;
+    final lon1 = from.longitude * math.pi / 180;
+    final lon2 = to.longitude * math.pi / 180;
+
+    final dLon = lon2 - lon1;
+
+    final y = math.sin(dLon) * math.cos(lat2);
+    final x = math.cos(lat1) * math.sin(lat2) -
+        math.sin(lat1) * math.cos(lat2) * math.cos(dLon);
+
+    final bearing = math.atan2(y, x);
+    
+    // Convert to degrees and normalize to 0-360
+    return (bearing * 180 / math.pi + 360) % 360;
+  }
+
+  /// Get the bearing for the driver icon based on route direction
+  double _getDriverBearing() {
+    if (_routePoints == null || _routePoints!.length < 2) {
+      return 0.0;
+    }
+
+    final driverPosition = LatLng(widget.lat!, widget.lng!);
+    
+    // Find the closest point on the route to the driver
+    double minDistance = double.infinity;
+    int closestIndex = 0;
+    
+    for (int i = 0; i < _routePoints!.length; i++) {
+      final distance = _calculateDistance(driverPosition, _routePoints![i]);
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestIndex = i;
+      }
+    }
+
+    // Get the next point on the route to calculate bearing
+    int nextIndex = closestIndex + 1;
+    if (nextIndex >= _routePoints!.length) {
+      // If we're at the last point, use the previous point
+      nextIndex = closestIndex;
+      closestIndex = math.max(0, closestIndex - 1);
+    }
+
+    return _calculateBearing(_routePoints![closestIndex], _routePoints![nextIndex]);
+  }
+
+  /// Calculate distance between two points in meters (Haversine formula)
+  double _calculateDistance(LatLng point1, LatLng point2) {
+    const double earthRadius = 6371000; // meters
+    
+    final lat1 = point1.latitude * math.pi / 180;
+    final lat2 = point2.latitude * math.pi / 180;
+    final dLat = (point2.latitude - point1.latitude) * math.pi / 180;
+    final dLon = (point2.longitude - point1.longitude) * math.pi / 180;
+
+    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(lat1) * math.cos(lat2) * math.sin(dLon / 2) * math.sin(dLon / 2);
+    final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+
+    return earthRadius * c;
+  }
+
   @override
   Widget build(BuildContext context) {
     // If coordinates are available, show OSM map via flutter_map
     if (widget.lat != null && widget.lng != null) {
       final center = LatLng(widget.lat!, widget.lng!);
+      final driverBearing = _getDriverBearing();
 
       // Build list of markers
       final markers = <Marker>[
@@ -172,10 +256,15 @@ class _MapPlaceholderState extends State<MapPlaceholder> {
           point: center,
           width: 48,
           height: 48,
-          child: const Icon(
-            Icons.directions_car,
-            color: Colors.blue,
-            size: 36,
+          alignment: Alignment.center,
+          rotate: true, // Enable rotation
+          child: Transform.rotate(
+            angle: driverBearing * math.pi / 180, // Convert to radians
+            child: const Icon(
+              Icons.navigation, // Changed to navigation icon which has directional arrow
+              color: Colors.blue,
+              size: 36,
+            ),
           ),
         ),
       ];
@@ -226,28 +315,45 @@ class _MapPlaceholderState extends State<MapPlaceholder> {
 
       // Calculate map bounds to fit all markers and route
       LatLngBounds? bounds;
-      if (widget.originLat != null &&
+      CameraFit? initialCameraFit;
+      
+      // If we have saved camera position, use it
+      if (_lastZoom != null && _lastCenter != null) {
+        // Don't use bounds, we'll restore the saved position
+        initialCameraFit = null;
+      } else if (widget.originLat != null &&
           widget.originLng != null &&
           widget.destinationLat != null &&
           widget.destinationLng != null) {
+        // First time loading, fit to bounds
         final points = [
           LatLng(widget.lat!, widget.lng!),
           LatLng(widget.originLat!, widget.originLng!),
           LatLng(widget.destinationLat!, widget.destinationLng!),
         ];
         bounds = LatLngBounds.fromPoints(points);
+        initialCameraFit = CameraFit.bounds(
+          bounds: bounds,
+          padding: const EdgeInsets.all(50),
+        );
       }
 
       final map = FlutterMap(
+        mapController: _mapController,
         options: MapOptions(
-          initialCenter: center,
-          initialZoom: bounds != null ? 12.0 : 15.0,
-          initialCameraFit: bounds != null
-              ? CameraFit.bounds(
-                  bounds: bounds,
-                  padding: const EdgeInsets.all(50),
-                )
-              : null,
+          // Use saved position if available, otherwise use center
+          initialCenter: _lastCenter ?? center,
+          initialZoom: _lastZoom ?? (bounds != null ? 12.0 : 15.0),
+          initialRotation: _lastRotation ?? 0.0,
+          initialCameraFit: initialCameraFit,
+          onPositionChanged: (position, hasGesture) {
+            // Save camera position when user interacts with map
+            if (hasGesture) {
+              _lastZoom = position.zoom;
+              _lastCenter = position.center;
+              _lastRotation = position.rotation;
+            }
+          },
         ),
         children: [
           TileLayer(

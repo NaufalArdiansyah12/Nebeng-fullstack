@@ -3,6 +3,7 @@ class VerifikasiCustomer {
   final String? namaLengkap;
   final String? nik;
   final String? tanggalLahir;
+  final String? jenisKelamin;
   final String? alamat;
   final String? photoWajah;
   final String? photoKtp;
@@ -17,6 +18,7 @@ class VerifikasiCustomer {
     this.namaLengkap,
     this.nik,
     this.tanggalLahir,
+    this.jenisKelamin,
     this.alamat,
     this.photoWajah,
     this.photoKtp,
@@ -33,6 +35,7 @@ class VerifikasiCustomer {
       namaLengkap: json['nama_lengkap'],
       nik: json['nik'],
       tanggalLahir: json['tanggal_lahir'],
+      jenisKelamin: json['jenis_kelamin'],
       alamat: json['alamat'],
       photoWajah: json['photo_wajah'],
       photoKtp: json['photo_ktp'],
@@ -50,6 +53,7 @@ class VerifikasiCustomer {
       'nama_lengkap': namaLengkap,
       'nik': nik,
       'tanggal_lahir': tanggalLahir,
+      'jenis_kelamin': jenisKelamin,
       'alamat': alamat,
       'photo_wajah': photoWajah,
       'photo_ktp': photoKtp,

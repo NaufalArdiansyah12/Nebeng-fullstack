@@ -600,38 +600,22 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
   }
 
   void _showPenerimaPicker() async {
-    final result = await showModalBottomSheet<Map<String, String>>(
+    showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.75,
-        minChildSize: 0.5,
-        maxChildSize: 0.9,
-        builder: (context, scrollController) => Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-            ),
-          ),
-          child: PenerimaPickerPage(
-            currentPenerima: dataPenerima,
-            scrollController: scrollController,
-          ),
-        ),
+      builder: (context) => _PenerimaBottomSheet(
+        initialName: dataPenerima,
+        initialPhone: penerimaPhone,
+        onSave: (name, phone) {
+          setState(() {
+            dataPenerima = name;
+            penerimaPhone = phone;
+            _penerimaController.text = name;
+          });
+        },
       ),
     );
-
-    if (result != null && mounted) {
-      setState(() {
-        dataPenerima = result['name'];
-        penerimaPhone = result['phone'];
-        penerimaEmail = result['email'];
-        _penerimaController.text = result['name'] ?? '';
-      });
-    }
   }
 
   void _showUkuranPicker() {
@@ -847,6 +831,223 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Bottom Sheet untuk Data Penerima
+class _PenerimaBottomSheet extends StatefulWidget {
+  final String? initialName;
+  final String? initialPhone;
+  final Function(String name, String phone) onSave;
+
+  const _PenerimaBottomSheet({
+    this.initialName,
+    this.initialPhone,
+    required this.onSave,
+  });
+
+  @override
+  State<_PenerimaBottomSheet> createState() => _PenerimaBottomSheetState();
+}
+
+class _PenerimaBottomSheetState extends State<_PenerimaBottomSheet> {
+  late TextEditingController _nameController;
+  late TextEditingController _phoneController;
+  String? nameError;
+  String? phoneError;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.initialName);
+    _phoneController = TextEditingController(text: widget.initialPhone);
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+      ),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () => Navigator.pop(context),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Data Penerima',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Nama Penerima',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _nameController,
+                onChanged: (_) => setState(() => nameError = null),
+                decoration: InputDecoration(
+                  hintText: 'Masukkan nama penerima',
+                  hintStyle: TextStyle(color: Colors.grey[400]),
+                  errorText: nameError,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                        color:
+                            nameError != null ? Colors.red : Colors.grey[300]!),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                        color:
+                            nameError != null ? Colors.red : Colors.grey[300]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide:
+                        const BorderSide(color: NebengMotorTheme.primaryBlue),
+                  ),
+                  contentPadding: const EdgeInsets.all(16),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'No. Telepon',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
+                onChanged: (_) => setState(() => phoneError = null),
+                decoration: InputDecoration(
+                  hintText: 'Masukkan nomor telepon',
+                  hintStyle: TextStyle(color: Colors.grey[400]),
+                  errorText: phoneError,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                        color: phoneError != null
+                            ? Colors.red
+                            : Colors.grey[300]!),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                        color: phoneError != null
+                            ? Colors.red
+                            : Colors.grey[300]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide:
+                        const BorderSide(color: NebengMotorTheme.primaryBlue),
+                  ),
+                  contentPadding: const EdgeInsets.all(16),
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      nameError = null;
+                      phoneError = null;
+                    });
+
+                    if (_nameController.text.trim().isEmpty) {
+                      setState(() => nameError = 'Nama penerima harus diisi');
+                      return;
+                    }
+
+                    if (_phoneController.text.trim().isEmpty) {
+                      setState(() => phoneError = 'No. telepon harus diisi');
+                      return;
+                    }
+
+                    if (_phoneController.text.trim().length < 10) {
+                      setState(
+                          () => phoneError = 'No. telepon minimal 10 digit');
+                      return;
+                    }
+
+                    widget.onSave(
+                      _nameController.text.trim(),
+                      _phoneController.text.trim(),
+                    );
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                            '✓ ${_nameController.text.trim()} ditambahkan'),
+                        backgroundColor: Colors.green,
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: NebengMotorTheme.primaryBlue,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Simpan',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

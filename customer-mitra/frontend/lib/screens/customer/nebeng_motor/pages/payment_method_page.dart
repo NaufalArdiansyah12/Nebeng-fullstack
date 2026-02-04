@@ -8,7 +8,6 @@ import '../../../../services/api_service.dart';
 import '../../../../services/payment_service.dart';
 import '../../../../utils/chat_helper.dart';
 import 'payment_waiting_page.dart';
-import 'payment_success_page.dart';
 
 class PaymentMethodPage extends StatefulWidget {
   final TripModel trip;
@@ -593,160 +592,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
     try {
       // Calculate amounts - use actual trip price
       double amount = widget.trip.price.toDouble();
-      double adminFee = widget.paymentMethod == 'cash' ? 0.0 : 15000.0;
-
-      // Handle cash payment separately (no need for virtual account)
-      if (widget.paymentMethod == 'cash') {
-        // Get user ID for cash payment
-        final prefs = await SharedPreferences.getInstance();
-        print('All SharedPreferences keys: ${prefs.getKeys()}');
-        final userId = prefs.getInt('user_id');
-        print('Retrieved user_id: $userId');
-
-        if (userId == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text('User ID not found. Please login again.')),
-          );
-          setState(() {
-            _isLoading = false;
-          });
-          return;
-        }
-
-        // Create booking first
-        int? createdBookingId;
-        String createdBookingNumber = widget.bookingNumber;
-        try {
-          print('Creating booking with number: ${widget.bookingNumber}');
-          final booking = await ApiService.createBooking(
-            rideId: int.tryParse(widget.trip.id) ?? 1,
-            userId: userId,
-            seats: widget.totalPassengers,
-            bookingNumber: widget.bookingNumber,
-            rideType: 'motor',
-            photoFilePath: widget.photoFile?.path,
-            weight: widget.weight,
-            description: widget.description,
-          );
-          print(
-              'Booking created for cash payment: ${booking['id']}, booking_number: ${booking['booking_number']}');
-
-          createdBookingId = booking['id'];
-          createdBookingNumber =
-              booking['booking_number'] ?? widget.bookingNumber;
-
-          // Auto-create conversation with driver
-          try {
-            final ride = booking['ride'] ?? {};
-            final driver = ride['user'] ?? {};
-            final mitraId = driver['id'];
-            final mitraName = driver['name'] ?? 'Driver';
-            final mitraPhoto = driver['photo_url'];
-            final mitraPhone = driver['phone'] ?? driver['phone_number'] ?? '';
-
-            // Debug: Print booking structure
-            print('🔍 Booking data for conversation: ${booking.keys}');
-            print('🔍 Ride data: $ride');
-            print('🔍 Driver data: $driver');
-            print('🔍 MitraId: $mitraId (${mitraId.runtimeType})');
-
-            // Only create conversation if we have valid mitra data
-            if (mitraId != null && mitraId is int) {
-              final userName = prefs.getString('user_name') ??
-                  prefs.getString('name') ??
-                  widget.passengerName;
-              final userPhone = prefs.getString('phone') ?? '';
-              await ChatHelper.createConversationAfterBooking(
-                rideId: int.tryParse(widget.trip.id) ?? 1,
-                bookingType: 'motor',
-                customerData: {
-                  'id': userId,
-                  'name': userName,
-                  'photo': prefs.getString('photo_url'),
-                  'phone': userPhone,
-                },
-                mitraData: {
-                  'id': mitraId,
-                  'name': mitraName,
-                  'photo': mitraPhoto,
-                  'phone': mitraPhone,
-                },
-              );
-              print(
-                  '✅ Conversation created automatically for booking $createdBookingId');
-            } else {
-              print(
-                  '⚠️ Cannot create conversation: driver ID is null or invalid (mitraId: $mitraId)');
-            }
-          } catch (e) {
-            print('❌ Failed to create conversation: $e');
-            // Don't fail the booking if conversation creation fails
-          }
-        } catch (e) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to create booking: ${e.toString()}'),
-              backgroundColor: Colors.red,
-            ),
-          );
-          setState(() {
-            _isLoading = false;
-          });
-          return;
-        }
-
-        // Create cash payment record
-        try {
-          print(
-              'Creating payment with booking number: ${widget.bookingNumber}');
-          final paymentResult = await _paymentService.createPayment(
-            rideId: int.tryParse(widget.trip.id) ?? 1,
-            userId: userId,
-            bookingNumber: createdBookingNumber,
-            bookingId: createdBookingId,
-            paymentMethod: 'cash',
-            amount: amount,
-            adminFee: 0,
-          );
-          print('Cash payment created: $paymentResult');
-
-          if (paymentResult['success'] != true) {
-            throw Exception(
-                paymentResult['message'] ?? 'Failed to create payment');
-          }
-        } catch (e) {
-          print('Failed to create cash payment record: $e');
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to create payment: ${e.toString()}'),
-              backgroundColor: Colors.red,
-            ),
-          );
-          setState(() {
-            _isLoading = false;
-          });
-          return;
-        }
-
-        // For cash, directly go to success page
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PaymentSuccessPage(
-              trip: widget.trip,
-              bookingNumber: widget.bookingNumber,
-              passengerName: widget.passengerName,
-              phoneNumber: widget.phoneNumber,
-              paymentMethod: widget.paymentMethod,
-              totalPassengers: widget.totalPassengers,
-              amount: amount,
-              adminFee: 0, // No admin fee for cash
-            ),
-          ),
-        );
-        return;
-      }
+      double adminFee = 15000.0; // Admin fee for all payment methods
 
       // Get user ID from SharedPreferences
       final prefs = await SharedPreferences.getInstance();
@@ -844,9 +690,9 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
         return;
       }
 
-      // For virtual account payments (BRI, BCA, etc.)
+      // For payment (QRIS, VA, etc.)
       print(
-          'Creating VA payment for ride: ${widget.trip.id}, user: $userId, booking: ${widget.bookingNumber}');
+          'Creating payment for ride: ${widget.trip.id}, user: $userId, booking: ${widget.bookingNumber}');
       final result = await _paymentService.createPayment(
         rideId: int.tryParse(widget.trip.id) ?? 1,
         userId: userId,
@@ -856,34 +702,64 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
         amount: amount,
         adminFee: adminFee,
       );
-      print('VA payment result: $result');
+      print('Payment result: $result');
 
       if (result['success']) {
         final paymentData = result['data']['payment'];
-        final vaNumber = result['data']['virtual_account_number'];
-        final bankCode = result['data']['bank_code'];
-        final expiresAt = DateTime.parse(result['data']['expires_at']);
 
-        // Navigate to payment waiting page
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PaymentWaitingPage(
-              trip: widget.trip,
-              bookingNumber: widget.bookingNumber,
-              passengerName: widget.passengerName,
-              phoneNumber: widget.phoneNumber,
-              paymentMethod: widget.paymentMethod,
-              totalPassengers: widget.totalPassengers,
-              virtualAccountNumber: vaNumber,
-              bankCode: bankCode,
-              expiresAt: expiresAt,
-              paymentId: paymentData['id'],
-              amount: amount,
-              adminFee: adminFee,
+        // Handle QRIS payment separately (show QR code)
+        if (widget.paymentMethod == 'qris') {
+          final qrCodeUrl = result['data']['qr_code_url'];
+          final expiresAt = DateTime.parse(result['data']['expires_at']);
+
+          // Navigate to QRIS waiting page (will show QR code to scan)
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PaymentWaitingPage(
+                trip: widget.trip,
+                bookingNumber: widget.bookingNumber,
+                passengerName: widget.passengerName,
+                phoneNumber: widget.phoneNumber,
+                paymentMethod: widget.paymentMethod,
+                totalPassengers: widget.totalPassengers,
+                virtualAccountNumber:
+                    qrCodeUrl ?? 'N/A', // Use qrCodeUrl as placeholder
+                bankCode: 'QRIS',
+                expiresAt: expiresAt,
+                paymentId: paymentData['id'],
+                amount: amount,
+                adminFee: adminFee,
+              ),
             ),
-          ),
-        );
+          );
+        } else {
+          // Handle Virtual Account payment (BRI, BCA, etc.)
+          final vaNumber = result['data']['virtual_account_number'];
+          final bankCode = result['data']['bank_code'];
+          final expiresAt = DateTime.parse(result['data']['expires_at']);
+
+          // Navigate to payment waiting page
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PaymentWaitingPage(
+                trip: widget.trip,
+                bookingNumber: widget.bookingNumber,
+                passengerName: widget.passengerName,
+                phoneNumber: widget.phoneNumber,
+                paymentMethod: widget.paymentMethod,
+                totalPassengers: widget.totalPassengers,
+                virtualAccountNumber: vaNumber,
+                bankCode: bankCode,
+                expiresAt: expiresAt,
+                paymentId: paymentData['id'],
+                amount: amount,
+                adminFee: adminFee,
+              ),
+            ),
+          );
+        }
       } else {
         // Show error
         ScaffoldMessenger.of(context).showSnackBar(
@@ -911,8 +787,6 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
     switch (widget.paymentMethod) {
       case 'qris':
         return 'QRIS';
-      case 'cash':
-        return 'Tunai';
       case 'bri':
         return 'BRI Virtual Account';
       case 'bca':

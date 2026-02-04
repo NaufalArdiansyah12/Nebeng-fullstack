@@ -83,4 +83,50 @@ class UserController extends Controller
             ]
         ], 201);
     }
+
+    /**
+     * Get balance for authenticated user.
+     */
+    public function getBalance(Request $request)
+    {
+        // Get authenticated user from bearer token
+        $bearer = $request->bearerToken();
+        if (!$bearer) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Token tidak ditemukan',
+            ], 401);
+        }
+
+        // Try both hashed and plain token lookup (project uses both methods)
+        $hashed = hash('sha256', $bearer);
+        $apiToken = \App\Models\ApiToken::where('token', $hashed)
+            ->orWhere('token', $bearer)
+            ->first();
+        
+        if (!$apiToken) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Token tidak valid',
+            ], 401);
+        }
+
+        $user = \App\Models\User::find($apiToken->user_id);
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User tidak ditemukan',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Saldo berhasil diambil',
+            'data' => [
+                'balance' => (float) $user->balance,
+                'formatted_balance' => 'Rp ' . number_format($user->balance, 0, ',', '.'),
+            ]
+        ]);
+    }
 }

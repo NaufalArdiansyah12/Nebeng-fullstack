@@ -27,10 +27,19 @@ class PassengerData {
 }
 
 class SavedPassenger {
+  int id;
   String name;
   String phone;
 
-  SavedPassenger({required this.name, required this.phone});
+  SavedPassenger({required this.id, required this.name, required this.phone});
+
+  factory SavedPassenger.fromJson(Map<String, dynamic> json) {
+    return SavedPassenger(
+      id: json['id'] as int,
+      name: json['name'] as String,
+      phone: json['phone'] as String,
+    );
+  }
 }
 
 class _BookingDetailPageState extends State<BookingDetailPage> {
@@ -45,11 +54,9 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
   File? selectedImage;
   final ImagePicker _picker = ImagePicker();
 
-  // Dummy data for saved passengers
-  final List<SavedPassenger> savedPassengers = [
-    SavedPassenger(name: 'Ailsa Nasywa', phone: '0829-9273-0984'),
-    SavedPassenger(name: 'Karina', phone: '0812-3456-7890'),
-  ];
+  // Saved passengers loaded from database
+  List<SavedPassenger> savedPassengers = [];
+  bool _isLoadingPassengers = false;
 
   @override
   void initState() {
@@ -77,8 +84,27 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
           _userPhone = user['phone'] as String? ?? '';
         });
       }
+
+      // Load saved passengers
+      await _loadSavedPassengers(token);
     } catch (e) {
       // ignore, keep defaults
+    }
+  }
+
+  Future<void> _loadSavedPassengers(String token) async {
+    setState(() => _isLoadingPassengers = true);
+    try {
+      final List<Map<String, dynamic>> response =
+          await ApiService.getSavedPassengers(token: token);
+      setState(() {
+        savedPassengers =
+            response.map((json) => SavedPassenger.fromJson(json)).toList();
+      });
+    } catch (e) {
+      // ignore error, keep empty list
+    } finally {
+      setState(() => _isLoadingPassengers = false);
     }
   }
 
@@ -112,6 +138,37 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
         passengers.add(PassengerData(name: saved.name, phone: saved.phone));
       });
       Navigator.pop(context);
+    }
+  }
+
+  Future<void> _deleteSavedPassenger(SavedPassenger passenger) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('api_token');
+    if (token == null) return;
+
+    try {
+      final success = await ApiService.deletePassenger(
+        token: token,
+        passengerId: passenger.id,
+      );
+
+      if (success) {
+        await _loadSavedPassengers(token);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✓ ${passenger.name} dihapus dari daftar'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Gagal menghapus penumpang'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -871,6 +928,12 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
   }
 
   Widget _buildPassengerInfoModal() {
+    final filteredPassengers = savedPassengers.where((p) {
+      return p.name
+          .toLowerCase()
+          .contains(_searchController.text.toLowerCase());
+    }).toList();
+
     return Container(
       height: MediaQuery.of(context).size.height * 0.75,
       decoration: const BoxDecoration(
@@ -894,56 +957,175 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
                   constraints: const BoxConstraints(),
                 ),
                 const SizedBox(width: 12),
-                const Text(
-                  'Informasi Penebeng',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Informasi Penebeng',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      Text(
+                        '${passengers.length}/${widget.trip.maxPassengers} penumpang',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
           const Divider(height: 1),
+
+          // Added Passengers Section (if any)
+          if (passengers.isNotEmpty)
+            Container(
+              color: Colors.blue.withOpacity(0.05),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Penumpang Terpilih (${passengers.length})',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      if (passengers.length < widget.trip.maxPassengers)
+                        TextButton(
+                          onPressed: _showAddPassengerModal,
+                          child: const Text('+ Tambah'),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  ...passengers.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final p = entry.value;
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: NebengMobilTheme.primaryBlue,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${index + 1}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  p.name,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                Text(
+                                  p.phone,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.delete_outline,
+                                color: Colors.red[400], size: 20),
+                            onPressed: () {
+                              setState(() {
+                                passengers.removeAt(index);
+                              });
+                              Navigator.pop(context);
+                              _showPassengerInfoModal();
+                            },
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ],
+              ),
+            ),
+
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
                 // Add Passenger Button
-                OutlinedButton(
-                  onPressed: _showAddPassengerModal,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: NebengMobilTheme.primaryBlue,
-                    side: const BorderSide(
-                      color: NebengMobilTheme.primaryBlue,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    minimumSize: const Size(double.infinity, 48),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Icon(Icons.add_circle_outline, size: 20),
-                      SizedBox(width: 8),
-                      Text(
-                        'Tambah Penebeng',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
+                if (passengers.length < widget.trip.maxPassengers)
+                  OutlinedButton(
+                    onPressed: _showAddPassengerModal,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: NebengMobilTheme.primaryBlue,
+                      side: const BorderSide(
+                        color: NebengMobilTheme.primaryBlue,
                       ),
-                    ],
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      minimumSize: const Size(double.infinity, 48),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(Icons.add_circle_outline, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          'Tambah Penebeng Baru',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
                 const SizedBox(height: 16),
                 // Search Bar
                 TextField(
                   controller: _searchController,
+                  onChanged: (value) => setState(() {}),
                   decoration: InputDecoration(
-                    hintText: 'Cari Penebeng yang terdaftar',
+                    hintText: 'Cari penebeng tersimpan',
                     hintStyle: TextStyle(
                       color: Colors.grey[400],
                       fontSize: 14,
@@ -966,33 +1148,119 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
           ),
           // Saved Passengers List
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: savedPassengers.length,
-              itemBuilder: (context, index) {
-                final passenger = savedPassengers[index];
-                return InkWell(
-                  onTap: () => _addPassengerFromSaved(passenger),
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey[300]!),
+            child: filteredPassengers.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.people_outline,
+                            size: 64, color: Colors.grey[300]),
+                        const SizedBox(height: 16),
+                        Text(
+                          _searchController.text.isEmpty
+                              ? 'Belum ada penebeng tersimpan'
+                              : 'Tidak ada hasil pencarian',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
                     ),
-                    child: Text(
-                      passenger.name,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black87,
-                      ),
-                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: filteredPassengers.length,
+                    itemBuilder: (context, index) {
+                      final passenger = filteredPassengers[index];
+                      final isAdded = passengers.any((p) =>
+                          p.name == passenger.name &&
+                          p.phone == passenger.phone);
+
+                      return InkWell(
+                        onTap: isAdded ||
+                                passengers.length >= widget.trip.maxPassengers
+                            ? null
+                            : () => _addPassengerFromSaved(passenger),
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: isAdded ? Colors.grey[100] : Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isAdded
+                                  ? Colors.grey[300]!
+                                  : Colors.grey[300]!,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      passenger.name,
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                        color: isAdded
+                                            ? Colors.grey[500]
+                                            : Colors.black87,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      passenger.phone,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (isAdded)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green[50],
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    'Ditambahkan',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.green[700],
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                )
+                              else if (passengers.length >=
+                                  widget.trip.maxPassengers)
+                                Icon(Icons.block,
+                                    color: Colors.grey[400], size: 20)
+                              else
+                                Icon(Icons.add_circle_outline,
+                                    color: NebengMobilTheme.primaryBlue,
+                                    size: 20),
+                              const SizedBox(width: 8),
+                              IconButton(
+                                icon: Icon(Icons.delete_outline,
+                                    color: Colors.red[400], size: 20),
+                                onPressed: () =>
+                                    _deleteSavedPassenger(passenger),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
         ],
       ),
@@ -1004,12 +1272,116 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
         TextEditingController(text: _userName);
     final TextEditingController phoneController =
         TextEditingController(text: _userPhone);
-    bool saveToList = false;
+    bool saveToList = true;
+    String? nameError;
+    String? phoneError;
 
     return StatefulBuilder(
       builder: (context, setModalState) {
+        void validateAndSave() async {
+          setModalState(() {
+            nameError = null;
+            phoneError = null;
+          });
+
+          // Validation
+          if (nameController.text.trim().isEmpty) {
+            setModalState(() {
+              nameError = 'Nama harus diisi';
+            });
+            return;
+          }
+
+          if (phoneController.text.trim().isEmpty) {
+            setModalState(() {
+              phoneError = 'No telp harus diisi';
+            });
+            return;
+          }
+
+          if (phoneController.text.trim().length < 10) {
+            setModalState(() {
+              phoneError = 'No telp minimal 10 digit';
+            });
+            return;
+          }
+
+          if (passengers.length >= widget.trip.maxPassengers) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content:
+                    Text('Maksimal ${widget.trip.maxPassengers} penumpang'),
+                backgroundColor: Colors.red,
+              ),
+            );
+            return;
+          }
+
+          // Check duplicate
+          final isDuplicate = passengers.any((p) =>
+              p.name.toLowerCase() ==
+                  nameController.text.trim().toLowerCase() &&
+              p.phone == phoneController.text.trim());
+
+          if (isDuplicate) {
+            setModalState(() {
+              nameError = 'Penumpang sudah ditambahkan';
+            });
+            return;
+          }
+
+          // Add passenger
+          setState(() {
+            passengers.add(PassengerData(
+              name: nameController.text.trim(),
+              phone: phoneController.text.trim(),
+            ));
+          });
+
+          // Save to list if toggle is on
+          if (saveToList) {
+            final isAlreadySaved = savedPassengers.any((sp) =>
+                sp.name.toLowerCase() ==
+                    nameController.text.trim().toLowerCase() &&
+                sp.phone == phoneController.text.trim());
+
+            if (!isAlreadySaved) {
+              // Save to database
+              final prefs = await SharedPreferences.getInstance();
+              final token = prefs.getString('api_token');
+              if (token != null) {
+                try {
+                  await ApiService.savePassenger(
+                    token: token,
+                    name: nameController.text.trim(),
+                    phone: phoneController.text.trim(),
+                  );
+                  // Reload saved passengers list
+                  await _loadSavedPassengers(token);
+                } catch (e) {
+                  // ignore error
+                }
+              }
+            }
+          }
+
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✓ ${nameController.text.trim()} ditambahkan'),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+
+          // Reopen passenger info modal
+          Future.delayed(const Duration(milliseconds: 300), () {
+            _showPassengerInfoModal();
+          });
+        }
+
         return Container(
-          height: MediaQuery.of(context).size.height * 0.6,
+          height: MediaQuery.of(context).size.height * 0.7,
           decoration: const BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.only(
@@ -1026,7 +1398,12 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
                   children: [
                     IconButton(
                       icon: const Icon(Icons.arrow_back),
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        Future.delayed(const Duration(milliseconds: 300), () {
+                          _showPassengerInfoModal();
+                        });
+                      },
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                     ),
@@ -1061,8 +1438,13 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
                       const SizedBox(height: 8),
                       TextField(
                         controller: nameController,
+                        onChanged: (value) {
+                          setModalState(() {
+                            nameError = null;
+                          });
+                        },
                         decoration: InputDecoration(
-                          hintText: 'Nama Anda',
+                          hintText: 'Nama Penumpang',
                           hintStyle: TextStyle(
                             color: Colors.grey[400],
                             fontSize: 14,
@@ -1071,8 +1453,17 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
                           fillColor: const Color(0xFFF5F5F5),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide.none,
+                            borderSide: nameError != null
+                                ? const BorderSide(color: Colors.red)
+                                : BorderSide.none,
                           ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: nameError != null
+                                ? const BorderSide(color: Colors.red)
+                                : BorderSide.none,
+                          ),
+                          errorText: nameError,
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 12,
@@ -1093,8 +1484,13 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
                       TextField(
                         controller: phoneController,
                         keyboardType: TextInputType.phone,
+                        onChanged: (value) {
+                          setModalState(() {
+                            phoneError = null;
+                          });
+                        },
                         decoration: InputDecoration(
-                          hintText: 'No Telp Anda',
+                          hintText: '08xxxxxxxxxx',
                           hintStyle: TextStyle(
                             color: Colors.grey[400],
                             fontSize: 14,
@@ -1103,8 +1499,17 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
                           fillColor: const Color(0xFFF5F5F5),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide.none,
+                            borderSide: phoneError != null
+                                ? const BorderSide(color: Colors.red)
+                                : BorderSide.none,
                           ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: phoneError != null
+                                ? const BorderSide(color: Colors.red)
+                                : BorderSide.none,
+                          ),
+                          errorText: phoneError,
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 12,
@@ -1113,44 +1518,55 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
                       ),
                       const SizedBox(height: 16),
                       // Save to List Toggle
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Simpan ke daftar penebeng',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.black87,
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.bookmark_outline,
+                                color: NebengMobilTheme.primaryBlue, size: 20),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Simpan ke daftar penebeng',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Untuk memudahkan booking selanjutnya',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          Switch(
-                            value: saveToList,
-                            onChanged: (value) {
-                              setModalState(() {
-                                saveToList = value;
-                              });
-                            },
-                            activeColor: NebengMobilTheme.primaryBlue,
-                          ),
-                        ],
+                            Switch(
+                              value: saveToList,
+                              onChanged: (value) {
+                                setModalState(() {
+                                  saveToList = value;
+                                });
+                              },
+                              activeColor: NebengMobilTheme.primaryBlue,
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 24),
                       // Save Button
                       ElevatedButton(
-                        onPressed: () {
-                          if (nameController.text.isNotEmpty &&
-                              phoneController.text.isNotEmpty) {
-                            if (passengers.length < widget.trip.maxPassengers) {
-                              setState(() {
-                                passengers.add(PassengerData(
-                                  name: nameController.text,
-                                  phone: phoneController.text,
-                                ));
-                              });
-                              Navigator.pop(context);
-                            }
-                          }
-                        },
+                        onPressed: validateAndSave,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: NebengMobilTheme.primaryBlue,
                           padding: const EdgeInsets.symmetric(vertical: 16),

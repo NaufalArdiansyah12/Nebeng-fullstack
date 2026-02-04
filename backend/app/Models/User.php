@@ -25,8 +25,11 @@ class User extends Authenticatable
         'fcm_token',
         'address',
         'phone',
-        'gender',
+        'phone_verified',
+        'phone_verified_at',
         'profile_photo',
+        'balance',
+        'pin',
     ];
 
     /**
@@ -37,6 +40,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'pin',
     ];
 
     /**
@@ -48,7 +52,18 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'phone_verified_at' => 'datetime',
+            'phone_verified' => 'boolean',
             'password' => 'hashed',
+            'balance' => 'decimal:2',
         ];
+    }
+
+    /**
+     * Relasi ke Phone OTPs
+     */
+    public function phoneOtps()
+    {
+        return $this->hasMany(PhoneOtp::class);
     }
 }

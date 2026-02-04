@@ -35,16 +35,9 @@ class _PaymentSelectionPageState extends State<PaymentSelectionPage> {
     {
       'id': 'qris',
       'name': 'QRIS',
-      'subtitle': 'Pindai QR pengemudi untuk membayar',
+      'subtitle': 'Scan QR code untuk pembayaran instan',
       'icon': 'assets/icons/qris.png',
       'useText': true,
-    },
-    {
-      'id': 'cash',
-      'name': 'Tunai',
-      'subtitle': '',
-      'icon': 'assets/icons/cash.png',
-      'useIcon': Icons.money,
     },
     {
       'id': 'bri',

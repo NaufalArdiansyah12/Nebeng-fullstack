@@ -5,6 +5,8 @@ class User {
   final bool isKTPVerified;
   final int rewardPoints;
   final String? profileImage;
+  final String? phone;
+  final bool phoneVerified;
 
   User({
     required this.id,
@@ -13,6 +15,8 @@ class User {
     required this.isKTPVerified,
     required this.rewardPoints,
     this.profileImage,
+    this.phone,
+    this.phoneVerified = false,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -23,6 +27,8 @@ class User {
       isKTPVerified: json['is_ktp_verified'] ?? false,
       rewardPoints: json['reward_points'] ?? 0,
       profileImage: json['profile_image'],
+      phone: json['phone'],
+      phoneVerified: json['phone_verified'] ?? false,
     );
   }
 
@@ -34,6 +40,8 @@ class User {
       'is_ktp_verified': isKTPVerified,
       'reward_points': rewardPoints,
       'profile_image': profileImage,
+      'phone': phone,
+      'phone_verified': phoneVerified,
     };
   }
 }

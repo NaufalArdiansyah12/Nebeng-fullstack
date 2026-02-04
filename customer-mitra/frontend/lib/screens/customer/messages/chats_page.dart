@@ -75,22 +75,20 @@ class _ChatsPageState extends State<ChatsPage> {
       appBar: AppBar(
         backgroundColor: Color(0xFF0F4AA3),
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Align(
-          alignment: Alignment.centerLeft,
-          child: Text(
-            'Chats',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
+        leading: Navigator.canPop(context)
+            ? IconButton(
+                icon: Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () => Navigator.pop(context),
+              )
+            : null,
+        title: Text(
+          'Chats',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
           ),
         ),
-        titleSpacing: 0,
       ),
       body: Column(
         children: [

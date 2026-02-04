@@ -204,18 +204,34 @@ class _AuthCheckerState extends State<AuthChecker> {
 
   @override
   Widget build(BuildContext context) {
-    // Tampilkan loading indicator sementara mengecek auth
+    // Tampilkan splash yang sama dengan splash login
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: Center(
-        child: SizedBox(
-          width: 60,
-          height: 60,
-          child: CircularProgressIndicator(
-            strokeWidth: 5,
-            valueColor: AlwaysStoppedAnimation<Color>(
-              Theme.of(context).primaryColor,
-            ),
+      backgroundColor: const Color(0xFF1D4ED8),
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                'Nebeng',
+                style: TextStyle(
+                  fontSize: 56,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  letterSpacing: 0,
+                  height: 1,
+                ),
+              ),
+              const SizedBox(height: 40),
+              const SizedBox(
+                width: 40,
+                height: 40,
+                child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+            ],
           ),
         ),
       ),

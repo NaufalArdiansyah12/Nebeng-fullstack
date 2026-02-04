@@ -120,7 +120,7 @@ class AuthController extends Controller
     }
 
     /**
-     * Update user profile (name, email, address, phone, gender, profile photo)
+     * Update user profile (name, email, address, phone, profile photo)
      */
     public function updateProfile(Request $request)
     {
@@ -158,7 +158,6 @@ class AuthController extends Controller
             'email' => 'sometimes|email',
             'address' => 'sometimes|string|nullable',
             'phone' => 'sometimes|string|nullable',
-            'gender' => 'sometimes|string|nullable',
             'profile_photo' => 'sometimes|file|mimes:jpg,jpeg,png|max:5120',
         ];
 
@@ -172,7 +171,7 @@ class AuthController extends Controller
         }
 
         // Update fields
-        $input = $request->only(['name', 'email', 'address', 'phone', 'gender']);
+        $input = $request->only(['name', 'email', 'address', 'phone']);
         foreach ($input as $key => $val) {
             if ($val !== null) {
                 $user->{$key} = $val;
@@ -199,7 +198,6 @@ class AuthController extends Controller
                     'email' => $user->email,
                     'address' => $user->address,
                     'phone' => $user->phone,
-                    'gender' => $user->gender,
                     'profile_photo' => $user->profile_photo,
                     'reward_points' => $user->reward_points ?? 0,
                 ],
@@ -249,7 +247,6 @@ class AuthController extends Controller
                     'email' => $user->email,
                     'address' => $user->address,
                     'phone' => $user->phone,
-                    'gender' => $user->gender,
                     'profile_photo' => $user->profile_photo,
                         'average_rating' => $user->average_rating ?? null,
                         'total_ratings' => $user->total_ratings ?? 0,

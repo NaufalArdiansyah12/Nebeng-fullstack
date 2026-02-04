@@ -8,6 +8,8 @@ import 'create_tebengan_mobil/pages/create_ride_page.dart' as mobil_create;
 import 'create_tebengan_barang/pages/create_ride_page.dart' as barang_create;
 import 'titip_barang/pages/create_titip_barang_page.dart';
 import 'vehicles/vehicle_type_page.dart';
+import 'withdrawal/tarik_saldo_page.dart';
+import 'withdrawal/withdrawal_history_page.dart';
 
 class MitraHomePage extends StatefulWidget {
   final VoidCallback? onOpenHistory;
@@ -24,6 +26,8 @@ class _MitraHomePageState extends State<MitraHomePage> {
   int _totalRatings = 0;
   Map<int, int> _ratingCounts = {5: 0, 4: 0, 3: 0, 2: 0, 1: 0};
   int? _mitraId;
+  double _balance = 0.0;
+  bool _isBalanceVisible = true;
 
   @override
   void initState() {
@@ -47,6 +51,29 @@ class _MitraHomePageState extends State<MitraHomePage> {
           user = profile['data'];
         } else {
           user = profile;
+        }
+
+        // Fetch balance
+        try {
+          final balanceResp = await ApiService.getBalance(token: token);
+          if (balanceResp['success'] == true && balanceResp['data'] != null) {
+            final balance = balanceResp['data']['balance'];
+            if (balance != null) {
+              double newBalance = 0.0;
+              if (balance is num) {
+                newBalance = (balance as num).toDouble();
+              } else if (balance is String) {
+                newBalance = double.tryParse(balance) ?? 0.0;
+              }
+              if (mounted) {
+                setState(() {
+                  _balance = newBalance;
+                });
+              }
+            }
+          }
+        } catch (e) {
+          // ignore error, keep default balance
         }
 
         // Try to fetch driver rating stats via ratings API (preferred)
@@ -278,21 +305,32 @@ class _MitraHomePageState extends State<MitraHomePage> {
                                     color: Colors.white,
                                   ),
                                 ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 8,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: const Text(
-                                    'Tarik Saldo',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Color(0xFF10367d),
-                                      fontWeight: FontWeight.w600,
+                                GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const TarikSaldoPage(),
+                                      ),
+                                    );
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: const Text(
+                                      'Tarik Saldo',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Color(0xFF10367d),
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -301,33 +339,52 @@ class _MitraHomePageState extends State<MitraHomePage> {
                             const SizedBox(height: 12),
                             Row(
                               children: [
-                                const Text(
-                                  'Rp 200.000,00',
-                                  style: TextStyle(
+                                Text(
+                                  _isBalanceVisible
+                                      ? 'Rp ${_balance.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')},00'
+                                      : 'Rp ••••••',
+                                  style: const TextStyle(
                                     fontSize: 28,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white,
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-                                Container(
-                                  width: 32,
-                                  height: 32,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.visibility_outlined,
-                                    color: Colors.white,
-                                    size: 18,
+                                GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _isBalanceVisible = !_isBalanceVisible;
+                                    });
+                                  },
+                                  child: Container(
+                                    width: 32,
+                                    height: 32,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.2),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      _isBalanceVisible
+                                          ? Icons.visibility_outlined
+                                          : Icons.visibility_off_outlined,
+                                      color: Colors.white,
+                                      size: 18,
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 16),
                             GestureDetector(
-                              onTap: () {},
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const WithdrawalHistoryPage(),
+                                  ),
+                                );
+                              },
                               child: Row(
                                 children: [
                                   const Text(

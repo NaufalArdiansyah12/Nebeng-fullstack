@@ -16,15 +16,18 @@ class _KtpVerificationPageState extends State<KtpVerificationPage> {
   final _ktpNumberController = TextEditingController();
   final _ktpNameController = TextEditingController();
   final _birthDateController = TextEditingController();
+  final _addressController = TextEditingController();
 
   File? _ktpPhoto;
   DateTime? _selectedDate;
+  String? _selectedGender;
 
   @override
   void dispose() {
     _ktpNumberController.dispose();
     _ktpNameController.dispose();
     _birthDateController.dispose();
+    _addressController.dispose();
     super.dispose();
   }
 
@@ -71,6 +74,16 @@ class _KtpVerificationPageState extends State<KtpVerificationPage> {
       return;
     }
 
+    if (_selectedGender == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Harap pilih jenis kelamin'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     try {
       // Format date to YYYY-MM-DD
       final formattedDate = _selectedDate != null
@@ -83,6 +96,8 @@ class _KtpVerificationPageState extends State<KtpVerificationPage> {
         'ktp_number': _ktpNumberController.text,
         'ktp_name': _ktpNameController.text,
         'ktp_birth_date': formattedDate,
+        'jenis_kelamin': _selectedGender,
+        'address': _addressController.text,
         'ktp_photo': _ktpPhoto!.path,
       };
 
@@ -178,6 +193,20 @@ class _KtpVerificationPageState extends State<KtpVerificationPage> {
                 return null;
               },
             ),
+            const SizedBox(height: 16),
+            _buildGenderField(),
+            const SizedBox(height: 16),
+            _buildTextField(
+              controller: _addressController,
+              label: 'Alamat',
+              hint: 'Masukkan alamat sesuai KTP',
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Alamat harus diisi';
+                }
+                return null;
+              },
+            ),
             const SizedBox(height: 24),
             _buildPhotoUpload(),
             const SizedBox(height: 24),
@@ -241,6 +270,68 @@ class _KtpVerificationPageState extends State<KtpVerificationPage> {
                   const BorderSide(color: Color(0xFF1E40AF), width: 1.5),
             ),
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGenderField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Jenis Kelamin',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          value: _selectedGender,
+          decoration: InputDecoration(
+            hintText: 'Pilih jenis kelamin',
+            hintStyle: const TextStyle(color: Colors.black38),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.black26, width: 1.2),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.black26, width: 1.2),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide:
+                  const BorderSide(color: Color(0xFF1E40AF), width: 1.5),
+            ),
+          ),
+          items: const [
+            DropdownMenuItem(
+              value: 'Laki-laki',
+              child: Text('Laki-laki'),
+            ),
+            DropdownMenuItem(
+              value: 'Perempuan',
+              child: Text('Perempuan'),
+            ),
+          ],
+          onChanged: (value) {
+            setState(() {
+              _selectedGender = value;
+            });
+          },
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Jenis kelamin harus dipilih';
+            }
+            return null;
+          },
         ),
       ],
     );

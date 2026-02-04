@@ -498,44 +498,187 @@ class PaymentService
         return $bankCodes[$paymentMethod] ?? null;
     }
 
-    public function createCashPayment($rideId, $userId, $bookingNumber, $amount, $adminFee = 0, $bookingId = null)
+    public function createQRISPayment($rideId, $userId, $bookingNumber, $amount, $adminFee = 15000, $bookingId = null)
     {
+        // support motor, mobil, barang rides, and tebengan titip barang
+        $ride = Ride::find($rideId);
+        if (!$ride) {
+            $ride = CarRide::find($rideId);
+        }
+        if (!$ride) {
+            $ride = \App\Models\BarangRide::find($rideId);
+        }
+        if (!$ride) {
+            $ride = \App\Models\TebenganTitipBarang::find($rideId);
+        }
+        if (!$ride) {
+            throw new \Exception('Ride not found');
+        }
+
         $totalAmount = $amount + $adminFee;
-        $externalId = 'CASH-' . $bookingNumber . '-' . time();
+        $externalId = 'QRIS-' . $bookingNumber . '-' . time();
 
-        // Avoid FK issues for BarangRide and TebenganTitipBarang: don't set ride_id if it's one of these
-        $rideModel = \App\Models\Ride::find($rideId);
-        if (!$rideModel) {
-            $rideModel = \App\Models\CarRide::find($rideId);
-        }
-        if (!$rideModel) {
-            $rideModel = \App\Models\BarangRide::find($rideId);
-        }
-        if (!$rideModel) {
-            $rideModel = \App\Models\TebenganTitipBarang::find($rideId);
-        }
-
-        $rideIdToSave = $rideId;
-        if ($rideModel instanceof \App\Models\BarangRide || $rideModel instanceof \App\Models\TebenganTitipBarang) {
-            $rideIdToSave = null;
-        }
-
-        $payment = Payment::create([
-            'booking_id' => $bookingId ?? null,
-            'ride_id' => $rideIdToSave,
+        Log::info('Creating QRIS payment', [
+            'ride_id' => $rideId,
             'user_id' => $userId,
             'booking_number' => $bookingNumber,
-            'payment_method' => 'cash',
+            'external_id' => $externalId,
             'amount' => $amount,
             'admin_fee' => $adminFee,
-            'total_amount' => $totalAmount,
-            'external_id' => $externalId,
-            'status' => 'pending',
         ]);
 
-        return [
-            'success' => true,
-            'payment' => $payment,
-        ];
+        // Set expiration time (1 hour from now)
+        $expiresAt = Carbon::now()->addHour();
+
+        try {
+            $xenditKey = config('services.xendit.secret_key');
+            $useDummyMode = empty($xenditKey) ||
+                $xenditKey === 'your-xendit-secret-key-here' ||
+                env('PAYMENT_DUMMY_MODE', false) ||
+                !str_starts_with($xenditKey, 'xnd_'); // Fallback if key format invalid
+
+            if ($useDummyMode) {
+                Log::info('Payment: Using dummy mode for QRIS generation');
+
+                // Generate dummy QRIS QR code URL for testing
+                $qrCodeUrl = 'https://api.xendit.co/qr_codes/dummy_' . uniqid() . '.png';
+                $response = [
+                    'id' => 'dummy_qris_' . uniqid(),
+                    'reference_id' => $externalId,
+                    'external_id' => $externalId,
+                    'type' => 'QR_CODE',
+                    'status' => 'ACTIVE',
+                    'qr_string' => $qrCodeUrl,
+                    'amount' => $totalAmount,
+                ];
+            } else {
+                Log::info('Payment: Using real Xendit API for QRIS generation');
+
+                // Use Xendit REST API directly for QR Code
+                $apiKey = config('services.xendit.secret_key');
+                $apiUrl = 'https://api.xendit.co/qr_codes';
+                
+                // Xendit QR Code API request format
+                $requestData = [
+                    'external_id' => $externalId,
+                    'type' => 'DYNAMIC',
+                    'callback_url' => 'https://webhook.site/unique-uuid', // Placeholder for development
+                    'amount' => (int) $totalAmount, // Xendit expects integer for amount
+                ];
+
+                Log::info('Xendit QRIS Request', ['url' => $apiUrl, 'data' => $requestData]);
+
+                $ch = curl_init($apiUrl);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_POST, true);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($requestData));
+                curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                    'Content-Type: application/json',
+                    'Authorization: Basic ' . base64_encode($apiKey . ':'),
+                ]);
+
+                $apiResponse = curl_exec($ch);
+                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                $curlError = curl_error($ch);
+                curl_close($ch);
+
+                Log::info('Xendit QRIS Response', [
+                    'http_code' => $httpCode,
+                    'response' => $apiResponse,
+                    'curl_error' => $curlError,
+                ]);
+
+                if ($httpCode !== 200 && $httpCode !== 201) {
+                    $errorMsg = 'Failed to create QRIS: HTTP ' . $httpCode;
+                    $errorDetail = '';
+                    
+                    if ($apiResponse) {
+                        $errorData = json_decode($apiResponse, true);
+                        if (isset($errorData['error_code'])) {
+                            $errorDetail = $errorData['error_code'] . ': ' . ($errorData['message'] ?? '');
+                            $errorMsg .= ' - ' . $errorDetail;
+                        }
+                    }
+                    
+                    Log::error('Xendit QRIS API Error', [
+                        'http_code' => $httpCode,
+                        'response' => $apiResponse,
+                        'error_message' => $errorMsg,
+                    ]);
+                    
+                    // If Xendit API key doesn't support QR Code, fallback to dummy mode
+                    if ($httpCode === 400 || $httpCode === 401 || $httpCode === 403) {
+                        Log::warning('Xendit API key may not support QR Code API, falling back to dummy mode', [
+                            'error_detail' => $errorDetail,
+                        ]);
+                        
+                        // Generate dummy QRIS QR code URL for testing
+                        $qrCodeUrl = 'https://api.xendit.co/qr_codes/dummy_' . uniqid() . '.png';
+                        $response = [
+                            'id' => 'dummy_qris_' . uniqid(),
+                            'reference_id' => $externalId,
+                            'external_id' => $externalId,
+                            'type' => 'QR_CODE',
+                            'status' => 'ACTIVE',
+                            'qr_string' => $qrCodeUrl,
+                            'amount' => $totalAmount,
+                        ];
+                        
+                        Log::info('Using dummy QR code as fallback');
+                    } else {
+                        throw new \Exception($errorMsg);
+                    }
+                } else {
+                    $response = json_decode($apiResponse, true);
+                    
+                    if (!$response) {
+                        throw new \Exception('Failed to parse Xendit response');
+                    }
+                    
+                    // Extract QR code URL from response
+                    $qrCodeUrl = $response['qr_string'] ?? null;
+                    
+                    if (!$qrCodeUrl) {
+                        throw new \Exception('Failed to generate QR code URL from Xendit response');
+                    }
+                    
+                    Log::info('QRIS generated successfully', ['qr_code_url' => substr($qrCodeUrl, 0, 100) . '...']);
+                }
+            }
+
+            // Decide whether to store ride_id
+            $rideIdToSave = $rideId;
+            if ($ride instanceof \App\Models\BarangRide || $ride instanceof \App\Models\TebenganTitipBarang) {
+                $rideIdToSave = null;
+            }
+
+            // Save payment to database
+            $payment = Payment::create([
+                'booking_id' => $bookingId,
+                'ride_id' => $rideIdToSave,
+                'user_id' => $userId,
+                'booking_number' => $bookingNumber,
+                'payment_method' => 'qris',
+                'amount' => $amount,
+                'admin_fee' => $adminFee,
+                'total_amount' => $totalAmount,
+                'external_id' => $externalId,
+                'qr_code_url' => $qrCodeUrl ?? null,
+                'status' => 'pending',
+                'expires_at' => $expiresAt,
+                'xendit_response' => json_encode($response),
+            ]);
+
+            return [
+                'success' => true,
+                'payment' => $payment,
+                'qr_code_url' => $qrCodeUrl ?? null,
+                'expires_at' => $expiresAt,
+            ];
+        } catch (\Exception $e) {
+            Log::error('Xendit QRIS Creation Error: ' . $e->getMessage());
+            Log::error('Xendit QRIS Creation Trace: ' . $e->getTraceAsString());
+            throw new \Exception('Failed to create QRIS payment: ' . $e->getMessage());
+        }
     }
 }

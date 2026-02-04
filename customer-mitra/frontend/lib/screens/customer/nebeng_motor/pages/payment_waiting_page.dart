@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../models/trip_model.dart';
 import '../utils/theme.dart';
 import '../../../../services/payment_service.dart';
@@ -196,7 +197,11 @@ class _PaymentWaitingPageState extends State<PaymentWaitingPage> {
                     const SizedBox(height: 24),
                     _buildVirtualAccountCard(),
                     const SizedBox(height: 24),
-                    _buildTripDetails(),
+                    // Show route card only for QRIS payment, otherwise show trip details
+                    if (widget.paymentMethod.toLowerCase() == 'qris')
+                      _buildRouteCard()
+                    else
+                      _buildTripDetails(),
                     const SizedBox(height: 100),
                   ],
                 ),
@@ -283,6 +288,9 @@ class _PaymentWaitingPageState extends State<PaymentWaitingPage> {
   }
 
   Widget _buildVirtualAccountCard() {
+    // Check if this is QRIS payment
+    bool isQRIS = widget.paymentMethod.toLowerCase() == 'qris';
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -299,21 +307,23 @@ class _PaymentWaitingPageState extends State<PaymentWaitingPage> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: widget.bankCode == 'BRI'
-                      ? const Color(0xFF003D7A)
-                      : Colors.blue,
+                  color: isQRIS
+                      ? const Color(0xFF00A8E8)
+                      : (widget.bankCode == 'BRI'
+                          ? const Color(0xFF003D7A)
+                          : Colors.blue),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Row(
                   children: [
-                    const Icon(
-                      Icons.account_balance,
+                    Icon(
+                      isQRIS ? Icons.qr_code : Icons.account_balance,
                       color: Colors.white,
                       size: 16,
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'BANK ${widget.bankCode}',
+                      isQRIS ? 'BANK QRIS' : 'BANK ${widget.bankCode}',
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
@@ -327,43 +337,121 @@ class _PaymentWaitingPageState extends State<PaymentWaitingPage> {
             ],
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Nomor Virtual Account',
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.black54,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                widget.virtualAccountNumber,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                  letterSpacing: 1,
-                ),
-              ),
-              IconButton(
-                onPressed: () {
-                  Clipboard.setData(
-                      ClipboardData(text: widget.virtualAccountNumber));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Nomor VA disalin'),
-                      duration: Duration(seconds: 2),
-                      backgroundColor: Colors.green,
+
+          // Different UI for QRIS vs Virtual Account
+          if (isQRIS) ...[
+            // QRIS UI
+            Center(
+              child: Column(
+                children: [
+                  const Text(
+                    'Scan QR Code untuk Membayar',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
                     ),
-                  );
-                },
-                icon: const Icon(Icons.copy, size: 20),
-                color: NebengMotorTheme.primaryBlue,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // QR Code Image from Xendit
+                  Container(
+                    width: 200,
+                    height: 200,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey[300]!, width: 2),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: widget.virtualAccountNumber.isNotEmpty
+                          ? QrImageView(
+                              data: widget.virtualAccountNumber,
+                              version: QrVersions.auto,
+                              backgroundColor: Colors.white,
+                            )
+                          : Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.qr_code_2,
+                                  size: 80,
+                                  color: Colors.grey[400],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Loading...',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Gunakan aplikasi m-banking atau e-wallet',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  Text(
+                    'untuk scan QR Code di atas',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ] else ...[
+            // Virtual Account UI (existing)
+            const Text(
+              'Nomor Virtual Account',
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.black54,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    widget.virtualAccountNumber,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () {
+                    Clipboard.setData(
+                        ClipboardData(text: widget.virtualAccountNumber));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Nomor VA disalin'),
+                        duration: Duration(seconds: 2),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.copy, size: 20),
+                  color: NebengMotorTheme.primaryBlue,
+                ),
+              ],
+            ),
+          ],
+
           const Divider(height: 32),
           const Text(
             'Total Pembayaran',
@@ -384,6 +472,119 @@ class _PaymentWaitingPageState extends State<PaymentWaitingPage> {
         ],
       ),
     );
+  }
+
+  Widget _buildRouteCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Informasi Perjalanan',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Icon(
+                Icons.calendar_today,
+                size: 16,
+                color: Colors.grey[600],
+              ),
+              const SizedBox(width: 8),
+              Text(
+                _formatTripDate(),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey[700],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildLocationRow(
+            icon: Icons.radio_button_checked,
+            iconColor: NebengMotorTheme.greenIcon,
+            location: widget.trip.departureLocation,
+            description: widget.trip.departureAddress,
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.only(left: 10),
+            child: Column(
+              children: List.generate(
+                3,
+                (index) => Container(
+                  width: 2,
+                  height: 4,
+                  margin: const EdgeInsets.symmetric(vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[400],
+                    borderRadius: BorderRadius.circular(1),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _buildLocationRow(
+            icon: Icons.location_on,
+            iconColor: Colors.red,
+            location: widget.trip.arrivalLocation,
+            description: widget.trip.arrivalAddress,
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue[50],
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.people,
+                  size: 20,
+                  color: NebengMotorTheme.primaryBlue,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '${widget.totalPassengers} Penebeng',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: NebengMotorTheme.primaryBlue,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  'No. ${widget.bookingNumber}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[700],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatTripDate() {
+    // TripModel already has formatted date and time as strings
+    return '${widget.trip.date} | ${widget.trip.time}';
   }
 
   Widget _buildTripDetails() {

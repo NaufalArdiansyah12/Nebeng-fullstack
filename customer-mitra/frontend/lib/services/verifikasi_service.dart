@@ -88,6 +88,7 @@ class VerifikasiService {
     required String namaLengkap,
     required String nik,
     required String tanggalLahir,
+    required String jenisKelamin,
     required String alamat,
   }) async {
     final uri = Uri.parse(
@@ -103,6 +104,7 @@ class VerifikasiService {
     request.fields['nama_lengkap'] = namaLengkap;
     request.fields['nik'] = nik;
     request.fields['tanggal_lahir'] = tanggalLahir;
+    request.fields['jenis_kelamin'] = jenisKelamin;
     request.fields['alamat'] = alamat;
 
     final streamedResponse = await request.send();
@@ -128,6 +130,7 @@ class VerifikasiService {
     required String namaLengkap,
     required String nik,
     required String tanggalLahir,
+    required String jenisKelamin,
     required String alamat,
   }) async {
     final uri = Uri.parse(
@@ -143,6 +146,7 @@ class VerifikasiService {
     request.fields['nama_lengkap'] = namaLengkap;
     request.fields['nik'] = nik;
     request.fields['tanggal_lahir'] = tanggalLahir;
+    request.fields['jenis_kelamin'] = jenisKelamin;
     request.fields['alamat'] = alamat;
 
     final streamedResponse = await request.send();

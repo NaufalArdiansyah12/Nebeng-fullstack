@@ -52,11 +52,25 @@ Route::prefix('api/v1')->group(function () {
     // Update profile (authenticated via Bearer token)
     Route::post('/auth/update-profile', [\App\Http\Controllers\Api\AuthController::class, 'updateProfile']);
 
+    // Balance endpoint (requires auth via bearer token)
+    Route::get('/balance', [UserController::class, 'getBalance']);
+
+    // Saved Passengers (requires auth via bearer token)
+    Route::get('/saved-passengers', [\App\Http\Controllers\Api\SavedPassengerController::class, 'index']);
+    Route::post('/saved-passengers', [\App\Http\Controllers\Api\SavedPassengerController::class, 'store']);
+    Route::delete('/saved-passengers/{id}', [\App\Http\Controllers\Api\SavedPassengerController::class, 'destroy']);
+
     // PIN Management (requires auth via bearer token)
     Route::get('/pin/check', [\App\Http\Controllers\Api\PinController::class, 'checkPin']);
     Route::post('/pin/create', [\App\Http\Controllers\Api\PinController::class, 'createPin']);
     Route::post('/pin/verify', [\App\Http\Controllers\Api\PinController::class, 'verifyPin']);
     Route::post('/pin/update', [\App\Http\Controllers\Api\PinController::class, 'updatePin']);
+
+    // Phone Verification (requires auth via bearer token)
+    Route::post('/phone-verification/send-otp', [\App\Http\Controllers\Api\PhoneVerificationController::class, 'sendOtp']);
+    Route::post('/phone-verification/verify-otp', [\App\Http\Controllers\Api\PhoneVerificationController::class, 'verifyOtp']);
+    Route::post('/phone-verification/resend-otp', [\App\Http\Controllers\Api\PhoneVerificationController::class, 'resendOtp']);
+    Route::get('/phone-verification/status', [\App\Http\Controllers\Api\PhoneVerificationController::class, 'getPhoneStatus']);
 
     // Rides (public - list and view)
     Route::get('/rides', [RideController::class, 'index']);
@@ -236,6 +250,16 @@ Route::prefix('api/v1')->group(function () {
     Route::get('/mitra/verification/bank', [\App\Http\Controllers\VerifikasiBankController::class, 'show']);
     Route::post('/mitra/verification/bank', [\App\Http\Controllers\VerifikasiBankController::class, 'store']);
     Route::put('/mitra/verification/bank', [\App\Http\Controllers\VerifikasiBankController::class, 'update']);
+
+    // Mitra Withdrawal (Tarik Saldo)
+    Route::get('/mitra/withdrawal/balance', [\App\Http\Controllers\Mitra\WithdrawalController::class, 'getBalanceInfo']);
+    Route::post('/mitra/withdrawal/submit', [\App\Http\Controllers\Mitra\WithdrawalController::class, 'submitRequest']);
+    Route::get('/mitra/withdrawal/{id}', [\App\Http\Controllers\Mitra\WithdrawalController::class, 'getDetail']);
+    Route::get('/mitra/withdrawal/{id}/status', [\App\Http\Controllers\Mitra\WithdrawalController::class, 'checkStatus']);
+    Route::get('/mitra/withdrawal/history/list', [\App\Http\Controllers\Mitra\WithdrawalController::class, 'getHistory']);
+    Route::post('/mitra/withdrawal/{id}/reject', [\App\Http\Controllers\Mitra\WithdrawalController::class, 'rejectWithdrawal']);
+    Route::post('/mitra/pin/set', [\App\Http\Controllers\Mitra\WithdrawalController::class, 'setPin']);
+    Route::post('/mitra/pin/verify', [\App\Http\Controllers\Mitra\WithdrawalController::class, 'verifyPin']);
 
     // Admin routes for managing locations (requires auth:sanctum)
     Route::middleware('auth:sanctum')->prefix('admin')->group(function () {

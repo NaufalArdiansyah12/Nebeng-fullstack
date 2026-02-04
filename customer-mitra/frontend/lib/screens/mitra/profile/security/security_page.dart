@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'change_password_page.dart';
+import 'phone_verification_page.dart';
 
 class SecurityPage extends StatefulWidget {
   const SecurityPage({Key? key}) : super(key: key);
@@ -66,7 +67,15 @@ class _SecurityPageState extends State<SecurityPage> {
             title: 'Nomor ponsel terverifikasi',
             subtitle: _phone,
             onTap: () {
-              // TODO: Implement phone verification
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PhoneVerificationPage(),
+                ),
+              ).then((_) {
+                // Reload phone status when returning
+                _loadUserPhone();
+              });
             },
           ),
           const Divider(height: 1),

@@ -59,6 +59,7 @@ int color notification_icon_bg_color 0x7f020014
 int color notification_material_background_media_default_color 0x7f020015
 int color primary_text_default_material_dark 0x7f020016
 int color secondary_text_default_material_dark 0x7f020017
+int color splash_background 0x7f020018
 int dimen browser_actions_context_menu_max_width 0x7f030000
 int dimen browser_actions_context_menu_min_padding 0x7f030001
 int dimen compat_button_inset_horizontal_material 0x7f030002

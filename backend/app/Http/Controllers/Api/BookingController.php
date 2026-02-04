@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Ride;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
@@ -42,6 +43,23 @@ class BookingController extends Controller
                 'message' => 'Validation error',
                 'errors' => $validator->errors(),
             ], 422);
+        }
+
+        // Check if user has verified their phone number
+        $user = User::find($request->user_id);
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User tidak ditemukan',
+            ], 404);
+        }
+
+        if (!$user->phone_verified) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda harus memverifikasi nomor HP terlebih dahulu sebelum dapat melakukan booking. Silakan verifikasi nomor HP Anda di menu Keamanan.',
+                'requires_phone_verification' => true,
+            ], 403);
         }
 
         // Ensure ride exists and has enough seats (basic check)
@@ -193,8 +211,6 @@ class BookingController extends Controller
             return response()->json(['success' => false, 'message' => 'User tidak ditemukan'], 404);
         }
 
-        \Log::info('MyBookings Request', ['user_id' => $user->id, 'type' => $request->query('type', 'semua')]);
-
         $type = $request->query('type', 'semua');
 
         $results = [];
@@ -316,8 +332,6 @@ class BookingController extends Controller
             $tb = isset($b['created_at']) ? strtotime($b['created_at']) : 0;
             return $tb <=> $ta;
         });
-
-        \Log::info('MyBookings Response', ['user_id' => $user->id, 'total_results' => count($results)]);
 
         return response()->json(['success' => true, 'data' => $results]);
     }

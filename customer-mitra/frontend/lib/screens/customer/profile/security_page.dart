@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:easy_localization/easy_localization.dart';
 import 'change_password_page.dart';
+import 'phone_verification_page.dart';
 
 class SecurityPage extends StatefulWidget {
   const SecurityPage({Key? key}) : super(key: key);
@@ -37,9 +37,9 @@ class _SecurityPageState extends State<SecurityPage> {
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(
-          'security'.tr(),
-          style: const TextStyle(
+        title: const Text(
+          'Keamanan',
+          style: TextStyle(
             color: Colors.black,
             fontSize: 20,
             fontWeight: FontWeight.w600,
@@ -51,7 +51,7 @@ class _SecurityPageState extends State<SecurityPage> {
         children: [
           _buildMenuItem(
             icon: Icons.lock_outline,
-            title: 'change_password'.tr(),
+            title: 'Ubah Kata Sandi',
             onTap: () {
               Navigator.push(
                 context,
@@ -64,10 +64,18 @@ class _SecurityPageState extends State<SecurityPage> {
           const Divider(height: 1),
           _buildMenuItem(
             icon: Icons.phone_android_outlined,
-            title: 'verified_phone'.tr(),
+            title: 'Nomor ponsel terverifikasi',
             subtitle: _phone,
             onTap: () {
-              // TODO: Implement phone verification
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PhoneVerificationPage(),
+                ),
+              ).then((_) {
+                // Reload phone status when returning
+                _loadUserPhone();
+              });
             },
           ),
           const Divider(height: 1),

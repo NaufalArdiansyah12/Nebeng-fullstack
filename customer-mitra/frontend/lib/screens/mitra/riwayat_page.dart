@@ -16,6 +16,10 @@ class _MitraRiwayatPageState extends State<MitraRiwayatPage> {
   String selectedType = 'Semua';
   bool _isShowingSessionDialog = false;
 
+  // Pagination variables
+  int _currentPage = 1;
+  final int _itemsPerPage = 4;
+
   List<String> get typeTabs {
     final tabs = <String>['Semua'];
     if (items.any((it) => (it['type'] ?? '') == 'motor')) tabs.add('Motor');
@@ -154,7 +158,10 @@ class _MitraRiwayatPageState extends State<MitraRiwayatPage> {
           return Expanded(
             child: InkWell(
               onTap: () {
-                setState(() => selected = c);
+                setState(() {
+                  selected = c;
+                  _currentPage = 1; // Reset to page 1
+                });
                 _loadAndFetch();
               },
               child: Container(
@@ -205,7 +212,10 @@ class _MitraRiwayatPageState extends State<MitraRiwayatPage> {
               margin: const EdgeInsets.only(right: 8),
               child: InkWell(
                 onTap: () {
-                  setState(() => selectedType = c);
+                  setState(() {
+                    selectedType = c;
+                    _currentPage = 1; // Reset to page 1
+                  });
                 },
                 borderRadius: BorderRadius.circular(20),
                 child: Container(
@@ -254,6 +264,115 @@ class _MitraRiwayatPageState extends State<MitraRiwayatPage> {
     return items
         .where((it) => (it['type'] ?? '').toString().toLowerCase() == t)
         .toList();
+  }
+
+  // Pagination helpers
+  int get _totalPages {
+    final totalItems = _visibleItems.length;
+    return (totalItems / _itemsPerPage).ceil();
+  }
+
+  List<Map<String, dynamic>> get _paginatedItems {
+    final startIndex = (_currentPage - 1) * _itemsPerPage;
+    final endIndex = startIndex + _itemsPerPage;
+    final visibleItems = _visibleItems;
+
+    if (startIndex >= visibleItems.length) return [];
+
+    return visibleItems.sublist(
+      startIndex,
+      endIndex > visibleItems.length ? visibleItems.length : endIndex,
+    );
+  }
+
+  void _goToPage(int page) {
+    if (page >= 1 && page <= _totalPages) {
+      setState(() {
+        _currentPage = page;
+      });
+    }
+  }
+
+  Widget _buildPagination() {
+    if (_totalPages <= 1) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(color: Colors.grey.shade200, width: 1),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Previous button
+          IconButton(
+            icon: const Icon(Icons.chevron_left),
+            onPressed:
+                _currentPage > 1 ? () => _goToPage(_currentPage - 1) : null,
+            color: _currentPage > 1 ? const Color(0xFF1E40AF) : Colors.grey,
+            disabledColor: Colors.grey.shade300,
+          ),
+
+          const SizedBox(width: 8),
+
+          // Page numbers
+          ...List.generate(_totalPages, (index) {
+            final pageNumber = index + 1;
+            final isCurrentPage = pageNumber == _currentPage;
+
+            return GestureDetector(
+              onTap: () => _goToPage(pageNumber),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: isCurrentPage
+                      ? const Color(0xFF1E40AF)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: isCurrentPage
+                        ? const Color(0xFF1E40AF)
+                        : Colors.grey.shade300,
+                    width: 1,
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    '$pageNumber',
+                    style: TextStyle(
+                      color:
+                          isCurrentPage ? Colors.white : Colors.grey.shade700,
+                      fontWeight:
+                          isCurrentPage ? FontWeight.w600 : FontWeight.w500,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
+
+          const SizedBox(width: 8),
+
+          // Next button
+          IconButton(
+            icon: const Icon(Icons.chevron_right),
+            onPressed: _currentPage < _totalPages
+                ? () => _goToPage(_currentPage + 1)
+                : null,
+            color: _currentPage < _totalPages
+                ? const Color(0xFF1E40AF)
+                : Colors.grey,
+            disabledColor: Colors.grey.shade300,
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _card(Map<String, dynamic> item) {
@@ -540,7 +659,7 @@ class _MitraRiwayatPageState extends State<MitraRiwayatPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -629,14 +748,22 @@ class _MitraRiwayatPageState extends State<MitraRiwayatPage> {
                     ),
                   );
                 }
-                return RefreshIndicator(
-                  onRefresh: _loadAndFetch,
-                  color: const Color(0xFF0F4AA3),
-                  child: ListView.builder(
-                    padding: const EdgeInsets.only(top: 16, bottom: 24),
-                    itemCount: _visibleItems.length,
-                    itemBuilder: (context, i) => _card(_visibleItems[i]),
-                  ),
+                return Column(
+                  children: [
+                    Expanded(
+                      child: RefreshIndicator(
+                        onRefresh: _loadAndFetch,
+                        color: const Color(0xFF0F4AA3),
+                        child: ListView.builder(
+                          padding: const EdgeInsets.only(top: 16, bottom: 24),
+                          itemCount: _paginatedItems.length,
+                          itemBuilder: (context, i) =>
+                              _card(_paginatedItems[i]),
+                        ),
+                      ),
+                    ),
+                    _buildPagination(),
+                  ],
                 );
               },
             ),
