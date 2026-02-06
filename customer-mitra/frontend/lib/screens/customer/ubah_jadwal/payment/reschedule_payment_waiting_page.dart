@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../nebeng_motor/models/trip_model.dart';
 import '../../nebeng_motor/utils/theme.dart';
-import '../../../../services/payment_service.dart';
+import '../../../../services/customer/payment_service.dart';
 import '../../../../services/api_service.dart';
 import 'reschedule_payment_success_page.dart';
 

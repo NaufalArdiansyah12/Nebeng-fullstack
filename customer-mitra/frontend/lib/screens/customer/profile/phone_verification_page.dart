@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../../services/api/phone_verification_service.dart';
+import '../../../services/shared/phone_verification_service.dart';
 import 'otp_verification_page.dart';
 
 class PhoneVerificationPage extends StatefulWidget {

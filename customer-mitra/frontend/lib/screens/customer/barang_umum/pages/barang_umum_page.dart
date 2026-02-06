@@ -9,7 +9,7 @@ import '../../nebeng_barang/widgets/ukuran_picker.dart';
 import '../../nebeng_barang/widgets/barang_form.dart';
 import '../../../../services/api_service.dart';
 import '../../../../widgets/custom_calendar_widget.dart';
-import 'penerima_picker_page.dart';
+
 import 'trip_list_barang_umum_page.dart';
 
 class BarangUmumPage extends StatefulWidget {

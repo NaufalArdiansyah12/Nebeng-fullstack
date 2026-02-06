@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../../services/chat_service.dart';
-import '../../../utils/chat_helper.dart';
+import '../../../services/shared/chat_service.dart';
+
 import 'chat_detail_page.dart';
 
 class MitraChatsPage extends StatefulWidget {
@@ -12,9 +12,10 @@ class MitraChatsPage extends StatefulWidget {
   State<MitraChatsPage> createState() => _MitraChatsPageState();
 }
 
-class _MitraChatsPageState extends State<MitraChatsPage> {
+class _MitraChatsPageState extends State<MitraChatsPage> with SingleTickerProviderStateMixin {
   final ChatService _chatService = ChatService();
   final TextEditingController _searchController = TextEditingController();
+  TabController? _tabController;
   int? _userId;
   String _userRole = 'mitra';
   String _searchQuery = '';
@@ -22,6 +23,7 @@ class _MitraChatsPageState extends State<MitraChatsPage> {
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _loadUserData();
     _searchController.addListener(() {
       setState(() {
@@ -32,6 +34,7 @@ class _MitraChatsPageState extends State<MitraChatsPage> {
 
   @override
   void dispose() {
+    _tabController?.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -40,8 +43,6 @@ class _MitraChatsPageState extends State<MitraChatsPage> {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getInt('user_id');
     final userRole = prefs.getString('user_role') ?? 'mitra';
-
-    print('🔍 MitraChatsPage - User ID: $userId, Role: $userRole');
 
     if (mounted) {
       setState(() {
@@ -85,48 +86,88 @@ class _MitraChatsPageState extends State<MitraChatsPage> {
             color: Colors.white,
           ),
         ),
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: Colors.white,
+          indicatorWeight: 3,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
+          labelStyle: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+          ),
+          unselectedLabelStyle: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+          ),
+          tabs: [
+            Tab(
+              icon: Icon(Icons.person),
+              text: 'Customer',
+            ),
+            Tab(
+              icon: Icon(Icons.store),
+              text: 'Pos Mitra',
+            ),
+          ],
+        ),
       ),
-      body: Column(
+      body: TabBarView(
+        controller: _tabController,
         children: [
-          // Search Bar
-          Container(
-            padding: EdgeInsets.all(12),
-            color: Colors.white,
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search',
-                hintStyle: TextStyle(color: Colors.grey[400]),
-                prefixIcon: Icon(Icons.search, color: Colors.grey[400]),
-                filled: true,
-                fillColor: Color(0xFFF5F5F5),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding:
-                    EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          // Tab 1: Customer Conversations
+          _buildChatList(filterRole: 'customer'),
+          // Tab 2: Pos Mitra Conversations
+          _buildChatList(filterRole: 'posmitra'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChatList({required String filterRole}) {
+    return Column(
+      children: [
+        // Search Bar
+        Container(
+          padding: EdgeInsets.all(12),
+          color: Colors.white,
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Search',
+              hintStyle: TextStyle(color: Colors.grey[400]),
+              prefixIcon: Icon(Icons.search, color: Colors.grey[400]),
+              filled: true,
+              fillColor: Color(0xFFF5F5F5),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
               ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             ),
           ),
-          // Chat List
-          Expanded(
-            child: StreamBuilder<List<Map<String, dynamic>>>(
+        ),
+        // Chat List
+        Expanded(
+          child: _buildConversationList(filterRole: filterRole),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildConversationList({required String filterRole}) {
+    return StreamBuilder<List<Map<String, dynamic>>>(
               stream: _chatService.getConversations(_userId!, _userRole),
               builder: (context, snapshot) {
-                print(
-                    '🎬 MitraChatsPage StreamBuilder state: ${snapshot.connectionState}');
-                print('🎬 Has data: ${snapshot.hasData}');
-                print('🎬 Has error: ${snapshot.hasError}');
-
                 if (snapshot.connectionState == ConnectionState.waiting &&
                     !snapshot.hasData) {
                   return Center(
@@ -168,22 +209,46 @@ class _MitraChatsPageState extends State<MitraChatsPage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.message_outlined,
-                            size: 80, color: Colors.grey),
+                        Icon(
+                          filterRole == 'posmitra' 
+                            ? Icons.store_outlined 
+                            : Icons.message_outlined,
+                          size: 80, 
+                          color: Colors.grey
+                        ),
                         SizedBox(height: 16),
                         Text('Belum ada percakapan',
                             style: TextStyle(fontSize: 16, color: Colors.grey)),
                         SizedBox(height: 8),
                         Text(
-                            'Chat akan muncul setelah ada customer yang booking',
-                            style: TextStyle(fontSize: 12, color: Colors.grey)),
+                            filterRole == 'posmitra'
+                              ? 'Chat dengan Pos Mitra akan muncul setelah Anda membuat tebengan'
+                              : 'Chat akan muncul setelah ada customer yang booking',
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                            textAlign: TextAlign.center,
+                        ),
                       ],
                     ),
                   );
                 }
 
-                // Filter conversations based on search query
-                final conversations = snapshot.data!.where((conv) {
+                // Filter conversations based on role and search query
+                final allConversations = snapshot.data!.where((conv) {
+                  // Filter by role first
+                  final otherUserRole = conv['otherUserRole'] as String?;
+                  final isOldFormat = conv['_type'] == 'old_format';
+                  
+                  // For old format (customer-mitra), consider it as customer conversation
+                  bool matchesRole;
+                  if (filterRole == 'customer') {
+                    matchesRole = isOldFormat || otherUserRole == 'customer';
+                  } else {
+                    matchesRole = !isOldFormat && otherUserRole == 'posmitra';
+                  }
+                  
+                  if (!matchesRole) return false;
+                  
+                  // Then filter by search query
                   if (_searchQuery.isEmpty) return true;
                   final customerName =
                       (conv['customerName'] as String? ?? '').toLowerCase();
@@ -193,19 +258,49 @@ class _MitraChatsPageState extends State<MitraChatsPage> {
                       lastMessage.contains(_searchQuery);
                 }).toList();
 
-                if (conversations.isEmpty && _searchQuery.isNotEmpty) {
+                if (allConversations.isEmpty) {
+                  if (_searchQuery.isNotEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.search_off, size: 80, color: Colors.grey),
+                          SizedBox(height: 16),
+                          Text('No chats found',
+                              style: TextStyle(fontSize: 16, color: Colors.grey)),
+                        ],
+                      ),
+                    );
+                  }
+                  
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.search_off, size: 80, color: Colors.grey),
+                        Icon(
+                          filterRole == 'posmitra' 
+                            ? Icons.store_outlined 
+                            : Icons.message_outlined,
+                          size: 80, 
+                          color: Colors.grey
+                        ),
                         SizedBox(height: 16),
-                        Text('No chats found',
+                        Text('Belum ada percakapan',
                             style: TextStyle(fontSize: 16, color: Colors.grey)),
+                        SizedBox(height: 8),
+                        Text(
+                            filterRole == 'posmitra'
+                              ? 'Chat dengan Pos Mitra akan muncul setelah Anda membuat tebengan'
+                              : 'Chat akan muncul setelah ada customer yang booking',
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                            textAlign: TextAlign.center,
+                        ),
                       ],
                     ),
                   );
                 }
+
+                final conversations = allConversations;
 
                 return ListView.builder(
                   itemCount: conversations.length,
@@ -220,6 +315,17 @@ class _MitraChatsPageState extends State<MitraChatsPage> {
                     final lastMessageAt = conv['lastMessageAt'] as Timestamp?;
                     final bookingType =
                         conv['bookingType'] as String? ?? 'motor';
+                    final conversationContext = conv['context'] as String?;
+                    final otherUserRole = conv['otherUserRole'] as String?;
+
+                    // Determine if this is pos mitra conversation
+                    final isPosMitra = otherUserRole == 'posmitra';
+
+                    // Create display name with context
+                    String displayName = customerName;
+                    if (isPosMitra && conversationContext != null) {
+                      displayName = '$customerName ($conversationContext)';
+                    }
 
                     String timeText = '';
                     if (lastMessageAt != null) {
@@ -274,6 +380,7 @@ class _MitraChatsPageState extends State<MitraChatsPage> {
                               otherUserName: customerName,
                               otherUserPhoto: customerPhoto,
                               bookingType: bookingType,
+                              isPosMitra: isPosMitra,
                             ),
                           ),
                         );
@@ -290,26 +397,51 @@ class _MitraChatsPageState extends State<MitraChatsPage> {
                         child: Row(
                           children: [
                             // Avatar
-                            CircleAvatar(
-                              radius: 28,
-                              backgroundColor: Color(0xFF0F4AA3),
-                              backgroundImage: customerPhoto != null &&
-                                      customerPhoto.isNotEmpty
-                                  ? NetworkImage(customerPhoto)
-                                  : null,
-                              child:
-                                  customerPhoto == null || customerPhoto.isEmpty
-                                      ? Text(
-                                          customerName.isNotEmpty
-                                              ? customerName[0].toUpperCase()
-                                              : 'C',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.w600,
-                                          ),
+                            Stack(
+                              children: [
+                                CircleAvatar(
+                                  radius: 28,
+                                  backgroundColor: isPosMitra
+                                      ? Color(0xFFEC4899)
+                                      : Color(0xFF0F4AA3),
+                                  backgroundImage: customerPhoto != null &&
+                                          customerPhoto.isNotEmpty
+                                      ? NetworkImage(customerPhoto)
+                                      : null,
+                                  child: customerPhoto == null ||
+                                          customerPhoto.isEmpty
+                                      ? Icon(
+                                          isPosMitra
+                                              ? Icons.store
+                                              : Icons.person,
+                                          color: Colors.white,
+                                          size: 24,
                                         )
                                       : null,
+                                ),
+                                if (isPosMitra)
+                                  Positioned(
+                                    right: 0,
+                                    bottom: 0,
+                                    child: Container(
+                                      width: 18,
+                                      height: 18,
+                                      decoration: BoxDecoration(
+                                        color: Color(0xFFEC4899),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Colors.white,
+                                          width: 2,
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        Icons.location_on,
+                                        size: 10,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
                             SizedBox(width: 12),
 
@@ -323,17 +455,32 @@ class _MitraChatsPageState extends State<MitraChatsPage> {
                                         MainAxisAlignment.spaceBetween,
                                     children: [
                                       Expanded(
-                                        child: Text(
-                                          customerName,
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: unreadCount > 0
-                                                ? FontWeight.w600
-                                                : FontWeight.w500,
-                                            color: Colors.black87,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              displayName,
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: unreadCount > 0
+                                                    ? FontWeight.w600
+                                                    : FontWeight.w500,
+                                                color: Colors.black87,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            if (isPosMitra)
+                                              Text(
+                                                'Pos Mitra',
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  color: Color(0xFFEC4899),
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                          ],
                                         ),
                                       ),
                                       if (timeText.isNotEmpty)
@@ -407,10 +554,6 @@ class _MitraChatsPageState extends State<MitraChatsPage> {
                   },
                 );
               },
-            ),
-          ),
-        ],
-      ),
-    );
+            );
   }
 }

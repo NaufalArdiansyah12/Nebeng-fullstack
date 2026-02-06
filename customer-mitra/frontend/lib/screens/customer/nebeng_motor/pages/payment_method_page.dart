@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/trip_model.dart';
 import '../utils/theme.dart';
 import '../../../../services/api_service.dart';
-import '../../../../services/payment_service.dart';
+import '../../../../services/customer/payment_service.dart';
 import '../../../../utils/chat_helper.dart';
 import 'payment_waiting_page.dart';
 

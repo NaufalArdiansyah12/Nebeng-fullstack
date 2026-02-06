@@ -33,9 +33,11 @@ class _RewardDetailPageState extends State<RewardDetailPage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF1E3A8A),
-        title: const Text('Penawaran Spesial'),
+        title: const Text('Penawaran Spesial',
+            style: TextStyle(color: Colors.white)),
+        iconTheme: const IconThemeData(color: Colors.white),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
       ),
@@ -123,11 +125,13 @@ class _RewardDetailPageState extends State<RewardDetailPage> {
             ElevatedButton(
               onPressed: _isProcessing ? null : _redeem,
               style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1E3A8A)),
+                  backgroundColor: const Color(0xFF1E3A8A),
+                  foregroundColor: Colors.white),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 20.0, vertical: 12.0),
-                child: Text(_isProcessing ? 'Memproses...' : 'Tukar'),
+                child: Text(_isProcessing ? 'Memproses...' : 'Tukar',
+                    style: const TextStyle(color: Colors.white)),
               ),
             ),
           ],

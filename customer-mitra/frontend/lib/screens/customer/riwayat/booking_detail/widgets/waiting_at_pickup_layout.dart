@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:easy_localization/easy_localization.dart' hide TextDirection;
-import '../../../../../services/chat_service.dart';
+import '../../../../../services/shared/chat_service.dart';
 import '../../../../../utils/chat_helper.dart';
 import '../../../messages/chats_page.dart';
 

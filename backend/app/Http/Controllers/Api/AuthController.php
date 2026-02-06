@@ -13,6 +13,65 @@ use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
+    public function register(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:8',
+            'password_confirmation' => 'required|string|same:password',
+        ], [
+            'name.required' => 'Nama harus diisi',
+            'email.required' => 'Email harus diisi',
+            'email.email' => 'Format email tidak valid',
+            'email.unique' => 'Email sudah terdaftar',
+            'password.required' => 'Password harus diisi',
+            'password.min' => 'Password minimal 8 karakter',
+            'password_confirmation.required' => 'Konfirmasi password harus diisi',
+            'password_confirmation.same' => 'Konfirmasi password tidak sama dengan password',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            // Create new user with default role 'customer'
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'role' => 'customer', // default role
+                'balance' => 0,
+                'reward_points' => 0,
+                'phone_verified' => false,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Registrasi berhasil',
+                'data' => [
+                    'user' => [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                        'role' => $user->role,
+                    ],
+                ],
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat registrasi',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function login(Request $request)
     {
         $request->validate([

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../services/api_service.dart';
-import '../../../../services/payment_service.dart';
+import '../../../../services/customer/payment_service.dart';
 import '../../../../utils/chat_helper.dart';
 import '../../nebeng_motor/pages/payment_waiting_page.dart';
 import '../../nebeng_motor/models/trip_model.dart' as motor_model;

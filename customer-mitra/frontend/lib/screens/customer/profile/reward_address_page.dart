@@ -47,7 +47,8 @@ class _RewardAddressPageState extends State<RewardAddressPage> {
             onPressed: () => Navigator.of(context).pop(true),
             child: const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Text('Iya'),
+              child: Text('Iya',
+                  style: const TextStyle(color: Colors.white)),
             ),
           ),
         ],
@@ -184,10 +185,12 @@ class _RewardAddressPageState extends State<RewardAddressPage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF1E3A8A),
-        title: const Text('Tambah Alamat'),
+        title: const Text('Tambah Alamat',
+        style: const TextStyle(color: Colors.white)),
         leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => Navigator.of(context).maybePop()),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -228,7 +231,8 @@ class _RewardAddressPageState extends State<RewardAddressPage> {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 14.0),
                     child: Text(
-                        _isSaving ? 'Memproses...' : 'Simpan Alamat & Tukar'),
+                        _isSaving ? 'Memproses...' : 'Tukar',
+                        style: const TextStyle(color: Colors.white)),
                   ),
                 ),
               ),

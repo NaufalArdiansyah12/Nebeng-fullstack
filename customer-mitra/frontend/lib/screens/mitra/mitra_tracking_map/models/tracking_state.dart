@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
+
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
-import '../../../../services/chat_service.dart';
+import '../../../../services/shared/chat_service.dart';
 
 /// Model class to hold all tracking state variables
 class TrackingState {

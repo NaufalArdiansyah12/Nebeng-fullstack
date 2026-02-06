@@ -6,10 +6,12 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'services/notification_service.dart';
+import 'services/shared/notification_service.dart';
+import 'models/user_role.dart';
 import 'screens/auth/splash_screen.dart';
 import 'screens/customer/main_page.dart';
 import 'screens/mitra/main_page.dart';
+import 'screens/posmitra/main_page.dart';
 import 'package:http/http.dart' as http;
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -182,12 +184,20 @@ class _AuthCheckerState extends State<AuthChecker> {
 
     if (token != null && token.isNotEmpty) {
       // User sudah login, redirect berdasarkan role
-      if (role == 'mitra') {
+      final userRole = UserRole.fromString(role);
+
+      if (userRole.isMitra) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const MitraMainPage()),
         );
+      } else if (userRole.isPosMitra) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const PosMitraMainPage()),
+        );
       } else {
+        // Default customer atau role lainnya
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const MainPage()),

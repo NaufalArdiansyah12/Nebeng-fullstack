@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/trip_model.dart';
 import '../../nebeng_motor/utils/theme.dart';
-import '../../../../services/payment_service.dart';
+import '../../../../services/customer/payment_service.dart';
 import 'payment_success_page.dart';
 
 class PaymentWaitingPage extends StatefulWidget {

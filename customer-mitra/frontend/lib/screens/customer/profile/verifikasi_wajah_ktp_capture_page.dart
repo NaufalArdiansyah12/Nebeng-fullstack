@@ -4,7 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'verifikasi_type_page.dart';
 import 'verifikasi_success_page.dart';
-import '../../../services/verifikasi_service.dart';
+import '../../../services/mitra/verifikasi_service.dart';
 import '../../../models/verifikasi_model.dart';
 
 class VerifikasiWajahKtpCapturePage extends StatefulWidget {

@@ -4,7 +4,7 @@ import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import '../widgets/map_placeholder.dart';
 import '../widgets/location_card.dart';
 import '../utils/booking_formatters.dart';
-import '../../../../../services/chat_service.dart';
+import '../../../../../services/shared/chat_service.dart';
 import '../../../../../utils/chat_helper.dart';
 import '../../../messages/chats_page.dart';
 

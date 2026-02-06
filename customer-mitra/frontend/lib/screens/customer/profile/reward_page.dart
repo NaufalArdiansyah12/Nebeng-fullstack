@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../services/api_service.dart';
 import 'reward_detail_page.dart';
+import 'reward_history_page.dart';
+import 'add_points_page.dart';
 
 class RewardPage extends StatefulWidget {
   const RewardPage({Key? key}) : super(key: key);
@@ -114,17 +116,6 @@ class _RewardPageState extends State<RewardPage> {
                 ),
               ),
               const SizedBox(width: 12),
-              const Spacer(),
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.notifications_none,
-                    color: Color(0xFF1E3A8A)),
-              ),
             ],
           ),
         ),
@@ -209,7 +200,14 @@ class _RewardPageState extends State<RewardPage> {
                               children: [
                                 Expanded(
                                   child: TextButton(
-                                    onPressed: () {},
+                                    onPressed: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              const AddPointsPage(),
+                                        ),
+                                      );
+                                    },
                                     child: const Padding(
                                       padding:
                                           EdgeInsets.symmetric(vertical: 14.0),
@@ -224,7 +222,14 @@ class _RewardPageState extends State<RewardPage> {
                                 ),
                                 Expanded(
                                   child: TextButton(
-                                    onPressed: () {},
+                                    onPressed: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              const RewardHistoryPage(),
+                                        ),
+                                      );
+                                    },
                                     child: const Padding(
                                       padding:
                                           EdgeInsets.symmetric(vertical: 14.0),

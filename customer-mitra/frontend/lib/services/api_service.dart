@@ -1,19 +1,19 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'api/api_config.dart';
-import 'api/auth_service.dart';
-import 'api/profile_service.dart';
-import 'api/ride_service.dart';
-import 'api/booking_service.dart';
-import 'api/vehicle_service.dart';
-import 'api/reward_service.dart';
-import 'api/location_service.dart';
-import 'api/rating_service.dart';
-import 'api/verification_service.dart';
-import 'api/credit_service.dart';
-import 'api/reschedule_service.dart';
-import 'api/saved_passenger_service.dart';
-import 'payment_service.dart';
+import 'shared/api_config.dart';
+import 'shared/auth_service.dart';
+import 'shared/profile_service.dart';
+import 'mitra/ride_service.dart';
+import 'customer/booking_service.dart';
+import 'mitra/vehicle_service.dart';
+import 'customer/reward_service.dart';
+import 'shared/location_service.dart';
+import 'customer/rating_service.dart';
+import 'shared/verification_service.dart';
+import 'customer/credit_service.dart';
+import 'customer/reschedule_service.dart';
+import 'customer/saved_passenger_service.dart';
+import 'customer/payment_service.dart';
 
 class ApiService {
   // Base URL configuration

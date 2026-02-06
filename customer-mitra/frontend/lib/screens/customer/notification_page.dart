@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/notification_model.dart' as notif_model;
-import '../../services/notification_api_service.dart';
+import '../../services/shared/notification_api_service.dart';
 
 class NotificationPage extends StatefulWidget {
   const NotificationPage({Key? key}) : super(key: key);

@@ -7,7 +7,7 @@ import 'settings/edit_profile_page.dart';
 import 'settings/settings_page.dart';
 import '../help/help_center_page.dart';
 import '../../pin/create_pin_page.dart';
-import '../verification/verification_documents_page.dart';
+
 import 'documents/documents_page.dart';
 import 'account_status_page.dart';
 
@@ -78,8 +78,6 @@ class _MitraProfilePageState extends State<MitraProfilePage> {
             if (Navigator.canPop(context)) {
               Navigator.pop(context);
             } else {
-              // If this page isn't pushed (it's part of main page), ensure we navigate
-              // to the main page instead of popping to an empty route.
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (context) => const MitraMainPage()),
@@ -237,7 +235,7 @@ class _MitraProfilePageState extends State<MitraProfilePage> {
                   builder: (context) => const SettingsPage(),
                 ),
               );
-              _loadUserData(); // Refresh data after returning from settings
+              _loadUserData();
             },
           ),
           _buildDivider(),

@@ -6,7 +6,7 @@ import 'package:easy_localization/easy_localization.dart';
 import '../../services/api_service.dart';
 import '../../models/user_model.dart';
 import '../../models/service_model.dart';
-import '../../services/verifikasi_service.dart';
+import '../../services/mitra/verifikasi_service.dart';
 import 'notification_page.dart';
 import 'nebeng_motor_page.dart';
 import 'nebeng_mobil_page.dart';

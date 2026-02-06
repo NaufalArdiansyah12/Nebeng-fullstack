@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
-import '../../../services/chat_service.dart';
+import '../../../services/shared/chat_service.dart';
 import '../../../services/api_service.dart';
 import '../../../utils/chat_helper.dart';
 import '../../../utils/phone_helper.dart';
-import '../../../test_firestore.dart';
 
 class ChatsPage extends StatefulWidget {
   const ChatsPage({Key? key}) : super(key: key);

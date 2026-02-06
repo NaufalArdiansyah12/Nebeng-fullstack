@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Enums\UserRole;
 
 class User extends Authenticatable
 {
@@ -22,6 +23,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'assigned_location_id',
         'fcm_token',
         'address',
         'phone',
@@ -30,6 +32,7 @@ class User extends Authenticatable
         'profile_photo',
         'balance',
         'pin',
+        'reward_points',
     ];
 
     /**
@@ -56,6 +59,7 @@ class User extends Authenticatable
             'phone_verified' => 'boolean',
             'password' => 'hashed',
             'balance' => 'decimal:2',
+            'role' => UserRole::class,
         ];
     }
 
@@ -65,5 +69,13 @@ class User extends Authenticatable
     public function phoneOtps()
     {
         return $this->hasMany(PhoneOtp::class);
+    }
+
+    /**
+     * Relasi ke Location (untuk pos mitra)
+     */
+    public function assignedLocation()
+    {
+        return $this->belongsTo(\App\Models\Location::class, 'assigned_location_id');
     }
 }

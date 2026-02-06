@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../ubah_jadwal/ubah_jadwal_page.dart';
 import '../../../services/api_service.dart';
-import '../../../services/chat_service.dart';
+import '../../../services/shared/chat_service.dart';
 import '../../../utils/chat_helper.dart';
 import '../messages/chats_page.dart';
 

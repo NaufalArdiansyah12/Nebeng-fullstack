@@ -3,10 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../services/api_service.dart';
+
 import '../../utils/chat_helper.dart';
 import 'messages/chat_detail_page.dart';
-import 'main_page.dart';
 import 'mitra_tracking_map/models/tracking_state.dart';
 import 'mitra_tracking_map/services/tracking_service.dart';
 import 'mitra_tracking_map/utils/tracking_helpers.dart';

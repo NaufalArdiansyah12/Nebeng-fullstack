@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../models/trip_model.dart';
 import '../utils/theme.dart';
-import '../../../../services/payment_service.dart';
+import '../../../../services/customer/payment_service.dart';
 import 'payment_success_page.dart';
 
 class PaymentWaitingPage extends StatefulWidget {

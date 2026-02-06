@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../models/withdrawal_model.dart';
-import '../../../services/withdrawal_service.dart';
+import '../../../services/mitra/withdrawal_service.dart';
 import 'pin_verification_page.dart';
 
 class TarikSaldoPage extends StatefulWidget {

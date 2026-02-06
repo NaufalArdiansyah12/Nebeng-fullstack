@@ -1,4 +1,4 @@
-import '../services/chat_service.dart';
+import '../services/shared/chat_service.dart';
 
 /// Helper untuk create conversation (untuk testing atau dipanggil dari booking flow)
 class ChatHelper {
