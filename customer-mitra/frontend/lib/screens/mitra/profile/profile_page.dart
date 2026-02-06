@@ -9,8 +9,8 @@ import '../help/help_center_page.dart';
 import '../../pin/create_pin_page.dart';
 import 'documents/documents_page.dart';
 import 'account_status_page.dart';
-import 'package:nebeng/screens/mitra/riwayat_page.dart';
 import '../verification/verification_documents_page.dart';
+import '../../customer/profile/transaction_history_page.dart';
 
 class MitraProfilePage extends StatefulWidget {
   const MitraProfilePage({Key? key}) : super(key: key);
@@ -227,13 +227,20 @@ class _MitraProfilePageState extends State<MitraProfilePage> {
       child: Column(
         children: [
           _buildMenuItem(
-
             icon: Icons.settings_outlined,
             title: 'Pengaturan',
             onTap: () async {
               await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SettingsPage(),
+                ),
+              );
+            },
+          ),
+          _buildDivider(),
+          _buildMenuItem(
             icon: Icons.verified_user_outlined,
-            iconColor: const Color(0xFF1E40AF),
             title: 'Verifikasi Dokumen',
             onTap: () {
               Navigator.push(
@@ -244,18 +251,17 @@ class _MitraProfilePageState extends State<MitraProfilePage> {
               );
             },
           ),
+          _buildDivider(),
           _buildMenuItem(
             icon: Icons.receipt_long_outlined,
-            iconColor: Colors.black87,
             title: 'Riwayat Transaksi',
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const SettingsPage(),
+                  builder: (context) => const TransactionHistoryPage(),
                 ),
               );
-              _loadUserData();
             },
           ),
           _buildDivider(),
