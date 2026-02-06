@@ -5,10 +5,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/trip_model.dart';
 import '../../nebeng_motor/utils/theme.dart';
 import '../../../../services/api_service.dart';
-import '../../../../services/payment_service.dart';
+import '../../../../services/customer/payment_service.dart';
 import '../../../../utils/chat_helper.dart';
 import 'payment_waiting_page.dart';
-import 'payment_success_page.dart';
 
 class PaymentMethodPage extends StatefulWidget {
   final TripModel trip;
@@ -106,18 +105,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
   }
 
   Widget _buildPaymentMethodIcon() {
-    if (widget.paymentMethod == 'cash') {
-      return Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: const Icon(Icons.money, size: 28, color: Colors.black87),
-      );
-    }
-
+    // Branded payment method icons with colors
     Color bgColor;
     Color textColor;
     String displayText;
@@ -334,7 +322,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
   }
 
   Widget _buildTotalPayment() {
-    int adminFee = widget.paymentMethod == 'cash' ? 0 : 15000;
+    int adminFee = 15000; // All payments have admin fee
     int totalAmount = widget.trip.price + adminFee;
 
     return Container(
@@ -592,138 +580,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
 
     try {
       double amount = widget.trip.price.toDouble();
-      double adminFee = widget.paymentMethod == 'cash' ? 0.0 : 15000.0;
-
-      if (widget.paymentMethod == 'cash') {
-        final prefs = await SharedPreferences.getInstance();
-        final userId = prefs.getInt('user_id');
-
-        if (userId == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text('User ID not found. Please login again.')),
-          );
-          setState(() {
-            _isLoading = false;
-          });
-          return;
-        }
-
-        int? createdBookingId;
-        String createdBookingNumber = widget.bookingNumber;
-        try {
-          final booking = await ApiService.createBooking(
-            rideId: int.tryParse(widget.trip.id) ?? 1,
-            userId: userId,
-            seats: widget.totalPassengers,
-            bookingNumber: widget.bookingNumber,
-            rideType: widget.rideType,
-            photoFilePath: widget.photoFile?.path,
-            weight: widget.weight,
-            description: widget.description,
-            penerima: widget.receiverInfo,
-          );
-          createdBookingId = booking['id'];
-          createdBookingNumber =
-              booking['booking_number'] ?? widget.bookingNumber;
-
-          // Auto-create conversation with driver
-          try {
-            final ride = booking['ride'] ?? {};
-            final driver = ride['user'] ?? {};
-            final mitraId = driver['id'];
-            final mitraName = driver['name'] ?? 'Driver';
-            final mitraPhoto = driver['photo_url'];
-
-            // Debug: Print booking structure
-            print('🔍 Booking data for conversation: ${booking.keys}');
-            print('🔍 Ride data: $ride');
-            print('🔍 Driver data: $driver');
-            print('🔍 MitraId: $mitraId (${mitraId.runtimeType})');
-
-            // Only create conversation if we have valid mitra data
-            if (mitraId != null && mitraId is int) {
-              final userName = prefs.getString('user_name') ??
-                  prefs.getString('name') ??
-                  widget.passengerName;
-              await ChatHelper.createConversationAfterBooking(
-                rideId: int.tryParse(widget.trip.id) ?? 1,
-                bookingType: widget.rideType,
-                customerData: {
-                  'id': userId,
-                  'name': userName,
-                  'photo': prefs.getString('photo_url'),
-                },
-                mitraData: {
-                  'id': mitraId,
-                  'name': mitraName,
-                  'photo': mitraPhoto,
-                },
-              );
-              print(
-                  '✅ Conversation created automatically for booking $createdBookingId');
-            } else {
-              print(
-                  '⚠️ Cannot create conversation: driver ID is null or invalid (mitraId: $mitraId)');
-            }
-          } catch (e) {
-            print('❌ Failed to create conversation: $e');
-            // Don't fail the booking if conversation creation fails
-          }
-        } catch (e) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text('Failed to create booking: ${e.toString()}'),
-                backgroundColor: Colors.red),
-          );
-          setState(() {
-            _isLoading = false;
-          });
-          return;
-        }
-
-        try {
-          final paymentResult = await _paymentService.createPayment(
-            rideId: int.tryParse(widget.trip.id) ?? 1,
-            userId: userId,
-            bookingNumber: createdBookingNumber,
-            bookingId: createdBookingId,
-            paymentMethod: 'cash',
-            amount: amount,
-            adminFee: 0,
-          );
-
-          if (paymentResult['success'] != true)
-            throw Exception(paymentResult['message']);
-        } catch (e) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text('Failed to create payment: ${e.toString()}'),
-                backgroundColor: Colors.red),
-          );
-          setState(() {
-            _isLoading = false;
-          });
-          return;
-        }
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PaymentSuccessPage(
-              trip: widget.trip,
-              bookingNumber: widget.bookingNumber,
-              passengerName: widget.passengerName,
-              phoneNumber: widget.phoneNumber,
-              paymentMethod: widget.paymentMethod,
-              totalPassengers: widget.totalPassengers,
-              amount: amount,
-              adminFee: 0,
-            ),
-          ),
-        );
-        return;
-      }
+      double adminFee = 15000.0; // All payments have admin fee
 
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getInt('user_id');
@@ -764,6 +621,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
           final mitraId = driver['id'];
           final mitraName = driver['name'] ?? 'Driver';
           final mitraPhoto = driver['photo_url'];
+          final mitraPhone = driver['phone'] ?? driver['phone_number'] ?? '';
 
           // Debug: Print booking structure
           print('🔍 Booking data for conversation: ${booking.keys}');
@@ -776,6 +634,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
             final userName = prefs.getString('user_name') ??
                 prefs.getString('name') ??
                 widget.passengerName;
+            final userPhone = prefs.getString('phone') ?? '';
             await ChatHelper.createConversationAfterBooking(
               rideId: int.tryParse(widget.trip.id) ?? 1,
               bookingType: widget.rideType,
@@ -783,11 +642,13 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
                 'id': userId,
                 'name': userName,
                 'photo': prefs.getString('photo_url'),
+                'phone': userPhone,
               },
               mitraData: {
                 'id': mitraId,
                 'name': mitraName,
                 'photo': mitraPhoto,
+                'phone': mitraPhone,
               },
             );
             print(
@@ -896,8 +757,6 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
         return 'BCA Virtual Account';
       case 'dana':
         return 'Dana';
-      case 'cash':
-        return 'Tunai';
       default:
         return widget.paymentMethod.toUpperCase();
     }

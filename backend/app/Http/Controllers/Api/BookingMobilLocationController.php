@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\BookingMobil;
 use App\Models\ApiToken;
+use App\Services\BookingNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -55,7 +56,13 @@ class BookingMobilLocationController extends Controller
         // Auto-update status based on location and time
         if ($booking->status === 'paid' || $booking->status === 'confirmed') {
             // If booking is paid/confirmed and driver starts moving, set to menuju_penjemputan
+            $oldStatus = $booking->status;
             $booking->status = 'menuju_penjemputan';
+            
+            // Send notification on status change
+            if ($oldStatus !== 'menuju_penjemputan') {
+                BookingNotificationService::sendStatusNotification($booking, 'menuju_penjemputan');
+            }
         }
         
         $booking->save();
@@ -99,6 +106,10 @@ class BookingMobilLocationController extends Controller
             if ($booking->status === 'menuju_penjemputan' && $dist <= 10) {
                 $booking->status = 'sudah_di_penjemputan';
                 $booking->save();
+                
+                // Send notification
+                BookingNotificationService::sendStatusNotification($booking, 'sudah_di_penjemputan');
+                
                 Log::info('booking_mobil.status.auto_updated', [
                     'booking_id' => $booking->id, 
                     'status' => 'sudah_di_penjemputan',
@@ -115,6 +126,10 @@ class BookingMobilLocationController extends Controller
             if ($dist > 100 && ($booking->status === 'menunggu' || $booking->status === 'pending')) {
                 $booking->status = 'sedang_dalam_perjalanan';
                 $booking->save();
+                
+                // Send notification
+                BookingNotificationService::sendStatusNotification($booking, 'sedang_dalam_perjalanan');
+                
                 Log::info('booking_mobil.status.changed', ['booking_id' => $booking->id, 'status' => 'sedang_dalam_perjalanan']);
             }
         }

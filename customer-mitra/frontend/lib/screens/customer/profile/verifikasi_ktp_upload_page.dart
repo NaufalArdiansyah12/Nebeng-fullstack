@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../../services/verifikasi_service.dart';
+import '../../../services/mitra/verifikasi_service.dart';
 import 'verifikasi_success_page.dart';
 import 'verifikasi_type_page.dart';
 
@@ -472,6 +472,7 @@ class _VerifikasiKtpUploadPageState extends State<VerifikasiKtpUploadPage> {
           namaLengkap: widget.namaLengkap,
           nik: widget.nik,
           tanggalLahir: widget.tanggalLahir,
+          jenisKelamin: widget.jenisKelamin,
           alamat: alamat,
         );
       } else {
@@ -482,6 +483,7 @@ class _VerifikasiKtpUploadPageState extends State<VerifikasiKtpUploadPage> {
           namaLengkap: widget.namaLengkap,
           nik: widget.nik,
           tanggalLahir: widget.tanggalLahir,
+          jenisKelamin: widget.jenisKelamin,
           alamat: alamat,
         );
       }

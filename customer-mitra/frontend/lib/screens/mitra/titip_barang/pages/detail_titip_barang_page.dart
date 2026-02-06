@@ -144,10 +144,14 @@ class DetailTitipBarangPage extends StatelessWidget {
         final responseData = jsonDecode(response.body);
 
         if (response.statusCode == 201 && responseData['success'] == true) {
+          // Extract QR code from response
+          final qrCodeData = responseData['data']?['qr_code_data'] as String?;
+
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => const TitipBarangSuccessPage(),
+              builder: (context) =>
+                  TitipBarangSuccessPage(qrCodeData: qrCodeData),
             ),
           );
         } else {

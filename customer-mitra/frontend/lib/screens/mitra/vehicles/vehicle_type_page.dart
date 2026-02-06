@@ -58,8 +58,8 @@ class VehicleTypePage extends StatelessWidget {
                 );
               },
             ),
-            const Spacer(),
-            _buildNoVehicleOption(context),
+            // const Spacer(),
+            // _buildNoVehicleOption(context),
             const SizedBox(height: 20),
           ],
         ),
@@ -120,31 +120,31 @@ class VehicleTypePage extends StatelessWidget {
     );
   }
 
-  Widget _buildNoVehicleOption(BuildContext context) {
-    return InkWell(
-      onTap: () => Navigator.pop(context),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey[300]!),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.close, color: Colors.black54, size: 20),
-            SizedBox(width: 8),
-            Text(
-              'Tidak ada Kendaraan',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.black87,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // Widget _buildNoVehicleOption(BuildContext context) {
+  //   return InkWell(
+  //     onTap: () => Navigator.pop(context),
+  //     child: Container(
+  //       padding: const EdgeInsets.symmetric(vertical: 14),
+  //       decoration: BoxDecoration(
+  //         border: Border.all(color: Colors.grey[300]!),
+  //         borderRadius: BorderRadius.circular(8),
+  //       ),
+  //       child: const Row(
+  //         mainAxisAlignment: MainAxisAlignment.center,
+  //         children: [
+  //           Icon(Icons.close, color: Colors.black54, size: 20),
+  //           SizedBox(width: 8),
+  //           Text(
+  //             'Tidak ada Kendaraan',
+  //             style: TextStyle(
+  //               fontSize: 14,
+  //               color: Colors.black87,
+  //               fontWeight: FontWeight.w500,
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 }

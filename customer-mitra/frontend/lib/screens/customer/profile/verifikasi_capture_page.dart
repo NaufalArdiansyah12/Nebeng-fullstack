@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../../services/verifikasi_service.dart';
+import '../../../services/mitra/verifikasi_service.dart';
 import 'verifikasi_success_page.dart';
 import 'verifikasi_type_page.dart';
 
@@ -11,6 +11,7 @@ class VerifikasiCapturePage extends StatefulWidget {
   final String? namaLengkap;
   final String? nik;
   final String? tanggalLahir;
+  final String? jenisKelamin;
   final String? alamat;
 
   const VerifikasiCapturePage({
@@ -19,6 +20,7 @@ class VerifikasiCapturePage extends StatefulWidget {
     this.namaLengkap,
     this.nik,
     this.tanggalLahir,
+    this.jenisKelamin,
     this.alamat,
   }) : super(key: key);
 
@@ -304,6 +306,7 @@ class _VerifikasiCapturePageState extends State<VerifikasiCapturePage> {
             namaLengkap: widget.namaLengkap!,
             nik: widget.nik!,
             tanggalLahir: widget.tanggalLahir!,
+            jenisKelamin: widget.jenisKelamin!,
             alamat: widget.alamat!,
           );
           break;
@@ -314,6 +317,7 @@ class _VerifikasiCapturePageState extends State<VerifikasiCapturePage> {
             namaLengkap: widget.namaLengkap!,
             nik: widget.nik!,
             tanggalLahir: widget.tanggalLahir!,
+            jenisKelamin: widget.jenisKelamin!,
             alamat: widget.alamat!,
           );
           break;

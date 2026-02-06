@@ -22,7 +22,7 @@ class VerifikasiBankController extends Controller
 
         $hashed = hash('sha256', $bearer);
         $apiToken = \App\Models\ApiToken::where('token', $hashed)->first();
-        
+
         if (!$apiToken) {
             return response()->json([
                 'success' => false,
@@ -50,7 +50,7 @@ class VerifikasiBankController extends Controller
 
         $hashed = hash('sha256', $bearer);
         $apiToken = \App\Models\ApiToken::where('token', $hashed)->first();
-        
+
         if (!$apiToken) {
             return response()->json([
                 'success' => false,
@@ -94,6 +94,13 @@ class VerifikasiBankController extends Controller
             'status' => 'pending',
         ]);
 
+
+        // Ensure MitraVerifikasi links to this bank verification
+        MitraVerifikasi::updateOrCreate(
+            ['user_id' => $apiToken->user_id],
+            ['bank_verification_id' => $verification->id]
+        );
+
         return response()->json([
             'success' => true,
             'message' => 'Bank verification submitted successfully',
@@ -113,7 +120,7 @@ class VerifikasiBankController extends Controller
 
         $hashed = hash('sha256', $bearer);
         $apiToken = \App\Models\ApiToken::where('token', $hashed)->first();
-        
+
         if (!$apiToken) {
             return response()->json([
                 'success' => false,
@@ -144,13 +151,32 @@ class VerifikasiBankController extends Controller
             ], 404);
         }
 
+
+        $updateData = [
+            'bank_account_number' => $request->bank_account_number,
+            'bank_account_name' => $request->bank_account_name,
+            'bank_name' => $request->bank_name,
+            'status' => 'pending',
+        ];
+
         if ($request->hasFile('bank_account_photo')) {
             if ($verification->bank_account_photo) {
                 Storage::disk('public')->delete($verification->bank_account_photo);
             }
             $photoPath = $request->file('bank_account_photo')->store('verifikasi/bank', 'public');
-            $verification->bank_account_photo = $photoPath;
+
+            $updateData['bank_account_photo'] = $photoPath;
         }
+
+        $verification->update($updateData);
+
+        // Ensure MitraVerifikasi links to this bank verification
+        MitraVerifikasi::updateOrCreate(
+            ['user_id' => $apiToken->user_id],
+            ['bank_verification_id' => $verification->id]
+        );
+        $verification->bank_account_photo = $photoPath;
+
 
         $verification->update([
             'bank_account_number' => $request->bank_account_number,

@@ -14,6 +14,7 @@ class VerifikasiKtpCustomer extends Model
         'nama_lengkap',
         'nik',
         'tanggal_lahir',
+        'jenis_kelamin',
         'alamat',
         'photo_wajah',
         'photo_ktp',

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../../services/verifikasi_service.dart';
+import '../../../services/mitra/verifikasi_service.dart';
 import 'verifikasi_type_page.dart';
 
 class VerifikasiStatusPage extends StatefulWidget {

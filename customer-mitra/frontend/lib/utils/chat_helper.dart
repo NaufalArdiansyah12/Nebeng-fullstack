@@ -1,4 +1,4 @@
-import '../services/chat_service.dart';
+import '../services/shared/chat_service.dart';
 
 /// Helper untuk create conversation (untuk testing atau dipanggil dari booking flow)
 class ChatHelper {
@@ -9,8 +9,8 @@ class ChatHelper {
   static Future<String?> createConversationAfterBooking({
     required int rideId,
     required String bookingType, // 'motor', 'mobil', 'barang', 'titip'
-    required Map<String, dynamic> customerData, // {id, name, photo}
-    required Map<String, dynamic> mitraData, // {id, name, photo}
+    required Map<String, dynamic> customerData, // {id, name, photo, phone}
+    required Map<String, dynamic> mitraData, // {id, name, photo, phone}
   }) async {
     try {
       final conversationId = await _chatService.createConversation(
@@ -19,9 +19,11 @@ class ChatHelper {
         customerId: customerData['id'],
         customerName: customerData['name'] ?? 'Customer',
         customerPhoto: customerData['photo'],
+        customerPhone: customerData['phone'],
         mitraId: mitraData['id'],
         mitraName: mitraData['name'] ?? 'Mitra',
         mitraPhoto: mitraData['photo'],
+        mitraPhone: mitraData['phone'],
       );
 
       print('✅ Conversation created: $conversationId');
@@ -47,9 +49,13 @@ class ChatHelper {
         customerName:
             currentUserRole == 'customer' ? currentUserName : 'Test Customer',
         customerPhoto: null,
+        customerPhone:
+            currentUserRole == 'customer' ? '081234567890' : '081111111111',
         mitraId: currentUserRole == 'mitra' ? currentUserId : 200,
         mitraName: currentUserRole == 'mitra' ? currentUserName : 'Test Mitra',
         mitraPhoto: null,
+        mitraPhone:
+            currentUserRole == 'mitra' ? '081234567890' : '082222222222',
       );
 
       print('✅ Test conversation created: $conversationId');

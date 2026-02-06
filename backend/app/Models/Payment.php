@@ -18,6 +18,7 @@ class Payment extends Model
         'total_amount',
         'external_id',
         'virtual_account_number',
+        'qr_code_url',
         'bank_code',
         'status',
         'expires_at',

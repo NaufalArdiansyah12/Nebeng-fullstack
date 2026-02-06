@@ -4,14 +4,28 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Ride;
+use App\Services\PosMitraConversationService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 
 class RideController extends Controller
 {
+    /**
+     * Generate unique QR code data for a ride
+     * Format: RIDE-{type}-{id}-{random}
+     */
+    private function generateQrCode($rideType, $rideId)
+    {
+        $type = strtoupper($rideType);
+        $random = Str::upper(Str::random(8));
+        return "RIDE-{$type}-{$rideId}-{$random}";
+    }
+
     public function index(Request $request)
     {
         // If client requests mobil rides, fetch from CarRide (tebengan_mobil)
@@ -101,7 +115,7 @@ class RideController extends Controller
             $userId = $request->user_id;
             $query->whereDoesntHave('bookings', function ($q) use ($userId) {
                 $q->where('user_id', $userId)
-                  ->where('status', '!=', 'cancelled');
+                    ->where('status', '!=', 'cancelled');
             });
         }
 
@@ -150,7 +164,7 @@ class RideController extends Controller
 
         $hashed = hash('sha256', $bearer);
         $apiToken = \App\Models\ApiToken::where('token', $hashed)->first();
-        
+
         if (!$apiToken) {
             return response()->json([
                 'success' => false,
@@ -189,6 +203,33 @@ class RideController extends Controller
                     }
 
                     $r = Ride::create($data);
+
+                    // Generate and save QR code
+                    $qrCode = $this->generateQrCode('motor', $r->id);
+                    $r->qr_code_data = $qrCode;
+                    $r->save();
+
+                    // Create conversations with pos mitra (origin & destination)
+                    try {
+                        $conversationService = app(PosMitraConversationService::class);
+                        $conversations = $conversationService->createTebenganConversations(
+                            $apiToken->user_id,
+                            $request->origin_location_id,
+                            $request->destination_location_id,
+                            'motor'
+                        );
+
+                        // Save conversation IDs to ride
+                        if ($conversations['origin_conversation_id']) {
+                            $r->origin_pos_conversation_id = $conversations['origin_conversation_id'];
+                        }
+                        if ($conversations['destination_conversation_id']) {
+                            $r->destination_pos_conversation_id = $conversations['destination_conversation_id'];
+                        }
+                        $r->save();
+                    } catch (\Exception $e) {
+                        Log::error('Failed to create pos mitra conversations for motor ride: ' . $e->getMessage());
+                    }
 
                     // If mitra provided kendaraan_mitra_id and jumlah_bagasi, persist jumlah_bagasi into kendaraan_mitra
                     try {
@@ -238,15 +279,42 @@ class RideController extends Controller
 
                     $car = \App\Models\CarRide::create($data);
 
-                        // persist jumlah_bagasi into kendaraan_mitra if provided
-                        try {
-                            $kmId = $request->kendaraan_mitra_id ?? null;
-                            if ($kmId && $bagasi !== null && Schema::hasColumn('kendaraan_mitra', 'jumlah_bagasi')) {
-                                \App\Models\KendaraanMitra::where('id', $kmId)->update(['jumlah_bagasi' => intval($bagasi)]);
-                            }
-                        } catch (\Throwable $__e) {
-                            Log::warning('Failed to update kendaraan_mitra.jumlah_bagasi', ['error' => $__e->getMessage()]);
+                    // Generate and save QR code
+                    $qrCode = $this->generateQrCode('mobil', $car->id);
+                    $car->qr_code_data = $qrCode;
+                    $car->save();
+
+                    // Create conversations with pos mitra (origin & destination)
+                    try {
+                        $conversationService = app(PosMitraConversationService::class);
+                        $conversations = $conversationService->createTebenganConversations(
+                            $apiToken->user_id,
+                            $request->origin_location_id,
+                            $request->destination_location_id,
+                            'mobil'
+                        );
+
+                        // Save conversation IDs to ride
+                        if ($conversations['origin_conversation_id']) {
+                            $car->origin_pos_conversation_id = $conversations['origin_conversation_id'];
                         }
+                        if ($conversations['destination_conversation_id']) {
+                            $car->destination_pos_conversation_id = $conversations['destination_conversation_id'];
+                        }
+                        $car->save();
+                    } catch (\Exception $e) {
+                        Log::error('Failed to create pos mitra conversations for mobil ride: ' . $e->getMessage());
+                    }
+
+                    // persist jumlah_bagasi into kendaraan_mitra if provided
+                    try {
+                        $kmId = $request->kendaraan_mitra_id ?? null;
+                        if ($kmId && $bagasi !== null && Schema::hasColumn('kendaraan_mitra', 'jumlah_bagasi')) {
+                            \App\Models\KendaraanMitra::where('id', $kmId)->update(['jumlah_bagasi' => intval($bagasi)]);
+                        }
+                    } catch (\Throwable $__e) {
+                        Log::warning('Failed to update kendaraan_mitra.jumlah_bagasi', ['error' => $__e->getMessage()]);
+                    }
 
                     return $car;
                 }
@@ -279,15 +347,20 @@ class RideController extends Controller
 
                     $barang = \App\Models\BarangRide::create($data);
 
-                        // persist jumlah_bagasi into kendaraan_mitra if provided
-                        try {
-                            $kmId = $request->kendaraan_mitra_id ?? null;
-                            if ($kmId && $bagasi !== null && Schema::hasColumn('kendaraan_mitra', 'jumlah_bagasi')) {
-                                \App\Models\KendaraanMitra::where('id', $kmId)->update(['jumlah_bagasi' => intval($bagasi)]);
-                            }
-                        } catch (\Throwable $__e) {
-                            Log::warning('Failed to update kendaraan_mitra.jumlah_bagasi', ['error' => $__e->getMessage()]);
+                    // Generate and save QR code
+                    $qrCode = $this->generateQrCode('barang', $barang->id);
+                    $barang->qr_code_data = $qrCode;
+                    $barang->save();
+
+                    // persist jumlah_bagasi into kendaraan_mitra if provided
+                    try {
+                        $kmId = $request->kendaraan_mitra_id ?? null;
+                        if ($kmId && $bagasi !== null && Schema::hasColumn('kendaraan_mitra', 'jumlah_bagasi')) {
+                            \App\Models\KendaraanMitra::where('id', $kmId)->update(['jumlah_bagasi' => intval($bagasi)]);
                         }
+                    } catch (\Throwable $__e) {
+                        Log::warning('Failed to update kendaraan_mitra.jumlah_bagasi', ['error' => $__e->getMessage()]);
+                    }
 
                     // If a photo was uploaded as part of the request, store it and save into extra
                     if ($request->hasFile('photo')) {
@@ -295,7 +368,7 @@ class RideController extends Controller
                             $file = $request->file('photo');
                             $filename = 'uploads/' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
                             Storage::disk('public')->put($filename, file_get_contents($file));
-                            $url = '/storage/' . $filename;
+                            $url = '/storage' . $filename;
                             $barang->extra = array_merge($barang->extra ?? [], ['photo' => $url]);
                             $barang->save();
                         } catch (\Exception $e) {
@@ -360,7 +433,7 @@ class RideController extends Controller
     public function getRidePassengers(Request $request, $rideId)
     {
         $rideType = $request->query('ride_type', 'motor');
-        
+
         // Normalize ride_type: accept both 'motor' and 'tebengan_motor' formats
         $normalizedType = $rideType;
         if ($rideType === 'tebengan_motor') {

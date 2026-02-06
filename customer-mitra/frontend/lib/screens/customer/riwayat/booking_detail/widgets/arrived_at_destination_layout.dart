@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import '../utils/booking_formatters.dart';
 
 /// Layout widget for sudah_sampai_tujuan status
@@ -38,9 +39,9 @@ class ArrivedAtDestinationLayout extends StatelessWidget {
           icon: const Icon(Icons.arrow_back, color: Colors.black87),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Sudah Sampai Tujuan',
-          style: TextStyle(
+        title: Text(
+          'arrived_destination_title'.tr(),
+          style: const TextStyle(
             color: Colors.black87,
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -88,9 +89,9 @@ class ArrivedAtDestinationLayout extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Selamat Datang!',
-                    style: TextStyle(
+                  Text(
+                    'arrived_destination_welcome'.tr(),
+                    style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
@@ -106,9 +107,9 @@ class ArrivedAtDestinationLayout extends StatelessWidget {
                       color: Colors.white.withOpacity(0.25),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Text(
-                      'Anda Sudah Sampai di Tujuan',
-                      style: TextStyle(
+                    child: Text(
+                      'arrived_destination_subtitle'.tr(),
+                      style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: Colors.white,
@@ -137,9 +138,9 @@ class ArrivedAtDestinationLayout extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Ringkasan Perjalanan',
-                    style: TextStyle(
+                  Text(
+                    'arrived_destination_trip_summary'.tr(),
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color: Colors.black87,
@@ -279,10 +280,10 @@ class ArrivedAtDestinationLayout extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          'Lokasi Tujuan',
-                          style: TextStyle(
+                          'arrived_destination_location'.tr(),
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                             color: Colors.black87,
@@ -331,7 +332,7 @@ class ArrivedAtDestinationLayout extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Tunjukkan kode QR Anda ke Pos Mitra untuk menyelesaikan perjalanan',
+                      'arrived_destination_qr_instruction'.tr(),
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.blue[900],

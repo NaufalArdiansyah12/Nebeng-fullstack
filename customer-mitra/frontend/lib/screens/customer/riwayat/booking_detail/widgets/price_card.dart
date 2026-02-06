@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 /// Widget to display price breakdown
 class PriceCard extends StatelessWidget {
@@ -37,12 +38,12 @@ class PriceCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _buildPriceRow('Harga per Kursi', pricePerSeat, false),
+          _buildPriceRow('price_per_seat'.tr(), pricePerSeat, false),
           const SizedBox(height: 14),
           _buildPriceRow(
             (bookingType == 'motor' || bookingType == 'mobil')
-                ? 'Jumlah Kursi'
-                : 'Total Penumpang',
+                ? 'number_of_seats'.tr()
+                : 'total_passengers'.tr(),
             seats,
             false,
           ),

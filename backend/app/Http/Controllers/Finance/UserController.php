@@ -176,7 +176,6 @@ class UserController extends Controller
                 'role',
                 'address',
                 'phone',
-                'gender',
                 'profile_photo',
                 'created_at'
             )
@@ -210,7 +209,6 @@ class UserController extends Controller
             ->update([
                 'name' => $request->name,
                 'phone' => $request->phone,
-                'gender' => $request->gender,
                 'address' => $request->address,
                 'updated_at' => now(),
             ]);

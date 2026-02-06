@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
@@ -26,14 +27,14 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
   String? _selectedBarangSize;
   String? _barangImagePath;
   final List<String> _barangSizes = [
-    'Kecil',
-    'Sedang',
-    'Besar',
+    'small',
+    'medium',
+    'large',
   ];
   final Map<String, String> _barangSizeDescriptions = {
-    'Kecil': 'Maksimal 5 Kg',
-    'Sedang': 'Maksimal 10 Kg',
-    'Besar': 'Maksimal 20 Kg',
+    'small': 'max_5kg',
+    'medium': 'max_10kg',
+    'large': 'max_20kg',
   };
 
   final ImagePicker _picker = ImagePicker();
@@ -56,7 +57,7 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal memilih gambar: $e')),
+        SnackBar(content: Text('${'failed_to_pick_image'.tr()}: $e')),
       );
     }
   }
@@ -225,7 +226,7 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
   Future<void> _searchAvailableRides() async {
     if (selectedDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Mohon pilih tanggal terlebih dahulu')),
+        SnackBar(content: Text('please_select_date'.tr())),
       );
       return;
     }
@@ -236,14 +237,13 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
     if (bookingType == 'barang' || bookingType == 'titip') {
       if ((_selectedBarangSize ?? '').isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Pilih ukuran barang terlebih dahulu')),
+          SnackBar(content: Text('select_package_size_first'.tr())),
         );
         return;
       }
       if (_barangDescriptionController.text.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Isi keterangan barang terlebih dahulu')),
+          SnackBar(content: Text('enter_package_notes_first'.tr())),
         );
         return;
       }
@@ -259,7 +259,7 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
 
       if (token == null || token.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Silakan login untuk mengubah jadwal')),
+          SnackBar(content: Text('please_login_to_reschedule'.tr())),
         );
         return;
       }
@@ -293,7 +293,7 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
         isLoading = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Terjadi kesalahan: $e')),
+        SnackBar(content: Text('${'error_occurred'.tr()}: $e')),
       );
     }
   }
@@ -362,8 +362,8 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
           icon: const Icon(Icons.arrow_back, color: Colors.black, size: 24),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Ubah Jadwal',
+        title: Text(
+          'reschedule_page_title'.tr(),
           style: TextStyle(
             color: Colors.black,
             fontSize: 18,
@@ -398,7 +398,7 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        'Kode Pemesanan',
+                        'booking_code'.tr(),
                         style: TextStyle(
                           fontSize: 11,
                           color: Colors.grey[600],
@@ -428,8 +428,8 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Jadwal Saat Ini',
+                  Text(
+                    'current_schedule'.tr(),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -438,7 +438,7 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Informasi perjalanan yang sedang aktif',
+                    'active_trip_info'.tr(),
                     style: TextStyle(
                       fontSize: 13,
                       color: Colors.grey[600],
@@ -740,8 +740,8 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Pilih Tanggal Baru',
+                  Text(
+                    'select_new_date'.tr(),
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.black,
@@ -750,7 +750,7 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Cari jadwal yang tersedia untuk tanggal yang Anda pilih',
+                    'choose_departure_date'.tr(),
                     style: TextStyle(
                       fontSize: 13,
                       color: Colors.grey[600],
@@ -818,8 +818,8 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 12),
-                    const Text(
-                      'Ukuran Barang',
+                    Text(
+                      'package_size_label'.tr(),
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.black,
@@ -862,8 +862,8 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
                                         ),
                                       ),
                                       const SizedBox(height: 12),
-                                      const Text(
-                                        'Pilih Kapasitas Bagasi',
+                                      Text(
+                                        'select_size'.tr(),
                                         style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w700,
@@ -982,8 +982,8 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      'Keterangan Barang',
+                    Text(
+                      'package_notes'.tr(),
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.black,
@@ -1008,8 +1008,8 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      'Foto Barang',
+                    Text(
+                      'package_photo'.tr(),
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.black,
@@ -1031,11 +1031,11 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
                             ? Center(
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
-                                  children: const [
+                                  children: [
                                     Icon(Icons.image,
                                         size: 36, color: Colors.grey),
                                     SizedBox(height: 8),
-                                    Text('Unggah foto barang',
+                                    Text('add_photo'.tr(),
                                         style: TextStyle(color: Colors.grey)),
                                   ],
                                 ),
@@ -1154,8 +1154,8 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
                   )
                 : Text(
                     (bookingType == 'barang' || bookingType == 'titip')
-                        ? 'Ubah Jadwal'
-                        : 'Cari Jadwal Tersedia',
+                        ? 'reschedule_page_title'.tr()
+                        : 'search_available_rides'.tr(),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,

@@ -3,10 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../services/api_service.dart';
-import '../../../../services/payment_service.dart';
+import '../../../../services/customer/payment_service.dart';
 import '../../../../utils/chat_helper.dart';
 import '../../nebeng_motor/pages/payment_waiting_page.dart';
-import '../../nebeng_motor/pages/payment_success_page.dart';
 import '../../nebeng_motor/models/trip_model.dart' as motor_model;
 import '../models/trip_model.dart';
 import '../utils/theme.dart';
@@ -104,19 +103,6 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
   }
 
   Widget _buildPaymentMethodIcon() {
-    // Cash icon
-    if (widget.paymentMethod == 'cash') {
-      return Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: const Icon(Icons.money, size: 28, color: Colors.black87),
-      );
-    }
-
     // Branded payment method icons with colors
     Color bgColor;
     Color textColor;
@@ -589,6 +575,8 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
           final userName = prefs.getString('user_name') ??
               prefs.getString('name') ??
               widget.passengerName;
+          final userPhone = prefs.getString('phone') ?? '';
+          final mitraPhone = driver['phone'] ?? driver['phone_number'] ?? '';
           await ChatHelper.createConversationAfterBooking(
             rideId: int.parse(widget.trip.id),
             bookingType: 'mobil',
@@ -596,11 +584,13 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
               'id': userId,
               'name': userName,
               'photo': prefs.getString('photo_url'),
+              'phone': userPhone,
             },
             mitraData: {
               'id': mitraId,
               'name': mitraName,
               'photo': mitraPhoto,
+              'phone': mitraPhone,
             },
           );
           print(
@@ -644,47 +634,43 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
           expiresAt = DateTime.now().add(Duration(hours: 1));
         }
 
-        if (widget.paymentMethod == 'cash') {
-          final motorTrip = motor_model.TripModel(
-            id: widget.trip.id,
-            date: widget.trip.date,
-            time: widget.trip.time,
-            departureLocation: widget.trip.departureLocation,
-            departureAddress: widget.trip.departureAddress,
-            arrivalLocation: widget.trip.arrivalLocation,
-            arrivalAddress: widget.trip.arrivalAddress,
-            price: widget.trip.price,
-            availableSeats: widget.trip.availableSeats,
-          );
+        final motorTrip = motor_model.TripModel(
+          id: widget.trip.id,
+          date: widget.trip.date,
+          time: widget.trip.time,
+          departureLocation: widget.trip.departureLocation,
+          departureAddress: widget.trip.departureAddress,
+          arrivalLocation: widget.trip.arrivalLocation,
+          arrivalAddress: widget.trip.arrivalAddress,
+          price: widget.trip.price,
+          availableSeats: widget.trip.availableSeats,
+        );
+
+        // Handle QRIS payment with QR code URL
+        if (widget.paymentMethod == 'qris') {
+          final qrCodeUrl = paymentResult['data']['qr_code_url'] ?? vaNumber;
 
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => PaymentSuccessPage(
+              builder: (context) => PaymentWaitingPage(
                 trip: motorTrip,
                 bookingNumber: createdBookingNumber,
                 passengerName: widget.passengerName,
                 phoneNumber: '',
                 paymentMethod: widget.paymentMethod,
                 totalPassengers: widget.totalPassengers,
+                virtualAccountNumber: qrCodeUrl,
+                bankCode: 'QRIS',
+                expiresAt: expiresAt!,
+                paymentId: paymentData['id'],
                 amount: amount,
-                adminFee: 0,
+                adminFee: 15000,
               ),
             ),
           );
         } else {
-          final motorTrip = motor_model.TripModel(
-            id: widget.trip.id,
-            date: widget.trip.date,
-            time: widget.trip.time,
-            departureLocation: widget.trip.departureLocation,
-            departureAddress: widget.trip.departureAddress,
-            arrivalLocation: widget.trip.arrivalLocation,
-            arrivalAddress: widget.trip.arrivalAddress,
-            price: widget.trip.price,
-            availableSeats: widget.trip.availableSeats,
-          );
-
+          // Handle Virtual Account payments
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -724,8 +710,6 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
     switch (widget.paymentMethod) {
       case 'qris':
         return 'QRIS';
-      case 'cash':
-        return 'Tunai';
       case 'bri':
         return 'BRI Virtual Account';
       case 'bca':

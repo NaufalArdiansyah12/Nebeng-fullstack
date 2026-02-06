@@ -4,8 +4,10 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
 import '../../services/api_service.dart';
+import '../../models/user_role.dart';
 import '../customer/main_page.dart';
 import '../mitra/main_page.dart';
+import '../posmitra/main_page.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -113,45 +115,45 @@ class _LoginScreenState extends State<LoginScreen> {
           icon: Icons.check_circle_outline,
           iconColor: Colors.green,
           onClose: () {
-            // Redirect based on role and request location permission for mitra
-            Future<void> _maybeRequestLocation() async {
-              if (role == 'mitra') {
+            // Parse role using enum
+            final userRole = UserRole.fromString(role);
+
+            // Redirect based on role
+            if (userRole.isMitra) {
+              // Navigate first for faster transition
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const MitraMainPage(),
+                ),
+              );
+
+              // Request location permission and report location in background (non-blocking)
+              Future.microtask(() async {
                 try {
                   final prefs = await SharedPreferences.getInstance();
                   final alreadyAsked =
                       prefs.getBool('mitra_location_requested') ?? false;
 
-                  bool serviceEnabled =
-                      await Geolocator.isLocationServiceEnabled();
-                  if (!serviceEnabled) {
-                    // try to open location settings; do not block navigation
-                    await Geolocator.openLocationSettings();
-                  }
-
-                  // Always check current permission. If not granted, request it
-                  // on first ask. If already asked but not granted, open app settings.
                   LocationPermission permission =
                       await Geolocator.checkPermission();
 
+                  // Only request permission if not already granted
                   if (permission == LocationPermission.denied) {
                     if (!alreadyAsked) {
                       permission = await Geolocator.requestPermission();
                       await prefs.setBool('mitra_location_requested', true);
-                    } else {
-                      // already asked before and still denied -> open app settings to let user enable
-                      await Geolocator.openAppSettings();
                     }
-                  } else if (permission == LocationPermission.deniedForever) {
-                    // can't request programmatically; guide user to app settings
-                    await Geolocator.openAppSettings();
                   }
 
-                  // If permission granted now, capture and report current location
+                  // If permission granted, get and report location with lower accuracy for faster result
                   if (permission == LocationPermission.always ||
                       permission == LocationPermission.whileInUse) {
                     try {
+                      // Use medium accuracy for faster location acquisition
                       final pos = await Geolocator.getCurrentPosition(
-                          desiredAccuracy: LocationAccuracy.best);
+                          desiredAccuracy: LocationAccuracy.medium,
+                          timeLimit: const Duration(seconds: 5));
                       final token = prefs.getString('api_token');
                       if (token != null && token.isNotEmpty) {
                         await ApiService.reportMitraLocation(
@@ -166,24 +168,24 @@ class _LoginScreenState extends State<LoginScreen> {
                 } catch (_) {
                   // ignore permission errors
                 }
-
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const MitraMainPage(),
-                  ),
-                );
-              } else {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const MainPage(),
-                  ),
-                );
-              }
+              });
+            } else if (userRole.isPosMitra) {
+              // Redirect ke halaman pos mitra
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PosMitraMainPage(),
+                ),
+              );
+            } else {
+              // Default ke customer atau role lainnya
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const MainPage(),
+                ),
+              );
             }
-
-            _maybeRequestLocation();
           },
         );
       }

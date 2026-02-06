@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'nebeng_motor/data/location_data.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'nebeng_motor/widgets/form_section.dart';
 import 'nebeng_motor/widgets/history_section.dart';
 import 'nebeng_motor/pages/location_picker_page.dart';
@@ -23,6 +24,81 @@ class _NebengMotorPageState extends State<NebengMotorPage> {
   String? lokasiTujuanAddress;
   int? lokasiTujuanId;
   DateTime? tanggalKeberangkatan;
+  List<Map<String, String>> _addressHistory = [];
+  bool _loadingHistory = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAddressHistory();
+  }
+
+  Future<void> _loadAddressHistory() async {
+    setState(() {
+      _loadingHistory = true;
+    });
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('api_token');
+
+      if (token != null && token.isNotEmpty) {
+        final bookings = await ApiService.fetchBookings(
+          token: token,
+          type: 'motor',
+        );
+
+        // Extract unique locations from last bookings
+        final Set<String> seenAddresses = {};
+        final List<Map<String, String>> history = [];
+
+        for (var booking in bookings) {
+          final ride = booking['ride'] ?? {};
+
+          // Get origin
+          final originName = ride['origin'] ?? '';
+          final originAddress = ride['origin_address'] ?? '';
+          if (originName.isNotEmpty && !seenAddresses.contains(originName)) {
+            history.add({
+              'name': originName.toString(),
+              'address': originAddress.toString(),
+            });
+            seenAddresses.add(originName);
+          }
+
+          // Get destination
+          final destName = ride['destination'] ?? '';
+          final destAddress = ride['destination_address'] ?? '';
+          if (destName.isNotEmpty && !seenAddresses.contains(destName)) {
+            history.add({
+              'name': destName.toString(),
+              'address': destAddress.toString(),
+            });
+            seenAddresses.add(destName);
+          }
+
+          // Limit to 5 most recent unique addresses
+          if (history.length >= 5) break;
+        }
+
+        setState(() {
+          _addressHistory = history;
+          _loadingHistory = false;
+        });
+      } else {
+        setState(() {
+          _addressHistory = [];
+          _loadingHistory = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading address history: $e');
+      setState(() {
+        _addressHistory = [];
+        _loadingHistory = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,10 +134,18 @@ class _NebengMotorPageState extends State<NebengMotorPage> {
                         onTanggalTap: _showDatePicker,
                       ),
                       const SizedBox(height: 24),
-                      HistorySection(
-                        historiAlamat: LocationData.historiAlamat,
-                        onHistoryTap: _showHistorySelectionDialog,
-                      ),
+                      if (_loadingHistory)
+                        const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(32.0),
+                            child: CircularProgressIndicator(),
+                          ),
+                        )
+                      else if (_addressHistory.isNotEmpty)
+                        HistorySection(
+                          historiAlamat: _addressHistory,
+                          onHistoryTap: _showHistorySelectionDialog,
+                        ),
                       const SizedBox(height: 100),
                     ],
                   ),
@@ -92,9 +176,9 @@ class _NebengMotorPageState extends State<NebengMotorPage> {
               ),
               elevation: 0,
             ),
-            child: const Text(
-              'Selanjutnya',
-              style: TextStyle(
+            child: Text(
+              'next_button'.tr(),
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: Colors.white,
@@ -125,8 +209,8 @@ class _NebengMotorPageState extends State<NebengMotorPage> {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Mohon lengkapi semua field'),
+        SnackBar(
+          content: Text('please_complete_all_fields'.tr()),
         ),
       );
     }
@@ -154,9 +238,9 @@ class _NebengMotorPageState extends State<NebengMotorPage> {
             ),
           ),
           const SizedBox(width: 16),
-          const Text(
-            'Nebeng Motor',
-            style: TextStyle(
+          Text(
+            'nebeng_motor'.tr(),
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 20,
               fontWeight: FontWeight.w600,
@@ -191,8 +275,8 @@ class _NebengMotorPageState extends State<NebengMotorPage> {
         MaterialPageRoute(
           builder: (context) => LocationPickerPage(
             title: isStartLocation
-                ? 'Pilih Kota atau Pos Awal'
-                : 'Pilih Kota atau Pos',
+                ? 'select_city_or_post_origin'.tr()
+                : 'select_city_or_post'.tr(),
             daftarLokasi: List<Map<String, dynamic>>.from(daftar),
             onLocationSelected: (location) {
               setState(() {
@@ -235,8 +319,8 @@ class _NebengMotorPageState extends State<NebengMotorPage> {
           MaterialPageRoute(
             builder: (context) => LocationPickerPage(
               title: isStartLocation
-                  ? 'Pilih Kota atau Pos Awal'
-                  : 'Pilih Kota atau Pos',
+                  ? 'select_city_or_post_origin'.tr()
+                  : 'select_city_or_post'.tr(),
               daftarLokasi: List<Map<String, String>>.from(daftar),
               onLocationSelected: (location) {
                 setState(() {
@@ -260,17 +344,17 @@ class _NebengMotorPageState extends State<NebengMotorPage> {
     return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Gagal mengambil lokasi'),
+            title: Text('failed_to_get_location'.tr()),
             content: Text(
-                'Terjadi kesalahan saat mengambil daftar lokasi:\n$message\n\nPastikan backend berjalan di http://localhost:8000 dan CORS diizinkan.'),
+                'error_fetching_locations'.tr(namedArgs: {'message': message})),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Batal'),
+                child: Text('cancel'.tr()),
               ),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Gunakan contoh'),
+                child: Text('use_example'.tr()),
               ),
             ],
           ),
@@ -283,7 +367,7 @@ class _NebengMotorPageState extends State<NebengMotorPage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Pilih sebagai'),
+          title: Text('select_as'.tr()),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -292,7 +376,7 @@ class _NebengMotorPageState extends State<NebengMotorPage> {
                   Icons.arrow_upward,
                   color: NebengMotorTheme.greenIcon,
                 ),
-                title: const Text('Lokasi Awal'),
+                title: Text('starting_location'.tr()),
                 onTap: () {
                   setState(() {
                     lokasiAwal = alamat['name'];
@@ -306,7 +390,7 @@ class _NebengMotorPageState extends State<NebengMotorPage> {
                   Icons.location_on,
                   color: NebengMotorTheme.orangeIcon,
                 ),
-                title: const Text('Lokasi Tujuan'),
+                title: Text('destination_location'.tr()),
                 onTap: () {
                   setState(() {
                     lokasiTujuan = alamat['name'];

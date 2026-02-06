@@ -25,7 +25,7 @@ class PaymentController extends Controller
             'user_id' => 'required|integer',
             'booking_number' => 'nullable|string',
             'booking_id' => 'nullable|integer',
-            'payment_method' => 'required|in:bri,bca,mandiri,bni,permata,cash,qris,dana',
+            'payment_method' => 'required|in:bri,bca,mandiri,bni,permata,qris,dana',
             'amount' => 'required|numeric|min:0',
             'admin_fee' => 'nullable|numeric|min:0',
         ]);
@@ -96,18 +96,18 @@ class PaymentController extends Controller
             // Only pass booking_id to payments if the booking is stored in booking_motor (legacy payments FK)
             $bookingIdToPass = (!$isCarRide && !$isBarangRide && !$isTitipBarang && $bookingFromMotor) ? $bookingId : null;
 
-            // Handle cash payment separately
-            if ($request->payment_method === 'cash') {
-                $result = $this->paymentService->createCashPayment(
+            // Handle QRIS payment separately
+            if ($request->payment_method === 'qris') {
+                $result = $this->paymentService->createQRISPayment(
                     $request->ride_id,
                     $request->user_id,
                     $bookingNumber,
                     $request->amount,
-                    0, // No admin fee for cash
+                    $adminFee,
                     $bookingIdToPass
                 );
             } else {
-                // Create virtual account for non-cash payments
+                // Create virtual account for bank transfer payments
                 $result = $this->paymentService->createVirtualAccount(
                     $request->ride_id,
                     $request->user_id,

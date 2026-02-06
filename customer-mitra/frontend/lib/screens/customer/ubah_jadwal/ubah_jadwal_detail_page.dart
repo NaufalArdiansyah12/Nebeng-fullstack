@@ -5,6 +5,22 @@ import 'package:image_picker/image_picker.dart';
 import '../../../services/api_service.dart';
 import 'payment/reschedule_payment_detail_page.dart';
 
+class SavedPassenger {
+  int id;
+  String name;
+  String phone;
+
+  SavedPassenger({required this.id, required this.name, required this.phone});
+
+  factory SavedPassenger.fromJson(Map<String, dynamic> json) {
+    return SavedPassenger(
+      id: json['id'] as int,
+      name: json['name'] as String,
+      phone: json['phone'] as String,
+    );
+  }
+}
+
 class UbahJadwalDetailPage extends StatefulWidget {
   final Map<String, dynamic> booking;
   final Map<String, dynamic> selectedRide;
@@ -26,11 +42,15 @@ class UbahJadwalDetailPage extends StatefulWidget {
 class _UbahJadwalDetailPageState extends State<UbahJadwalDetailPage> {
   bool isLoading = false;
   List<Map<String, dynamic>> passengers = [];
+  List<SavedPassenger> savedPassengers = [];
+  bool _isLoadingPassengers = false;
   // Barang-specific fields
   final TextEditingController _barangDescriptionController =
       TextEditingController();
   String? _selectedBarangSize;
   String? _barangImagePath;
+  String? _penerimaName;
+  String? _penerimaPhone;
   final List<String> _barangSizes = [
     'Kecil',
     'Sedang',
@@ -46,6 +66,7 @@ class _UbahJadwalDetailPageState extends State<UbahJadwalDetailPage> {
     _fetchBookingDetails();
     // initialize barang image from incoming param if any
     _barangImagePath = widget.barangImagePath;
+    _loadSavedPassengersFromApi();
   }
 
   Future<void> _pickImage() async {
@@ -124,6 +145,57 @@ class _UbahJadwalDetailPageState extends State<UbahJadwalDetailPage> {
           }
         ];
       }
+    }
+  }
+
+  Future<void> _loadSavedPassengersFromApi() async {
+    setState(() => _isLoadingPassengers = true);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('api_token');
+      if (token != null) {
+        final List<Map<String, dynamic>> response =
+            await ApiService.getSavedPassengers(token: token);
+        setState(() {
+          savedPassengers =
+              response.map((json) => SavedPassenger.fromJson(json)).toList();
+        });
+      }
+    } catch (e) {
+      // ignore error, keep empty list
+    } finally {
+      setState(() => _isLoadingPassengers = false);
+    }
+  }
+
+  Future<void> _deleteSavedPassenger(SavedPassenger passenger) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('api_token');
+    if (token == null) return;
+
+    try {
+      final success = await ApiService.deletePassenger(
+        token: token,
+        passengerId: passenger.id,
+      );
+
+      if (success) {
+        await _loadSavedPassengersFromApi();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✓ ${passenger.name} dihapus dari daftar'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Gagal menghapus penumpang'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -215,12 +287,12 @@ class _UbahJadwalDetailPageState extends State<UbahJadwalDetailPage> {
       // Use absolute value of price diff + admin fee
       // Or minimum reschedule fee if price goes down
       final rescheduleAmount = priceDiff.abs(); // Always positive
-      final adminFee = 15000; // Always charge admin fee for reschedule
+      final adminFee = 15000.0; // Always charge admin fee for reschedule
 
       final payData = await ApiService.createPayment(
         rideId: targetId,
         userId: userId,
-        bookingNumber: widget.booking['booking_number']?.toString(),
+        bookingNumber: widget.booking['booking_number']?.toString() ?? '',
         bookingId: widget.booking['id'],
         paymentMethod: 'bri',
         amount: rescheduleAmount,
@@ -287,7 +359,58 @@ class _UbahJadwalDetailPageState extends State<UbahJadwalDetailPage> {
     }
   }
 
+  void _showPenerimaBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _PenerimaBottomSheet(
+        initialName: _penerimaName,
+        initialPhone: _penerimaPhone,
+        onSave: (name, phone) {
+          setState(() {
+            _penerimaName = name;
+            _penerimaPhone = phone;
+          });
+        },
+      ),
+    );
+  }
+
   void _showAddPassengerDialog() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _PassengerInfoBottomSheet(
+        passengers: passengers,
+        savedPassengers: savedPassengers,
+        onAddNew: () {
+          Navigator.pop(context);
+          _showAddNewPassengerDialog();
+        },
+        onSelectSaved: (saved) {
+          setState(() {
+            if (!passengers.any(
+                (p) => p['name'] == saved.name && p['phone'] == saved.phone)) {
+              passengers.add({'name': saved.name, 'phone': saved.phone});
+            }
+          });
+          Navigator.pop(context);
+        },
+        onDelete: (index) {
+          setState(() {
+            passengers.removeAt(index);
+          });
+          Navigator.pop(context);
+          _showAddPassengerDialog();
+        },
+        onDeleteSaved: _deleteSavedPassenger,
+      ),
+    );
+  }
+
+  void _showAddNewPassengerDialog() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -297,6 +420,22 @@ class _UbahJadwalDetailPageState extends State<UbahJadwalDetailPage> {
           setState(() {
             passengers.add({'name': name, 'phone': phone});
           });
+        },
+        onSaveToList: (name, phone) async {
+          final prefs = await SharedPreferences.getInstance();
+          final token = prefs.getString('api_token');
+          if (token != null) {
+            try {
+              await ApiService.savePassenger(
+                token: token,
+                name: name,
+                phone: phone,
+              );
+              await _loadSavedPassengersFromApi();
+            } catch (e) {
+              // ignore error
+            }
+          }
         },
       ),
     );
@@ -713,7 +852,7 @@ class _UbahJadwalDetailPageState extends State<UbahJadwalDetailPage> {
                           ),
                           const SizedBox(height: 16),
                           InkWell(
-                            onTap: () {},
+                            onTap: _showPenerimaBottomSheet,
                             borderRadius: BorderRadius.circular(12),
                             child: Container(
                               padding: const EdgeInsets.all(16),
@@ -726,12 +865,38 @@ class _UbahJadwalDetailPageState extends State<UbahJadwalDetailPage> {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  const Text(
-                                    'Data Penerima',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.black87,
-                                      fontWeight: FontWeight.w500,
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Data Penerima',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.black87,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        if (_penerimaName != null) ...[
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            _penerimaName!,
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              color: Colors.grey[700],
+                                            ),
+                                          ),
+                                          if (_penerimaPhone != null)
+                                            Text(
+                                              _penerimaPhone!,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.grey[500],
+                                              ),
+                                            ),
+                                        ],
+                                      ],
                                     ),
                                   ),
                                   Icon(
@@ -951,8 +1116,12 @@ class _UbahJadwalDetailPageState extends State<UbahJadwalDetailPage> {
 // Bottom Sheet for Adding Passenger
 class _AddPassengerBottomSheet extends StatefulWidget {
   final Function(String name, String phone) onAdd;
+  final Function(String name, String phone)? onSaveToList;
 
-  const _AddPassengerBottomSheet({required this.onAdd});
+  const _AddPassengerBottomSheet({
+    required this.onAdd,
+    this.onSaveToList,
+  });
 
   @override
   State<_AddPassengerBottomSheet> createState() =>
@@ -963,6 +1132,8 @@ class _AddPassengerBottomSheetState extends State<_AddPassengerBottomSheet> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   bool _saveToList = false;
+  String? nameError;
+  String? phoneError;
 
   @override
   Widget build(BuildContext context) {
@@ -1013,35 +1184,22 @@ class _AddPassengerBottomSheetState extends State<_AddPassengerBottomSheet> {
               const SizedBox(height: 8),
               TextField(
                 controller: _nameController,
+                onChanged: (_) => setState(() => nameError = null),
                 decoration: InputDecoration(
                   hintText: 'Nama Anda',
                   hintStyle: TextStyle(color: Colors.grey[400]),
+                  errorText: nameError,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
+                    borderSide: BorderSide(
+                        color:
+                            nameError != null ? Colors.red : Colors.grey[300]!),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFF1E3A8A)),
-                  ),
-                  contentPadding: const EdgeInsets.all(16),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _nameController,
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
+                    borderSide: BorderSide(
+                        color:
+                            nameError != null ? Colors.red : Colors.grey[300]!),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -1063,16 +1221,24 @@ class _AddPassengerBottomSheetState extends State<_AddPassengerBottomSheet> {
               TextField(
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
+                onChanged: (_) => setState(() => phoneError = null),
                 decoration: InputDecoration(
                   hintText: 'No Telp Anda',
                   hintStyle: TextStyle(color: Colors.grey[400]),
+                  errorText: phoneError,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
+                    borderSide: BorderSide(
+                        color: phoneError != null
+                            ? Colors.red
+                            : Colors.grey[300]!),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
+                    borderSide: BorderSide(
+                        color: phoneError != null
+                            ? Colors.red
+                            : Colors.grey[300]!),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -1082,36 +1248,93 @@ class _AddPassengerBottomSheetState extends State<_AddPassengerBottomSheet> {
                 ),
               ),
               const SizedBox(height: 16),
-              Row(
-                children: [
-                  Switch(
-                    value: _saveToList,
-                    onChanged: (value) {
-                      setState(() {
-                        _saveToList = value;
-                      });
-                    },
-                    activeColor: const Color(0xFF1E3A8A),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Simpan ke daftar penebeng',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.black87,
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.bookmark_outline,
+                        color: Color(0xFF1E3A8A), size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Simpan ke daftar penebeng',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          Text(
+                            'Untuk memudahkan booking selanjutnya',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                    Switch(
+                      value: _saveToList,
+                      onChanged: (value) {
+                        setState(() {
+                          _saveToList = value;
+                        });
+                      },
+                      activeColor: const Color(0xFF1E3A8A),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    if (_nameController.text.isNotEmpty) {
-                      widget.onAdd(_nameController.text, _phoneController.text);
-                      Navigator.pop(context);
+                  onPressed: () async {
+                    setState(() {
+                      nameError = null;
+                      phoneError = null;
+                    });
+
+                    if (_nameController.text.trim().isEmpty) {
+                      setState(() => nameError = 'Nama harus diisi');
+                      return;
                     }
+
+                    if (_phoneController.text.trim().isEmpty) {
+                      setState(() => phoneError = 'No telp harus diisi');
+                      return;
+                    }
+
+                    if (_phoneController.text.trim().length < 10) {
+                      setState(() => phoneError = 'No telp minimal 10 digit');
+                      return;
+                    }
+
+                    final name = _nameController.text.trim();
+                    final phone = _phoneController.text.trim();
+
+                    widget.onAdd(name, phone);
+
+                    if (_saveToList && widget.onSaveToList != null) {
+                      await widget.onSaveToList!(name, phone);
+                    }
+
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('\u2713 $name ditambahkan'),
+                        backgroundColor: Colors.green,
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1E3A8A),
@@ -1138,7 +1361,318 @@ class _AddPassengerBottomSheetState extends State<_AddPassengerBottomSheet> {
   }
 }
 
-// Bottom Sheet for Passenger List
+// Bottom Sheet for Passenger Info with Search
+class _PassengerInfoBottomSheet extends StatefulWidget {
+  final List<Map<String, dynamic>> passengers;
+  final List<SavedPassenger> savedPassengers;
+  final VoidCallback onAddNew;
+  final Function(SavedPassenger) onSelectSaved;
+  final Function(int) onDelete;
+  final Function(SavedPassenger) onDeleteSaved;
+
+  const _PassengerInfoBottomSheet({
+    required this.passengers,
+    required this.savedPassengers,
+    required this.onAddNew,
+    required this.onSelectSaved,
+    required this.onDelete,
+    required this.onDeleteSaved,
+  });
+
+  @override
+  State<_PassengerInfoBottomSheet> createState() =>
+      _PassengerInfoBottomSheetState();
+}
+
+class _PassengerInfoBottomSheetState extends State<_PassengerInfoBottomSheet> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final filteredPassengers = widget.savedPassengers.where((p) {
+      if (_searchQuery.isEmpty) return true;
+      return p.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          p.phone.contains(_searchQuery);
+    }).toList();
+
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.75,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Informasi Penebeng',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Current Passengers
+                if (widget.passengers.isNotEmpty) ...[
+                  const Text(
+                    'Penumpang yang ditambahkan:',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ...widget.passengers.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final p = entry.value;
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF1E3A8A),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${index + 1}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  p['name'] ?? '',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                Text(
+                                  p['phone'] ?? '',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.delete_outline,
+                                color: Colors.red[400], size: 20),
+                            onPressed: () => widget.onDelete(index),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                  const SizedBox(height: 16),
+                ],
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              children: [
+                // Add Passenger Button
+                OutlinedButton(
+                  onPressed: widget.onAddNew,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF1E3A8A),
+                    side: const BorderSide(color: Color(0xFF1E3A8A)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    minimumSize: const Size(double.infinity, 48),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(Icons.add_circle_outline, size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        'Tambah Penebeng Baru',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Search Bar
+                TextField(
+                  controller: _searchController,
+                  onChanged: (value) => setState(() => _searchQuery = value),
+                  decoration: InputDecoration(
+                    hintText: 'Cari penebeng tersimpan',
+                    hintStyle: TextStyle(
+                      color: Colors.grey[400],
+                      fontSize: 14,
+                    ),
+                    prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
+                    filled: true,
+                    fillColor: const Color(0xFFF5F5F5),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Saved Passengers List
+          Expanded(
+            child: filteredPassengers.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.people_outline,
+                            size: 64, color: Colors.grey[300]),
+                        const SizedBox(height: 16),
+                        Text(
+                          _searchQuery.isEmpty
+                              ? 'Belum ada penebeng tersimpan'
+                              : 'Tidak ada hasil pencarian',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: filteredPassengers.length,
+                    itemBuilder: (context, index) {
+                      final passenger = filteredPassengers[index];
+                      final isAdded = widget.passengers.any((p) =>
+                          p['name'] == passenger.name &&
+                          p['phone'] == passenger.phone);
+
+                      return InkWell(
+                        onTap: isAdded
+                            ? null
+                            : () => widget.onSelectSaved(passenger),
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: isAdded ? Colors.grey[100] : Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.grey[300]!,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      passenger.name,
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                        color: isAdded
+                                            ? Colors.grey[500]
+                                            : Colors.black87,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      passenger.phone,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (isAdded)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green[50],
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    'Ditambahkan',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.green[700],
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                )
+                              else
+                                const Icon(Icons.add_circle_outline,
+                                    color: Color(0xFF1E3A8A), size: 20),
+                              const SizedBox(width: 8),
+                              IconButton(
+                                icon: Icon(Icons.delete_outline,
+                                    color: Colors.red[400], size: 20),
+                                onPressed: () =>
+                                    widget.onDeleteSaved(passenger),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Bottom Sheet for Passenger List (deprecated, keeping for compatibility)
 class _PassengerListBottomSheet extends StatelessWidget {
   final List<Map<String, dynamic>> passengers;
   final Function(Map<String, dynamic>) onSelect;
@@ -1247,6 +1781,221 @@ class _PassengerListBottomSheet extends StatelessWidget {
             );
           }).toList(),
         ],
+      ),
+    );
+  }
+}
+
+// Bottom Sheet untuk Data Penerima
+class _PenerimaBottomSheet extends StatefulWidget {
+  final String? initialName;
+  final String? initialPhone;
+  final Function(String name, String phone) onSave;
+
+  const _PenerimaBottomSheet({
+    this.initialName,
+    this.initialPhone,
+    required this.onSave,
+  });
+
+  @override
+  State<_PenerimaBottomSheet> createState() => _PenerimaBottomSheetState();
+}
+
+class _PenerimaBottomSheetState extends State<_PenerimaBottomSheet> {
+  late TextEditingController _nameController;
+  late TextEditingController _phoneController;
+  String? nameError;
+  String? phoneError;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.initialName);
+    _phoneController = TextEditingController(text: widget.initialPhone);
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+      ),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () => Navigator.pop(context),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Data Penerima',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Nama Penerima',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _nameController,
+                onChanged: (_) => setState(() => nameError = null),
+                decoration: InputDecoration(
+                  hintText: 'Masukkan nama penerima',
+                  hintStyle: TextStyle(color: Colors.grey[400]),
+                  errorText: nameError,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                        color:
+                            nameError != null ? Colors.red : Colors.grey[300]!),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                        color:
+                            nameError != null ? Colors.red : Colors.grey[300]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFF1E3A8A)),
+                  ),
+                  contentPadding: const EdgeInsets.all(16),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'No. Telepon',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
+                onChanged: (_) => setState(() => phoneError = null),
+                decoration: InputDecoration(
+                  hintText: 'Masukkan nomor telepon',
+                  hintStyle: TextStyle(color: Colors.grey[400]),
+                  errorText: phoneError,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                        color: phoneError != null
+                            ? Colors.red
+                            : Colors.grey[300]!),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                        color: phoneError != null
+                            ? Colors.red
+                            : Colors.grey[300]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFF1E3A8A)),
+                  ),
+                  contentPadding: const EdgeInsets.all(16),
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      nameError = null;
+                      phoneError = null;
+                    });
+
+                    if (_nameController.text.trim().isEmpty) {
+                      setState(() => nameError = 'Nama penerima harus diisi');
+                      return;
+                    }
+
+                    if (_phoneController.text.trim().isEmpty) {
+                      setState(() => phoneError = 'No. telepon harus diisi');
+                      return;
+                    }
+
+                    if (_phoneController.text.trim().length < 10) {
+                      setState(
+                          () => phoneError = 'No. telepon minimal 10 digit');
+                      return;
+                    }
+
+                    widget.onSave(
+                      _nameController.text.trim(),
+                      _phoneController.text.trim(),
+                    );
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                            '✓ ${_nameController.text.trim()} ditambahkan'),
+                        backgroundColor: Colors.green,
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1E3A8A),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Simpan',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

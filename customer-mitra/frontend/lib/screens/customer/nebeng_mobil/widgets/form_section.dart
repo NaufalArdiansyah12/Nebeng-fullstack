@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'location_input_field.dart';
 import 'date_input_field.dart';
 
@@ -51,7 +52,7 @@ class FormSection extends StatelessWidget {
                     icon: Icons.my_location_rounded,
                     iconColor: Colors.white,
                     iconBgColor: const Color(0xFF10B981),
-                    label: 'Lokasi Awal',
+                    label: 'origin_label'.tr(),
                     value: lokasiAwal,
                     address: lokasiAwalAddress,
                     onTap: onLokasiAwalTap,
@@ -92,7 +93,7 @@ class FormSection extends StatelessWidget {
                     icon: Icons.location_on_rounded,
                     iconColor: Colors.white,
                     iconBgColor: const Color(0xFFF97316),
-                    label: 'Lokasi Tujuan',
+                    label: 'destination_label'.tr(),
                     value: lokasiTujuan,
                     address: lokasiTujuanAddress,
                     onTap: onLokasiTujuanTap,

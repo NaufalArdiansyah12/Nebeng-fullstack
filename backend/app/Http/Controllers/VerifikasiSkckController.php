@@ -22,7 +22,7 @@ class VerifikasiSkckController extends Controller
 
         $hashed = hash('sha256', $bearer);
         $apiToken = \App\Models\ApiToken::where('token', $hashed)->first();
-        
+
         if (!$apiToken) {
             return response()->json([
                 'success' => false,
@@ -50,7 +50,7 @@ class VerifikasiSkckController extends Controller
 
         $hashed = hash('sha256', $bearer);
         $apiToken = \App\Models\ApiToken::where('token', $hashed)->first();
-        
+
         if (!$apiToken) {
             return response()->json([
                 'success' => false,
@@ -94,6 +94,14 @@ class VerifikasiSkckController extends Controller
             'status' => 'pending',
         ]);
 
+
+        // Ensure MitraVerifikasi links to this skck verification
+        MitraVerifikasi::updateOrCreate(
+            ['user_id' => $apiToken->user_id],
+            ['skck_verification_id' => $verification->id]
+        );
+
+
         return response()->json([
             'success' => true,
             'message' => 'SKCK verification submitted successfully',
@@ -113,7 +121,7 @@ class VerifikasiSkckController extends Controller
 
         $hashed = hash('sha256', $bearer);
         $apiToken = \App\Models\ApiToken::where('token', $hashed)->first();
-        
+
         if (!$apiToken) {
             return response()->json([
                 'success' => false,
@@ -144,13 +152,34 @@ class VerifikasiSkckController extends Controller
             ], 404);
         }
 
+
+        $updateData = [
+            'skck_number' => $request->skck_number,
+            'skck_name' => $request->skck_name,
+            'skck_expiry_date' => $request->skck_expiry_date,
+            'status' => 'pending',
+        ];
+
+
         if ($request->hasFile('skck_photo')) {
             if ($verification->skck_photo) {
                 Storage::disk('public')->delete($verification->skck_photo);
             }
             $photoPath = $request->file('skck_photo')->store('verifikasi/skck', 'public');
-            $verification->skck_photo = $photoPath;
+
+            $updateData['skck_photo'] = $photoPath;
         }
+
+        $verification->update($updateData);
+
+        // Ensure MitraVerifikasi links to this skck verification
+        MitraVerifikasi::updateOrCreate(
+            ['user_id' => $apiToken->user_id],
+            ['skck_verification_id' => $verification->id]
+        );
+
+        $verification->skck_photo = $photoPath;
+
 
         $verification->update([
             'skck_number' => $request->skck_number,
@@ -158,6 +187,7 @@ class VerifikasiSkckController extends Controller
             'skck_expiry_date' => $request->skck_expiry_date,
             'status' => 'pending',
         ]);
+
 
         return response()->json([
             'success' => true,

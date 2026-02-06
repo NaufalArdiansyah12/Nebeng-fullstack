@@ -1,3 +1,5 @@
+import 'package:easy_localization/easy_localization.dart';
+
 /// Utility functions for formatting booking-related data
 class BookingFormatters {
   /// Format date and time into readable Indonesian format
@@ -89,25 +91,25 @@ class BookingFormatters {
   static String getStatusText(String status) {
     switch (status.toLowerCase()) {
       case 'menuju_penjemputan':
-        return 'Menuju Penjemputan';
+        return 'status_heading_to_pickup'.tr();
       case 'sudah_di_penjemputan':
-        return 'Di Titik Penjemputan';
+        return 'status_at_pickup'.tr();
       case 'menuju_tujuan':
-        return 'Menuju Tujuan';
+        return 'status_heading_to_destination'.tr();
       case 'sudah_sampai_tujuan':
-        return 'Sudah Sampai Tujuan';
+        return 'status_arrived_destination'.tr();
       case 'completed':
-        return 'Trip Selesai';
+        return 'status_trip_completed'.tr();
       case 'cancelled':
-        return 'Dibatalkan';
+        return 'status_cancelled'.tr();
       case 'scheduled':
-        return 'Dijadwalkan';
+        return 'status_scheduled'.tr();
       case 'paid':
-        return 'Sudah Dibayar';
+        return 'status_paid'.tr();
       case 'confirmed':
-        return 'Dikonfirmasi';
+        return 'status_confirmed'.tr();
       case 'pending':
-        return 'Menunggu Pembayaran';
+        return 'status_waiting_payment'.tr();
       default:
         return status; // Return original status if unknown
     }

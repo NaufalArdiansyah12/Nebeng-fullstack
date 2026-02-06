@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'verifikasi_upload_page.dart';
 import 'verifikasi_form_page.dart';
 import 'verifikasi_wajah_ktp_panduan_page.dart';
-import '../../../services/verifikasi_service.dart';
+import '../../../services/mitra/verifikasi_service.dart';
 
 enum VerificationType {
   face,

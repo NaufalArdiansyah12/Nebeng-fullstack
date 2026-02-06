@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import '../utils/booking_formatters.dart';
 
 /// Widget to display countdown to departure
@@ -36,8 +37,8 @@ class CountdownSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Text(
-            'Jadwal Berangkat',
+          Text(
+            'departure_schedule'.tr(),
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -59,25 +60,25 @@ class CountdownSection extends StatelessWidget {
               children: [
                 _buildCountdownBox(
                   timeUntilDeparture!.inDays.toString().padLeft(2, '0'),
-                  'Hari',
+                  'days'.tr(),
                 ),
                 const SizedBox(width: 12),
                 _buildCountdownBox(
                   (timeUntilDeparture!.inHours % 24).toString().padLeft(2, '0'),
-                  'Jam',
+                  'hours'.tr(),
                 ),
                 const SizedBox(width: 12),
                 _buildCountdownBox(
                   (timeUntilDeparture!.inMinutes % 60)
                       .toString()
                       .padLeft(2, '0'),
-                  'Menit',
+                  'minutes'.tr(),
                 ),
               ],
             ),
           ] else ...[
-            const Text(
-              'Waktu keberangkatan telah tiba',
+            Text(
+              'departure_time_arrived'.tr(),
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.orange,

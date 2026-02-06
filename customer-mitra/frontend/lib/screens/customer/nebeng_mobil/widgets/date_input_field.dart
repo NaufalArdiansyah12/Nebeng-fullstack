@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 
 class DateInputField extends StatelessWidget {
   final DateTime? selectedDate;
@@ -50,7 +51,7 @@ class DateInputField extends StatelessWidget {
             child: Text(
               selectedDate != null
                   ? _formatDateLong(selectedDate!)
-                  : 'Tanggal Keberangkatan',
+                  : 'departure_date_label'.tr(),
               style: TextStyle(
                 fontSize: 16,
                 color: Colors.black87,

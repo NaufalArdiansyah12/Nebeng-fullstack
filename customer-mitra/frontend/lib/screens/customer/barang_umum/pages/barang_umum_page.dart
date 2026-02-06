@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../nebeng_motor/widgets/form_section.dart';
 import '../../nebeng_motor/pages/location_picker_page.dart';
@@ -8,7 +9,7 @@ import '../../nebeng_barang/widgets/ukuran_picker.dart';
 import '../../nebeng_barang/widgets/barang_form.dart';
 import '../../../../services/api_service.dart';
 import '../../../../widgets/custom_calendar_widget.dart';
-import 'penerima_picker_page.dart';
+
 import 'trip_list_barang_umum_page.dart';
 
 class BarangUmumPage extends StatefulWidget {
@@ -62,7 +63,8 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal memilih foto: $e'),
+            content: Text('failed_to_select_photo'
+                .tr(namedArgs: {'error': e.toString()})),
             backgroundColor: Colors.red,
           ),
         );
@@ -79,7 +81,9 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
       context,
       MaterialPageRoute(
         builder: (context) => LocationPickerPage(
-          title: isOrigin ? 'Pilih Lokasi Awal' : 'Pilih Lokasi Tujuan',
+          title: isOrigin
+              ? 'select_origin_location'.tr()
+              : 'select_destination_location'.tr(),
           daftarLokasi: locations,
           onLocationSelected: (location) {
             // Don't call Navigator.pop here, LocationPickerPage already handles it
@@ -112,7 +116,8 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal memuat lokasi: $e'),
+            content: Text('failed_to_load_locations'
+                .tr(namedArgs: {'error': e.toString()})),
             backgroundColor: Colors.red,
           ),
         );
@@ -153,8 +158,8 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
   void _handleLanjut() {
     if (lokasiAwalId == null || lokasiTujuanId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Mohon pilih lokasi awal dan tujuan'),
+        SnackBar(
+          content: Text('please_select_origin_destination'.tr()),
           backgroundColor: Colors.red,
         ),
       );
@@ -163,8 +168,8 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
 
     if (tanggalBerangkat == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Mohon pilih tanggal berangkat'),
+        SnackBar(
+          content: Text('please_select_departure_date'.tr()),
           backgroundColor: Colors.red,
         ),
       );
@@ -173,8 +178,8 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
 
     if (ukuranBarang == null || ukuranBarang!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Mohon pilih ukuran barang'),
+        SnackBar(
+          content: Text('please_select_package_size'.tr()),
           backgroundColor: Colors.red,
         ),
       );
@@ -183,8 +188,8 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
 
     if (keteranganBarang == null || keteranganBarang!.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Mohon isi keterangan barang'),
+        SnackBar(
+          content: Text('please_enter_package_notes'.tr()),
           backgroundColor: Colors.red,
         ),
       );
@@ -279,7 +284,7 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             _buildFieldLabel(
-                                'Data Penerima', Icons.person_rounded),
+                                'recipient_data'.tr(), Icons.person_rounded),
                             const SizedBox(height: 10),
                             _buildDataPenerimaField(),
                           ],
@@ -316,13 +321,13 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
             ),
           ),
           const SizedBox(width: 16),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Nebeng Titip Barang',
-                  style: TextStyle(
+                  'nebeng_titip_barang_title'.tr(),
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -546,7 +551,7 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Tambah Foto Barang',
+                    'add_package_photo'.tr(),
                     style: TextStyle(
                       color: Colors.grey[600],
                       fontSize: 14,
@@ -575,7 +580,7 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
           children: [
             Expanded(
               child: Text(
-                dataPenerima ?? 'Data Penerima',
+                dataPenerima ?? 'recipient_data_placeholder'.tr(),
                 style: TextStyle(
                   fontSize: 14,
                   color:
@@ -595,38 +600,22 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
   }
 
   void _showPenerimaPicker() async {
-    final result = await showModalBottomSheet<Map<String, String>>(
+    showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.75,
-        minChildSize: 0.5,
-        maxChildSize: 0.9,
-        builder: (context, scrollController) => Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-            ),
-          ),
-          child: PenerimaPickerPage(
-            currentPenerima: dataPenerima,
-            scrollController: scrollController,
-          ),
-        ),
+      builder: (context) => _PenerimaBottomSheet(
+        initialName: dataPenerima,
+        initialPhone: penerimaPhone,
+        onSave: (name, phone) {
+          setState(() {
+            dataPenerima = name;
+            penerimaPhone = phone;
+            _penerimaController.text = name;
+          });
+        },
       ),
     );
-
-    if (result != null && mounted) {
-      setState(() {
-        dataPenerima = result['name'];
-        penerimaPhone = result['phone'];
-        penerimaEmail = result['email'];
-        _penerimaController.text = result['name'] ?? '';
-      });
-    }
   }
 
   void _showUkuranPicker() {
@@ -657,9 +646,10 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Text(
-                  'Pilih Kapasitas Bagasi',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                Text(
+                  'select_luggage_capacity'.tr(),
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 12),
                 // Options
@@ -697,13 +687,13 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
                             const SizedBox(width: 12),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
-                              children: const [
-                                Text('Kecil',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.w600)),
-                                SizedBox(height: 4),
-                                Text('Maksimal 5 Kg',
-                                    style: TextStyle(color: Colors.grey)),
+                              children: [
+                                Text('small'.tr(),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w600)),
+                                const SizedBox(height: 4),
+                                Text('max_5kg'.tr(),
+                                    style: const TextStyle(color: Colors.grey)),
                               ],
                             )
                           ],
@@ -742,13 +732,13 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
                             const SizedBox(width: 12),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
-                              children: const [
-                                Text('Sedang',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.w600)),
-                                SizedBox(height: 4),
-                                Text('Maksimal 10 Kg',
-                                    style: TextStyle(color: Colors.grey)),
+                              children: [
+                                Text('medium'.tr(),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w600)),
+                                const SizedBox(height: 4),
+                                Text('max_10kg'.tr(),
+                                    style: const TextStyle(color: Colors.grey)),
                               ],
                             )
                           ],
@@ -787,13 +777,13 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
                             const SizedBox(width: 12),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
-                              children: const [
-                                Text('Besar',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.w600)),
-                                SizedBox(height: 4),
-                                Text('Maksimal 20 Kg',
-                                    style: TextStyle(color: Colors.grey)),
+                              children: [
+                                Text('large'.tr(),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w600)),
+                                const SizedBox(height: 4),
+                                Text('max_20kg'.tr(),
+                                    style: const TextStyle(color: Colors.grey)),
                               ],
                             )
                           ],
@@ -835,12 +825,229 @@ class _BarangUmumPageState extends State<BarangUmumPage> {
             ),
             elevation: 0,
           ),
-          child: const Text(
-            'Lanjutnya',
-            style: TextStyle(
+          child: Text(
+            'continue'.tr(),
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Bottom Sheet untuk Data Penerima
+class _PenerimaBottomSheet extends StatefulWidget {
+  final String? initialName;
+  final String? initialPhone;
+  final Function(String name, String phone) onSave;
+
+  const _PenerimaBottomSheet({
+    this.initialName,
+    this.initialPhone,
+    required this.onSave,
+  });
+
+  @override
+  State<_PenerimaBottomSheet> createState() => _PenerimaBottomSheetState();
+}
+
+class _PenerimaBottomSheetState extends State<_PenerimaBottomSheet> {
+  late TextEditingController _nameController;
+  late TextEditingController _phoneController;
+  String? nameError;
+  String? phoneError;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.initialName);
+    _phoneController = TextEditingController(text: widget.initialPhone);
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+      ),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () => Navigator.pop(context),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Data Penerima',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Nama Penerima',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _nameController,
+                onChanged: (_) => setState(() => nameError = null),
+                decoration: InputDecoration(
+                  hintText: 'Masukkan nama penerima',
+                  hintStyle: TextStyle(color: Colors.grey[400]),
+                  errorText: nameError,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                        color:
+                            nameError != null ? Colors.red : Colors.grey[300]!),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                        color:
+                            nameError != null ? Colors.red : Colors.grey[300]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide:
+                        const BorderSide(color: NebengMotorTheme.primaryBlue),
+                  ),
+                  contentPadding: const EdgeInsets.all(16),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'No. Telepon',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
+                onChanged: (_) => setState(() => phoneError = null),
+                decoration: InputDecoration(
+                  hintText: 'Masukkan nomor telepon',
+                  hintStyle: TextStyle(color: Colors.grey[400]),
+                  errorText: phoneError,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                        color: phoneError != null
+                            ? Colors.red
+                            : Colors.grey[300]!),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                        color: phoneError != null
+                            ? Colors.red
+                            : Colors.grey[300]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide:
+                        const BorderSide(color: NebengMotorTheme.primaryBlue),
+                  ),
+                  contentPadding: const EdgeInsets.all(16),
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      nameError = null;
+                      phoneError = null;
+                    });
+
+                    if (_nameController.text.trim().isEmpty) {
+                      setState(() => nameError = 'Nama penerima harus diisi');
+                      return;
+                    }
+
+                    if (_phoneController.text.trim().isEmpty) {
+                      setState(() => phoneError = 'No. telepon harus diisi');
+                      return;
+                    }
+
+                    if (_phoneController.text.trim().length < 10) {
+                      setState(
+                          () => phoneError = 'No. telepon minimal 10 digit');
+                      return;
+                    }
+
+                    widget.onSave(
+                      _nameController.text.trim(),
+                      _phoneController.text.trim(),
+                    );
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                            '✓ ${_nameController.text.trim()} ditambahkan'),
+                        backgroundColor: Colors.green,
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: NebengMotorTheme.primaryBlue,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Simpan',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

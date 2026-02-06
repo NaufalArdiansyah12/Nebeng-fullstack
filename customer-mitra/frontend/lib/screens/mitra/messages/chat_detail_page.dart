@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../../services/chat_service.dart';
+import '../../../services/shared/chat_service.dart';
+import '../../../services/api_service.dart';
+import '../../../utils/phone_helper.dart';
 
 class MitraChatDetailPage extends StatefulWidget {
   final String conversationId;
   final String otherUserName;
   final String? otherUserPhoto;
   final String bookingType;
+  final bool isPosMitra;
 
   const MitraChatDetailPage({
     Key? key,
@@ -15,6 +18,7 @@ class MitraChatDetailPage extends StatefulWidget {
     required this.otherUserName,
     this.otherUserPhoto,
     this.bookingType = 'motor',
+    this.isPosMitra = false,
   }) : super(key: key);
 
   @override
@@ -27,11 +31,13 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
   int? _userId;
   String? _userName;
   String _userRole = 'mitra';
+  String? _customerPhone; // Nomor telepon customer
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
+    _loadConversationData();
   }
 
   Future<void> _loadUserData() async {
@@ -52,6 +58,81 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
     }
   }
 
+  Future<void> _loadConversationData() async {
+    try {
+      print('🔍 Loading conversation data for: ${widget.conversationId}');
+      final conv = await _chatService.getConversation(widget.conversationId);
+
+      if (conv == null) {
+        print('❌ Conversation not found');
+        return;
+      }
+
+      print('📦 Conversation data: ${conv.keys}');
+
+      if (mounted) {
+        // Mitra chat, maka ambil customerPhone
+        String? phone = conv['customerPhone'] as String?;
+        print('📞 Phone from conversation: $phone');
+
+        // Fallback: Jika phone tidak ada di conversation (conversation lama),
+        // ambil dari API berdasarkan customerId
+        if (phone == null || phone.isEmpty) {
+          final customerId = conv['customerId'] as int?;
+          print('👤 CustomerId from conversation: $customerId');
+
+          if (customerId != null) {
+            try {
+              final prefs = await SharedPreferences.getInstance();
+              final token = prefs.getString('api_token');
+              print('🔑 Token exists: ${token != null}');
+
+              if (token != null) {
+                print(
+                    '📞 Fetching customer phone from API for customerId: $customerId');
+                final userData =
+                    await ApiService.getUserById(customerId, token);
+                print('📦 User data keys: ${userData.keys}');
+
+                phone = userData['phone'] as String? ??
+                    userData['phone_number'] as String?;
+                print('✅ Phone from API: $phone');
+
+                // Update Firestore conversation with phone number for future use
+                if (phone != null && phone.isNotEmpty) {
+                  try {
+                    await _chatService.updateConversationPhone(
+                      widget.conversationId,
+                      customerPhone: phone,
+                    );
+                    print('✅ Updated conversation with phone number');
+                  } catch (e) {
+                    print('⚠️ Failed to update conversation: $e');
+                  }
+                }
+              } else {
+                print('❌ No token available');
+              }
+            } catch (e) {
+              print('⚠️ Error fetching phone from API: $e');
+              print('⚠️ Stack trace: ${StackTrace.current}');
+            }
+          } else {
+            print('❌ No customerId in conversation');
+          }
+        }
+
+        setState(() {
+          _customerPhone = phone;
+        });
+        print('📱 Final phone loaded: $_customerPhone');
+      }
+    } catch (e) {
+      print('❌ Error loading conversation data: $e');
+      print('❌ Stack trace: ${StackTrace.current}');
+    }
+  }
+
   Future<void> _sendMessage() async {
     if (_controller.text.trim().isEmpty || _userId == null) return;
 
@@ -59,12 +140,21 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
     _controller.clear();
 
     try {
-      await _chatService.sendMessage(
-        conversationId: widget.conversationId,
-        senderId: _userId!,
-        senderName: _userName ?? 'Mitra',
-        text: text,
-      );
+      // Gunakan method yang sesuai berdasarkan format conversation
+      if (widget.isPosMitra) {
+        await _chatService.sendMessageForPosMitra(
+          conversationId: widget.conversationId,
+          senderId: _userId!,
+          text: text,
+        );
+      } else {
+        await _chatService.sendMessage(
+          conversationId: widget.conversationId,
+          senderId: _userId!,
+          senderName: _userName ?? 'Mitra',
+          text: text,
+        );
+      }
     } catch (e) {
       print('❌ Error sending message: $e');
       if (mounted) {
@@ -140,7 +230,23 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
         ),
         actions: [
           IconButton(
-            onPressed: () {},
+            onPressed: () {
+              if (_customerPhone != null && _customerPhone!.isNotEmpty) {
+                PhoneHelper.showCallDialog(
+                  context: context,
+                  phoneNumber: _customerPhone!,
+                  userName: widget.otherUserName,
+                  userPhoto: widget.otherUserPhoto,
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Nomor telepon tidak tersedia'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+              }
+            },
             icon: Icon(Icons.call, color: Colors.black87),
           ),
         ],
@@ -148,77 +254,163 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
       body: Column(
         children: [
           Expanded(
-            child: StreamBuilder<List<Map<String, dynamic>>>(
-              stream: _chatService.getMessages(widget.conversationId),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
-                }
+            child: widget.isPosMitra
+                ? StreamBuilder<QuerySnapshot>(
+                    stream: _chatService
+                        .getMessagesForPosMitra(widget.conversationId),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return Center(child: CircularProgressIndicator());
+                      }
 
-                if (snapshot.hasError) {
-                  print('❌ Error loading messages: ${snapshot.error}');
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.error_outline, size: 60, color: Colors.red),
-                        SizedBox(height: 16),
-                        Text(
-                          'Error loading messages',
-                          style: TextStyle(color: Colors.red),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          '${snapshot.error}',
-                          style: TextStyle(color: Colors.grey, fontSize: 12),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  );
-                }
+                      if (snapshot.hasError) {
+                        print('❌ Error loading messages: ${snapshot.error}');
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.error_outline,
+                                  size: 60, color: Colors.red),
+                              SizedBox(height: 16),
+                              Text(
+                                'Error loading messages',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                '${snapshot.error}',
+                                style:
+                                    TextStyle(color: Colors.grey, fontSize: 12),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        );
+                      }
 
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.chat_bubble_outline,
-                            size: 60, color: Colors.grey),
-                        SizedBox(height: 16),
-                        Text(
-                          'Mulai percakapan',
-                          style: TextStyle(color: Colors.grey, fontSize: 16),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Kirim pesan pertama Anda',
-                          style: TextStyle(color: Colors.grey, fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  );
-                }
+                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.chat_bubble_outline,
+                                  size: 60, color: Colors.grey),
+                              SizedBox(height: 16),
+                              Text(
+                                'Mulai percakapan',
+                                style:
+                                    TextStyle(color: Colors.grey, fontSize: 16),
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'Kirim pesan pertama ke Pos Mitra',
+                                style:
+                                    TextStyle(color: Colors.grey, fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
 
-                final messages = snapshot.data!;
+                      final messages = snapshot.data!.docs;
 
-                return ListView.builder(
-                  reverse: true,
-                  padding: EdgeInsets.all(16),
-                  itemCount: messages.length,
-                  itemBuilder: (context, i) {
-                    final msg = messages[i];
-                    final isMe = msg['senderId'] == _userId;
+                      return ListView.builder(
+                        reverse: true,
+                        padding: EdgeInsets.all(16),
+                        itemCount: messages.length,
+                        itemBuilder: (context, index) {
+                          final messageDoc = messages[index];
+                          final data =
+                              messageDoc.data() as Map<String, dynamic>;
+                          final senderId = data['sender_id']?.toString();
+                          final text = data['text'] as String? ?? '';
+                          final timestamp = data['timestamp'] as Timestamp?;
+                          final isMe = senderId == _userId?.toString();
 
-                    return _buildMessageBubble(
-                      text: msg['text'] ?? '',
-                      isMe: isMe,
-                      timestamp: msg['createdAt'],
-                    );
-                  },
-                );
-              },
-            ),
+                          return _buildMessageBubble(
+                            text: text,
+                            isMe: isMe,
+                            timestamp: timestamp,
+                          );
+                        },
+                      );
+                    },
+                  )
+                : StreamBuilder<List<Map<String, dynamic>>>(
+                    stream: _chatService.getMessages(widget.conversationId),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return Center(child: CircularProgressIndicator());
+                      }
+
+                      if (snapshot.hasError) {
+                        print('❌ Error loading messages: ${snapshot.error}');
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.error_outline,
+                                  size: 60, color: Colors.red),
+                              SizedBox(height: 16),
+                              Text(
+                                'Error loading messages',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                '${snapshot.error}',
+                                style:
+                                    TextStyle(color: Colors.grey, fontSize: 12),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.chat_bubble_outline,
+                                  size: 60, color: Colors.grey),
+                              SizedBox(height: 16),
+                              Text(
+                                'Mulai percakapan',
+                                style:
+                                    TextStyle(color: Colors.grey, fontSize: 16),
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'Kirim pesan pertama Anda',
+                                style:
+                                    TextStyle(color: Colors.grey, fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      final messages = snapshot.data!;
+
+                      return ListView.builder(
+                        reverse: true,
+                        padding: EdgeInsets.all(16),
+                        itemCount: messages.length,
+                        itemBuilder: (context, i) {
+                          final msg = messages[i];
+                          final isMe = msg['senderId'] == _userId;
+
+                          return _buildMessageBubble(
+                            text: msg['text'] ?? '',
+                            isMe: isMe,
+                            timestamp: msg['createdAt'],
+                          );
+                        },
+                      );
+                    },
+                  ),
           ),
           _buildInputArea(),
         ],

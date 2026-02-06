@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class LanguagePage extends StatefulWidget {
   const LanguagePage({Key? key}) : super(key: key);
@@ -27,6 +28,10 @@ class _LanguagePageState extends State<LanguagePage> {
   Future<void> _saveLanguagePreference(String langCode) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('language', langCode);
+
+    // Change app locale
+    await context.setLocale(Locale(langCode));
+
     setState(() {
       _selectedLanguage = langCode;
     });
@@ -35,9 +40,7 @@ class _LanguagePageState extends State<LanguagePage> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(langCode == 'id'
-              ? 'Bahasa berhasil diubah ke Bahasa Indonesia'
-              : 'Language successfully changed to English'),
+          content: Text('language_changed_success'.tr()),
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 2),
         ),
@@ -57,9 +60,9 @@ class _LanguagePageState extends State<LanguagePage> {
               color: Colors.white, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Bahasa',
-          style: TextStyle(
+        title: Text(
+          'language'.tr(),
+          style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
             color: Colors.white,
@@ -91,7 +94,7 @@ class _LanguagePageState extends State<LanguagePage> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Pilih bahasa untuk aplikasi Nebeng',
+                    'select_language_for_app'.tr(),
                     style: TextStyle(
                       fontSize: 13,
                       color: Colors.grey[700],

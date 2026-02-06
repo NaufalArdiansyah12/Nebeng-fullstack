@@ -4,7 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'verifikasi_type_page.dart';
 import 'verifikasi_success_page.dart';
-import '../../../services/verifikasi_service.dart';
+import '../../../services/mitra/verifikasi_service.dart';
 import '../../../models/verifikasi_model.dart';
 
 class VerifikasiWajahKtpCapturePage extends StatefulWidget {
@@ -375,6 +375,7 @@ class _VerifikasiWajahKtpCapturePageState
       final namaLengkap = _verifikasiData!.namaLengkap ?? '';
       final nik = _verifikasiData!.nik ?? '';
       final tanggalLahir = _verifikasiData!.tanggalLahir ?? '';
+      final jenisKelamin = _verifikasiData!.jenisKelamin ?? 'Laki-laki';
       final alamat = _verifikasiData!.alamat ?? 'Alamat sesuai KTP';
 
       await VerifikasiService.uploadFaceKtpPhoto(
@@ -383,6 +384,7 @@ class _VerifikasiWajahKtpCapturePageState
         namaLengkap: namaLengkap,
         nik: nik,
         tanggalLahir: tanggalLahir,
+        jenisKelamin: jenisKelamin,
         alamat: alamat,
       );
 

@@ -2,10 +2,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../services/api_service.dart';
 import '../../models/user_model.dart';
 import '../../models/service_model.dart';
-import '../../services/verifikasi_service.dart';
+import '../../services/mitra/verifikasi_service.dart';
 import 'notification_page.dart';
 import 'nebeng_motor_page.dart';
 import 'nebeng_mobil_page.dart';
@@ -16,6 +17,7 @@ import 'profile/verifikasi_intro_page.dart';
 import 'profile/reward_page.dart';
 import 'riwayat/riwayat_page.dart';
 import 'riwayat/booking_detail_riwayat_page.dart';
+import 'messages/chats_page.dart';
 
 class BerandaPage extends StatefulWidget {
   final bool showBottomNav;
@@ -40,19 +42,19 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
   final List<Service> services = [
     Service(
       id: 1,
-      name: 'Nebeng Motor',
+      name: 'nebeng_motor',
       icon: FontAwesomeIcons.motorcycle,
       description: 'Layanan motor',
     ),
     Service(
       id: 2,
-      name: 'Nebeng Mobil',
+      name: 'nebeng_mobil',
       icon: FontAwesomeIcons.car,
       description: 'Layanan mobil',
     ),
     Service(
       id: 3,
-      name: 'Nebeng Barang',
+      name: 'nebeng_barang',
       icon: FontAwesomeIcons.box,
       description: 'Layanan barang',
     ),
@@ -363,7 +365,7 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
             children: [
               Expanded(
                 child: Text(
-                  'Hallo ${_userName.isNotEmpty ? _userName : 'Pengguna'}👋',
+                  '${'welcome'.tr()} ${_userName.isNotEmpty ? _userName : 'Pengguna'}👋',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
@@ -405,32 +407,7 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          // Search box
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Search',
-                hintStyle: TextStyle(
-                  color: Colors.grey[400],
-                  fontSize: 15,
-                ),
-                prefixIcon: Icon(
-                  Icons.search,
-                  color: Colors.grey[400],
-                ),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-              ),
-            ),
-          ),
+          const SizedBox(height: 12),
         ],
       ),
     );
@@ -467,9 +444,9 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Kamu belum melakukan verifikasi KTP',
-                    style: TextStyle(
+                  Text(
+                    'verification_required'.tr(),
+                    style: const TextStyle(
                       fontSize: 13,
                       color: Colors.black87,
                       fontWeight: FontWeight.w500,
@@ -494,9 +471,9 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
                         color: const Color(0xFFEF4444),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: const Text(
-                        'Verifikasi Sekarang!',
-                        style: TextStyle(
+                      child: Text(
+                        'verify_account'.tr(),
+                        style: const TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
@@ -560,9 +537,9 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Reward Point',
-                    style: TextStyle(
+                  Text(
+                    'reward_point'.tr(),
+                    style: const TextStyle(
                       fontSize: 13,
                       color: Colors.black87,
                       fontWeight: FontWeight.w500,
@@ -602,9 +579,9 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Layanan',
-            style: TextStyle(
+          Text(
+            'home'.tr(),
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.black,
@@ -746,10 +723,10 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
   void _showVerificationRequired() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('Verifikasi KTP diperlukan'),
+        content: Text('verification_message'.tr()),
         backgroundColor: const Color(0xFF1E3A8A),
         action: SnackBarAction(
-          label: 'VERIFIKASI',
+          label: 'verification'.tr().toUpperCase(),
           textColor: Colors.white,
           onPressed: () {
             Navigator.push(
@@ -770,8 +747,8 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Nebeng Disini',
+          Text(
+            'nebeng_here'.tr(),
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -848,8 +825,8 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text(
-                  'Nebeng Motor',
+                Text(
+                  'nebeng_motor_promo'.tr(),
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 24,
@@ -857,8 +834,8 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Text(
-                  'Jaminan pasti? Nebeng Motor\nmenjamin keamanan perjalanan Anda\ndan aman. Tingkatkan materi,\nnikmati perjalanan yang lancar!',
+                Text(
+                  'nebeng_motor_desc'.tr(),
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 11,
@@ -909,8 +886,8 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Tebengan Mendatang',
+              Text(
+                'upcoming_trips'.tr(),
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -927,8 +904,8 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
                       ),
                     );
                   },
-                  child: const Text(
-                    'Lihat Semua',
+                  child: Text(
+                    'see_all'.tr(),
                     style: TextStyle(
                       fontSize: 14,
                       color: Color(0xFF1E40AF),
@@ -981,7 +958,7 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
           ),
           const SizedBox(height: 12),
           Text(
-            'Belum ada tebengan mendatang',
+            'no_trips_available'.tr(),
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
@@ -991,7 +968,7 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
           ),
           const SizedBox(height: 6),
           Text(
-            'Pesan tebengan sekarang!',
+            'book_now_trip'.tr(),
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 12,
@@ -1346,7 +1323,21 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
                 fontSize: 11,
               ),
               onTap: (index) {
-                if (index == 3) {
+                if (index == 1) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const RiwayatPage(),
+                    ),
+                  );
+                } else if (index == 2) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ChatsPage(),
+                    ),
+                  );
+                } else if (index == 3) {
                   Navigator.push(
                     context,
                     MaterialPageRoute(

@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.nebeng.app-mergeDebugResources-27:/values-eu/values-eu.xml",
+            "outputFile": "com.example.nebeng.app-mergeDebugResources-28:/values-eu/values-eu.xml",
             "map": [
                 {
                     "source": "/home/naufal/.gradle/caches/transforms-3/25e78ba83c2029ea8b5d616749f280a1/transformed/jetified-play-services-base-18.3.0/res/values-eu/values.xml",
@@ -18,6 +18,23 @@
                         "startOffsets": "786,890,1062,1186,1295,1447,1572,1696,1947,2125,2233,2396,2524,2678,2838,2904,2969",
                         "endColumns": "103,171,123,108,151,124,123,107,177,107,162,127,153,159,65,64,91",
                         "endOffsets": "885,1057,1181,1290,1442,1567,1691,1799,2120,2228,2391,2519,2673,2833,2899,2964,3056"
+                    }
+                },
+                {
+                    "source": "/home/naufal/.gradle/caches/transforms-3/fdb1be1f7b877d72f6e0543dded7a73c/transformed/browser-1.5.0/res/values-eu/values-eu.xml",
+                    "from": {
+                        "startLines": "2,3,4,5",
+                        "startColumns": "4,4,4,4",
+                        "startOffsets": "55,155,257,370",
+                        "endColumns": "99,101,112,104",
+                        "endOffsets": "150,252,365,470"
+                    },
+                    "to": {
+                        "startLines": "27,28,29,30",
+                        "startColumns": "4,4,4,4",
+                        "startOffsets": "3061,3161,3263,3376",
+                        "endColumns": "99,101,112,104",
+                        "endOffsets": "3156,3258,3371,3476"
                     }
                 },
                 {
@@ -47,11 +64,11 @@
                         "endOffsets": "148,251,351,454,559,662,781,882"
                     },
                     "to": {
-                        "startLines": "2,3,4,5,6,7,8,27",
+                        "startLines": "2,3,4,5,6,7,8,31",
                         "startColumns": "4,4,4,4,4,4,4,4",
-                        "startOffsets": "55,153,256,356,459,564,667,3061",
+                        "startOffsets": "55,153,256,356,459,564,667,3481",
                         "endColumns": "97,102,99,102,104,102,118,100",
-                        "endOffsets": "148,251,351,454,559,662,781,3157"
+                        "endOffsets": "148,251,351,454,559,662,781,3577"
                     }
                 }
             ]

@@ -26,8 +26,17 @@ class _MitraMainPageState extends State<MitraMainPage>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // report location once on page init
-    _reportCurrentLocation();
+
+    // initialize pages first for faster UI display
+    _pages.addAll([
+      MitraHomePage(onOpenHistory: () => setState(() => _currentIndex = 1)),
+      const MitraRiwayatPage(),
+      const MitraChatsPage(),
+      const MitraProfilePage(),
+    ]);
+
+    // report location in background (non-blocking)
+    Future.microtask(() => _reportCurrentLocation());
     _startLocationTimer();
 
     // initialize pages with callback so child can request opening history tab
@@ -70,8 +79,10 @@ class _MitraMainPageState extends State<MitraMainPage>
       }
       if (permission == LocationPermission.deniedForever) return;
 
+      // Use medium accuracy for faster location acquisition with timeout
       final pos = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.best);
+          desiredAccuracy: LocationAccuracy.medium,
+          timeLimit: const Duration(seconds: 5));
 
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('api_token');
@@ -97,8 +108,10 @@ class _MitraMainPageState extends State<MitraMainPage>
           return;
         }
 
+        // Use medium accuracy with timeout for periodic updates
         final pos = await Geolocator.getCurrentPosition(
-            desiredAccuracy: LocationAccuracy.best);
+            desiredAccuracy: LocationAccuracy.medium,
+            timeLimit: const Duration(seconds: 5));
         final prefs = await SharedPreferences.getInstance();
         final token = prefs.getString('api_token');
         if (token == null || token.isEmpty) return;
@@ -121,6 +134,7 @@ class _MitraMainPageState extends State<MitraMainPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: _pages[_currentIndex],
       bottomNavigationBar: Container(
         decoration: BoxDecoration(

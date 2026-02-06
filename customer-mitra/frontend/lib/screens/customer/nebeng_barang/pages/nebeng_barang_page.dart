@@ -1,7 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../nebeng_motor/data/location_data.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../nebeng_motor/widgets/form_section.dart';
 import '../../nebeng_motor/widgets/history_section.dart';
 import '../../nebeng_motor/pages/location_picker_page.dart';
@@ -31,6 +32,81 @@ class _NebengBarangPageState extends State<NebengBarangPage> {
   String? keteranganBarang;
   File? selectedImage;
   final ImagePicker _picker = ImagePicker();
+  List<Map<String, String>> _addressHistory = [];
+  bool _loadingHistory = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAddressHistory();
+  }
+
+  Future<void> _loadAddressHistory() async {
+    setState(() {
+      _loadingHistory = true;
+    });
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('api_token');
+
+      if (token != null && token.isNotEmpty) {
+        final bookings = await ApiService.fetchBookings(
+          token: token,
+          type: 'barang',
+        );
+
+        // Extract unique locations from last bookings
+        final Set<String> seenAddresses = {};
+        final List<Map<String, String>> history = [];
+
+        for (var booking in bookings) {
+          final ride = booking['ride'] ?? {};
+
+          // Get origin
+          final originName = ride['origin'] ?? '';
+          final originAddress = ride['origin_address'] ?? '';
+          if (originName.isNotEmpty && !seenAddresses.contains(originName)) {
+            history.add({
+              'name': originName.toString(),
+              'address': originAddress.toString(),
+            });
+            seenAddresses.add(originName);
+          }
+
+          // Get destination
+          final destName = ride['destination'] ?? '';
+          final destAddress = ride['destination_address'] ?? '';
+          if (destName.isNotEmpty && !seenAddresses.contains(destName)) {
+            history.add({
+              'name': destName.toString(),
+              'address': destAddress.toString(),
+            });
+            seenAddresses.add(destName);
+          }
+
+          // Limit to 5 most recent unique addresses
+          if (history.length >= 5) break;
+        }
+
+        setState(() {
+          _addressHistory = history;
+          _loadingHistory = false;
+        });
+      } else {
+        setState(() {
+          _addressHistory = [];
+          _loadingHistory = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading address history: $e');
+      setState(() {
+        _addressHistory = [];
+        _loadingHistory = false;
+      });
+    }
+  }
 
   Future<void> _pickImage() async {
     try {
@@ -48,7 +124,8 @@ class _NebengBarangPageState extends State<NebengBarangPage> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Gagal memilih foto: $e'),
+          content: Text(
+              'failed_to_select_photo'.tr(namedArgs: {'error': e.toString()})),
           backgroundColor: Colors.red,
         ),
       );
@@ -142,9 +219,9 @@ class _NebengBarangPageState extends State<NebengBarangPage> {
                                     ),
                                   ),
                                   const SizedBox(width: 12),
-                                  const Text(
-                                    'Ukuran Barang',
-                                    style: TextStyle(
+                                  Text(
+                                    'package_size_title'.tr(),
+                                    style: const TextStyle(
                                       fontWeight: FontWeight.w600,
                                       fontSize: 15,
                                       color: Colors.black87,
@@ -176,12 +253,13 @@ class _NebengBarangPageState extends State<NebengBarangPage> {
                                         Expanded(
                                           child: Text(
                                             ukuranBarang == null
-                                                ? 'Pilih ukuran barang anda'
+                                                ? 'select_package_size'.tr()
                                                 : (ukuranBarang == 'Kecil'
-                                                    ? '📦 Kecil - Maksimal 5 Kg'
+                                                    ? 'small_max_5kg'.tr()
                                                     : ukuranBarang == 'Sedang'
-                                                        ? '📦 Sedang - Maksimal 10 Kg'
-                                                        : '📦 Besar - Maksimal 20 Kg'),
+                                                        ? 'medium_max_10kg'.tr()
+                                                        : 'large_max_20kg'
+                                                            .tr()),
                                             style: TextStyle(
                                               color: ukuranBarang == null
                                                   ? Colors.grey[500]
@@ -206,7 +284,7 @@ class _NebengBarangPageState extends State<NebengBarangPage> {
                                       size: 18, color: Colors.grey[600]),
                                   const SizedBox(width: 8),
                                   Text(
-                                    'Keterangan Barang',
+                                    'package_notes_title'.tr(),
                                     style: TextStyle(
                                       fontWeight: FontWeight.w600,
                                       fontSize: 14,
@@ -234,8 +312,7 @@ class _NebengBarangPageState extends State<NebengBarangPage> {
                                   maxLines: 4,
                                   style: const TextStyle(fontSize: 14),
                                   decoration: InputDecoration(
-                                    hintText:
-                                        'Contoh: Dokumen penting, kemasan bubble wrap',
+                                    hintText: 'package_notes_hint'.tr(),
                                     hintStyle: TextStyle(
                                       color: Colors.grey[400],
                                       fontSize: 13,
@@ -252,7 +329,7 @@ class _NebengBarangPageState extends State<NebengBarangPage> {
                                       size: 18, color: Colors.grey[600]),
                                   const SizedBox(width: 8),
                                   Text(
-                                    'Foto Barang (Opsional)',
+                                    'package_photo_optional'.tr(),
                                     style: TextStyle(
                                       fontWeight: FontWeight.w600,
                                       fontSize: 14,
@@ -338,7 +415,7 @@ class _NebengBarangPageState extends State<NebengBarangPage> {
                                             ),
                                             const SizedBox(height: 10),
                                             Text(
-                                              'Tap untuk tambah foto',
+                                              'tap_to_add_photo'.tr(),
                                               style: TextStyle(
                                                 color: Colors.grey[600],
                                                 fontSize: 13,
@@ -347,7 +424,7 @@ class _NebengBarangPageState extends State<NebengBarangPage> {
                                             ),
                                             const SizedBox(height: 4),
                                             Text(
-                                              'Format: JPG, PNG (Max 5MB)',
+                                              'photo_format_info'.tr(),
                                               style: TextStyle(
                                                 color: Colors.grey[400],
                                                 fontSize: 11,
@@ -362,10 +439,18 @@ class _NebengBarangPageState extends State<NebengBarangPage> {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      HistorySection(
-                        historiAlamat: LocationData.historiAlamat,
-                        onHistoryTap: _showHistorySelectionDialog,
-                      ),
+                      if (_loadingHistory)
+                        const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(32.0),
+                            child: CircularProgressIndicator(),
+                          ),
+                        )
+                      else if (_addressHistory.isNotEmpty)
+                        HistorySection(
+                          historiAlamat: _addressHistory,
+                          onHistoryTap: _showHistorySelectionDialog,
+                        ),
                       const SizedBox(height: 100),
                     ],
                   ),
@@ -396,9 +481,9 @@ class _NebengBarangPageState extends State<NebengBarangPage> {
               ),
               elevation: 0,
             ),
-            child: const Text(
-              'Lanjutkan',
-              style: TextStyle(
+            child: Text(
+              'continue_button'.tr(),
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: Colors.white,
@@ -430,8 +515,8 @@ class _NebengBarangPageState extends State<NebengBarangPage> {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Mohon lengkapi semua field'),
+        SnackBar(
+          content: Text('please_complete_all_fields'.tr()),
         ),
       );
     }
@@ -459,9 +544,9 @@ class _NebengBarangPageState extends State<NebengBarangPage> {
             ),
           ),
           const SizedBox(width: 16),
-          const Text(
-            'Nebeng Barang',
-            style: TextStyle(
+          Text(
+            'nebeng_barang_title'.tr(),
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 20,
               fontWeight: FontWeight.w600,
@@ -494,8 +579,8 @@ class _NebengBarangPageState extends State<NebengBarangPage> {
         MaterialPageRoute(
           builder: (context) => LocationPickerPage(
             title: isStartLocation
-                ? 'Pilih Kota atau Pos Awal'
-                : 'Pilih Kota atau Pos',
+                ? 'select_city_or_post_origin'.tr()
+                : 'select_city_or_post'.tr(),
             daftarLokasi: List<Map<String, dynamic>>.from(daftar),
             onLocationSelected: (location) {
               setState(() {
@@ -538,8 +623,8 @@ class _NebengBarangPageState extends State<NebengBarangPage> {
           MaterialPageRoute(
             builder: (context) => LocationPickerPage(
               title: isStartLocation
-                  ? 'Pilih Kota atau Pos Awal'
-                  : 'Pilih Kota atau Pos',
+                  ? 'select_city_or_post_origin'.tr()
+                  : 'select_city_or_post'.tr(),
               daftarLokasi: List<Map<String, String>>.from(daftar),
               onLocationSelected: (location) {
                 setState(() {
@@ -565,17 +650,17 @@ class _NebengBarangPageState extends State<NebengBarangPage> {
     return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Gagal mengambil lokasi'),
+            title: Text('failed_to_get_location'.tr()),
             content: Text(
-                'Terjadi kesalahan saat mengambil daftar lokasi:\n$message\n\nPastikan backend berjalan di http://localhost:8000 dan CORS diizinkan.'),
+                'error_fetching_locations'.tr(namedArgs: {'message': message})),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Batal'),
+                child: Text('cancel'.tr()),
               ),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Gunakan contoh'),
+                child: Text('use_example'.tr()),
               ),
             ],
           ),
@@ -588,7 +673,7 @@ class _NebengBarangPageState extends State<NebengBarangPage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Pilih sebagai'),
+          title: Text('select_as'.tr()),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -597,7 +682,7 @@ class _NebengBarangPageState extends State<NebengBarangPage> {
                   Icons.arrow_upward,
                   color: NebengMotorTheme.greenIcon,
                 ),
-                title: const Text('Lokasi Awal'),
+                title: Text('starting_location'.tr()),
                 onTap: () {
                   setState(() {
                     lokasiAwal = alamat['name'];
@@ -611,7 +696,7 @@ class _NebengBarangPageState extends State<NebengBarangPage> {
                   Icons.location_on,
                   color: NebengMotorTheme.orangeIcon,
                 ),
-                title: const Text('Lokasi Tujuan'),
+                title: Text('destination_location'.tr()),
                 onTap: () {
                   setState(() {
                     lokasiTujuan = alamat['name'];

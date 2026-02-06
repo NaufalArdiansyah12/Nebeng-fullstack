@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 /// Widget to display route information (origin and destination)
 class RouteCard extends StatelessWidget {
@@ -51,7 +52,7 @@ class RouteCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Penjemputan',
+                      'pickup_location'.tr(),
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[600],
@@ -99,7 +100,7 @@ class RouteCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Tujuan',
+                      'destination'.tr(),
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[600],

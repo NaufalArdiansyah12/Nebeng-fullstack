@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 /// Widget to display passenger information
 class PassengerCard extends StatelessWidget {
@@ -57,7 +58,7 @@ class PassengerCard extends StatelessWidget {
             ],
           ),
           Text(
-            'Penumpang',
+            'passenger_label'.tr(),
             style: TextStyle(
               fontSize: 13,
               color: Colors.grey[600],

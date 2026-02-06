@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../../../services/api_service.dart';
 
 class CustomerEditProfilePage extends StatefulWidget {
@@ -19,7 +20,6 @@ class _CustomerEditProfilePageState extends State<CustomerEditProfilePage> {
   final _nameController = TextEditingController();
   final _addressController = TextEditingController();
   final _phoneController = TextEditingController();
-  String? _gender;
   final ImagePicker _picker = ImagePicker();
   XFile? _pickedImage;
   bool _isSaving = false;
@@ -73,7 +73,6 @@ class _CustomerEditProfilePageState extends State<CustomerEditProfilePage> {
           _nameController.text = userData['name'] ?? '';
           _addressController.text = userData['address'] ?? '';
           _phoneController.text = userData['phone'] ?? '';
-          _gender = userData['gender'];
           _currentProfilePhotoUrl = photoUrl;
           _isLoading = false;
         });
@@ -102,7 +101,7 @@ class _CustomerEditProfilePageState extends State<CustomerEditProfilePage> {
     final token = prefs.getString('api_token');
     if (token == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Token tidak ditemukan. Silakan login.')),
+        SnackBar(content: Text('required_field'.tr())),
       );
       setState(() => _isSaving = false);
       return;
@@ -115,17 +114,16 @@ class _CustomerEditProfilePageState extends State<CustomerEditProfilePage> {
         email: _emailController.text.trim(),
         address: _addressController.text.trim(),
         phone: _phoneController.text.trim(),
-        gender: _gender,
         photoFilePath: _pickedImage?.path,
       );
 
       if (resp['success'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profil berhasil disimpan')),
+          SnackBar(content: Text('update_profile_success'.tr())),
         );
         Navigator.pop(context);
       } else {
-        final msg = resp['message'] ?? 'Gagal menyimpan profil';
+        final msg = resp['message'] ?? 'error_occurred'.tr();
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(msg)));
       }
@@ -158,7 +156,7 @@ class _CustomerEditProfilePageState extends State<CustomerEditProfilePage> {
           children: [
             ListTile(
               leading: const Icon(Icons.photo_library),
-              title: const Text('Pilih dari Galeri'),
+              title: Text('choose_from_gallery'.tr()),
               onTap: () {
                 Navigator.pop(c);
                 _pickImage(ImageSource.gallery);
@@ -166,7 +164,7 @@ class _CustomerEditProfilePageState extends State<CustomerEditProfilePage> {
             ),
             ListTile(
               leading: const Icon(Icons.camera_alt),
-              title: const Text('Ambil Foto'),
+              title: Text('take_photo'.tr()),
               onTap: () {
                 Navigator.pop(c);
                 _pickImage(ImageSource.camera);
@@ -189,9 +187,9 @@ class _CustomerEditProfilePageState extends State<CustomerEditProfilePage> {
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Edit Profile',
-          style: TextStyle(
+        title: Text(
+          'edit_profile'.tr(),
+          style: const TextStyle(
             color: Colors.black,
             fontSize: 20,
             fontWeight: FontWeight.w600,
@@ -291,35 +289,33 @@ class _CustomerEditProfilePageState extends State<CustomerEditProfilePage> {
                   const SizedBox(height: 24),
                   _buildField(
                     controller: _emailController,
-                    hint: 'Email',
+                    hint: 'email'.tr(),
                     keyboardType: TextInputType.emailAddress,
                     validator: (v) =>
-                        (v == null || v.isEmpty) ? 'Email harus diisi' : null,
+                        (v == null || v.isEmpty) ? 'required_field'.tr() : null,
                   ),
                   const SizedBox(height: 16),
                   _buildField(
                     controller: _nameController,
-                    hint: 'Nama Lengkap',
+                    hint: 'full_name'.tr(),
                     validator: (v) =>
-                        (v == null || v.isEmpty) ? 'Nama harus diisi' : null,
+                        (v == null || v.isEmpty) ? 'required_field'.tr() : null,
                   ),
                   const SizedBox(height: 16),
                   _buildField(
                     controller: _addressController,
-                    hint: 'Alamat',
+                    hint: 'address'.tr(),
                     validator: (v) =>
-                        (v == null || v.isEmpty) ? 'Alamat harus diisi' : null,
+                        (v == null || v.isEmpty) ? 'required_field'.tr() : null,
                   ),
                   const SizedBox(height: 16),
                   _buildField(
                     controller: _phoneController,
-                    hint: 'No Telp',
+                    hint: 'phone'.tr(),
                     keyboardType: TextInputType.phone,
                     validator: (v) =>
-                        (v == null || v.isEmpty) ? 'No Telp harus diisi' : null,
+                        (v == null || v.isEmpty) ? 'required_field'.tr() : null,
                   ),
-                  const SizedBox(height: 16),
-                  _buildGenderField(),
                   const SizedBox(height: 32),
                   SizedBox(
                     width: double.infinity,
@@ -340,9 +336,9 @@ class _CustomerEditProfilePageState extends State<CustomerEditProfilePage> {
                               width: 18,
                               child: CircularProgressIndicator(
                                   strokeWidth: 2, color: Colors.white))
-                          : const Text(
-                              'Save',
-                              style: TextStyle(
+                          : Text(
+                              'save'.tr(),
+                              style: const TextStyle(
                                   fontSize: 16, fontWeight: FontWeight.w600),
                             ),
                     ),
@@ -382,38 +378,6 @@ class _CustomerEditProfilePageState extends State<CustomerEditProfilePage> {
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      ),
-    );
-  }
-
-  Widget _buildGenderField() {
-    return InputDecorator(
-      decoration: InputDecoration(
-        hintText: 'Jenis Kelamin',
-        hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
-        filled: true,
-        fillColor: Colors.grey[50],
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: _gender,
-          items: const [
-            DropdownMenuItem(value: 'Laki-laki', child: Text('Laki-laki')),
-            DropdownMenuItem(value: 'Perempuan', child: Text('Perempuan')),
-          ],
-          hint: const Text('Jenis Kelamin'),
-          onChanged: (val) => setState(() => _gender = val),
-          isExpanded: true,
-        ),
       ),
     );
   }

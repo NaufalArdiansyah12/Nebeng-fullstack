@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../../services/chat_service.dart';
+import 'package:easy_localization/easy_localization.dart';
+import '../../../services/shared/chat_service.dart';
+import '../../../services/api_service.dart';
 import '../../../utils/chat_helper.dart';
-import '../../../test_firestore.dart';
+import '../../../utils/phone_helper.dart';
 
 class ChatsPage extends StatefulWidget {
   const ChatsPage({Key? key}) : super(key: key);
@@ -59,7 +61,7 @@ class _ChatsPageState extends State<ChatsPage> {
             centerTitle: true,
             title: Padding(
               padding: const EdgeInsets.only(top: 6.0),
-              child: Text('Pesan',
+              child: Text('messages'.tr(),
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
             ),
           ),
@@ -72,22 +74,20 @@ class _ChatsPageState extends State<ChatsPage> {
       appBar: AppBar(
         backgroundColor: Color(0xFF0F4AA3),
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Align(
-          alignment: Alignment.centerLeft,
-          child: Text(
-            'Chats',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
+        leading: Navigator.canPop(context)
+            ? IconButton(
+                icon: Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () => Navigator.pop(context),
+              )
+            : null,
+        title: Text(
+          'Chats',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
           ),
         ),
-        titleSpacing: 0,
       ),
       body: Column(
         children: [
@@ -138,7 +138,7 @@ class _ChatsPageState extends State<ChatsPage> {
                       children: [
                         CircularProgressIndicator(),
                         SizedBox(height: 16),
-                        Text('Loading conversations...',
+                        Text('loading'.tr(),
                             style: TextStyle(color: Colors.grey)),
                         SizedBox(height: 8),
                         Text('If stuck, check Firestore rules',
@@ -180,10 +180,10 @@ class _ChatsPageState extends State<ChatsPage> {
                         Icon(Icons.message_outlined,
                             size: 80, color: Colors.grey),
                         SizedBox(height: 16),
-                        Text('Belum ada percakapan',
+                        Text('no_chats_yet'.tr(),
                             style: TextStyle(fontSize: 16, color: Colors.grey)),
                         SizedBox(height: 8),
-                        Text('Chat akan muncul setelah Anda booking tebengan',
+                        Text('start_booking'.tr(),
                             style: TextStyle(fontSize: 12, color: Colors.grey)),
                         SizedBox(height: 24),
                         // Test button untuk development
@@ -313,10 +313,10 @@ class _ChatsPageState extends State<ChatsPage> {
                       children: [
                         Icon(Icons.search_off, size: 80, color: Colors.grey),
                         SizedBox(height: 16),
-                        Text('No results found',
+                        Text('no_data'.tr(),
                             style: TextStyle(fontSize: 16, color: Colors.grey)),
                         SizedBox(height: 8),
-                        Text('Try searching with different keywords',
+                        Text('try_again'.tr(),
                             style: TextStyle(fontSize: 12, color: Colors.grey)),
                       ],
                     ),
@@ -521,11 +521,13 @@ class _ChatPageState extends State<ChatPage> {
   int? _userId;
   String? _userName;
   String _userRole = 'customer';
+  String? _otherUserPhone; // Nomor telepon mitra/driver
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
+    _loadConversationData();
   }
 
   Future<void> _loadUserData() async {
@@ -539,6 +541,79 @@ class _ChatPageState extends State<ChatPage> {
     // Mark as read when opening chat
     if (_userId != null) {
       _chatService.markAsRead(widget.conversationId, _userId!, _userRole);
+    }
+  }
+
+  Future<void> _loadConversationData() async {
+    try {
+      print('🔍 Loading conversation data for: ${widget.conversationId}');
+      final conv = await _chatService.getConversation(widget.conversationId);
+
+      if (conv == null) {
+        print('❌ Conversation not found');
+        return;
+      }
+
+      print('📦 Conversation data: ${conv.keys}');
+
+      if (mounted) {
+        // Customer chat, maka ambil mitraPhone
+        String? phone = conv['mitraPhone'] as String?;
+        print('📞 Phone from conversation: $phone');
+
+        // Fallback: Jika phone tidak ada di conversation (conversation lama),
+        // ambil dari API berdasarkan mitraId
+        if (phone == null || phone.isEmpty) {
+          final mitraId = conv['mitraId'] as int?;
+          print('👤 MitraId from conversation: $mitraId');
+
+          if (mitraId != null) {
+            try {
+              final prefs = await SharedPreferences.getInstance();
+              final token = prefs.getString('api_token');
+              print('🔑 Token exists: ${token != null}');
+
+              if (token != null) {
+                print('📞 Fetching mitra phone from API for mitraId: $mitraId');
+                final userData = await ApiService.getUserById(mitraId, token);
+                print('📦 User data keys: ${userData.keys}');
+
+                phone = userData['phone'] as String? ??
+                    userData['phone_number'] as String?;
+                print('✅ Phone from API: $phone');
+
+                // Update Firestore conversation with phone number for future use
+                if (phone != null && phone.isNotEmpty) {
+                  try {
+                    await _chatService.updateConversationPhone(
+                      widget.conversationId,
+                      mitraPhone: phone,
+                    );
+                    print('✅ Updated conversation with phone number');
+                  } catch (e) {
+                    print('⚠️ Failed to update conversation: $e');
+                  }
+                }
+              } else {
+                print('❌ No token available');
+              }
+            } catch (e) {
+              print('⚠️ Error fetching phone from API: $e');
+              print('⚠️ Stack trace: ${StackTrace.current}');
+            }
+          } else {
+            print('❌ No mitraId in conversation');
+          }
+        }
+
+        setState(() {
+          _otherUserPhone = phone;
+        });
+        print('📱 Final phone loaded: $_otherUserPhone');
+      }
+    } catch (e) {
+      print('❌ Error loading conversation data: $e');
+      print('❌ Stack trace: ${StackTrace.current}');
     }
   }
 
@@ -557,7 +632,7 @@ class _ChatPageState extends State<ChatPage> {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal mengirim pesan: $e')),
+        SnackBar(content: Text('${'error_occurred'.tr()}: $e')),
       );
     }
   }
@@ -615,7 +690,23 @@ class _ChatPageState extends State<ChatPage> {
         ),
         actions: [
           IconButton(
-            onPressed: () {},
+            onPressed: () {
+              if (_otherUserPhone != null && _otherUserPhone!.isNotEmpty) {
+                PhoneHelper.showCallDialog(
+                  context: context,
+                  phoneNumber: _otherUserPhone!,
+                  userName: widget.otherUserName,
+                  userPhoto: widget.otherUserPhoto,
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('phone_not_available'.tr()),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+              }
+            },
             icon: Icon(Icons.call, color: Colors.black87),
           ),
         ],

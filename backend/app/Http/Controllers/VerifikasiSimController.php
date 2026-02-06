@@ -22,7 +22,7 @@ class VerifikasiSimController extends Controller
 
         $hashed = hash('sha256', $bearer);
         $apiToken = \App\Models\ApiToken::where('token', $hashed)->first();
-        
+
         if (!$apiToken) {
             return response()->json([
                 'success' => false,
@@ -50,7 +50,7 @@ class VerifikasiSimController extends Controller
 
         $hashed = hash('sha256', $bearer);
         $apiToken = \App\Models\ApiToken::where('token', $hashed)->first();
-        
+
         if (!$apiToken) {
             return response()->json([
                 'success' => false,
@@ -94,6 +94,14 @@ class VerifikasiSimController extends Controller
             'status' => 'pending',
         ]);
 
+
+        // Ensure MitraVerifikasi links to this sim verification
+        MitraVerifikasi::updateOrCreate(
+            ['user_id' => $apiToken->user_id],
+            ['sim_verification_id' => $verification->id]
+        );
+
+
         return response()->json([
             'success' => true,
             'message' => 'SIM verification submitted successfully',
@@ -113,7 +121,7 @@ class VerifikasiSimController extends Controller
 
         $hashed = hash('sha256', $bearer);
         $apiToken = \App\Models\ApiToken::where('token', $hashed)->first();
-        
+
         if (!$apiToken) {
             return response()->json([
                 'success' => false,
@@ -144,13 +152,34 @@ class VerifikasiSimController extends Controller
             ], 404);
         }
 
+
+        $updateData = [
+            'sim_number' => $request->sim_number,
+            'sim_type' => $request->sim_type,
+            'sim_expiry_date' => $request->sim_expiry_date,
+            'status' => 'pending',
+        ];
+
+
         if ($request->hasFile('sim_photo')) {
             if ($verification->sim_photo) {
                 Storage::disk('public')->delete($verification->sim_photo);
             }
             $photoPath = $request->file('sim_photo')->store('verifikasi/sim', 'public');
-            $verification->sim_photo = $photoPath;
+
+            $updateData['sim_photo'] = $photoPath;
         }
+
+        $verification->update($updateData);
+
+        // Ensure MitraVerifikasi links to this sim verification
+        MitraVerifikasi::updateOrCreate(
+            ['user_id' => $apiToken->user_id],
+            ['sim_verification_id' => $verification->id]
+        );
+
+        $verification->sim_photo = $photoPath;
+
 
         $verification->update([
             'sim_number' => $request->sim_number,
@@ -158,6 +187,7 @@ class VerifikasiSimController extends Controller
             'sim_expiry_date' => $request->sim_expiry_date,
             'status' => 'pending',
         ]);
+
 
         return response()->json([
             'success' => true,

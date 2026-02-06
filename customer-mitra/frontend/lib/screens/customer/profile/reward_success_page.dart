@@ -86,7 +86,8 @@ class RewardSuccessPage extends StatelessWidget {
               },
               child: const Padding(
                 padding: EdgeInsets.symmetric(vertical: 14.0),
-                child: Text('Kembali ke Halaman Beranda'),
+                child: Text('Kembali ke Halaman Beranda',
+                style: const TextStyle(color: Colors.white)),
               ),
             ),
           ),

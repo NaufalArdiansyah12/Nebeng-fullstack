@@ -1,6 +1,6 @@
 -- Merging decision tree log ---
 application
-INJECTED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:8:5-38:19
+INJECTED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:10:5-40:19
 MERGED from [:cloud_firestore] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/cloud_firestore/intermediates/merged_manifest/debug/AndroidManifest.xml:9:5-15:19
 MERGED from [:cloud_firestore] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/cloud_firestore/intermediates/merged_manifest/debug/AndroidManifest.xml:9:5-15:19
 MERGED from [:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:15:5-48:19
@@ -13,6 +13,8 @@ MERGED from [:image_picker_android] /home/naufal/project/nebeng-fullstack/custom
 MERGED from [:image_picker_android] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:10:5-34:19
 MERGED from [:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:15:5-32:19
 MERGED from [:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:15:5-32:19
+MERGED from [:url_launcher_android] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/url_launcher_android/intermediates/merged_manifest/debug/AndroidManifest.xml:9:5-14:19
+MERGED from [:url_launcher_android] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/url_launcher_android/intermediates/merged_manifest/debug/AndroidManifest.xml:9:5-14:19
 MERGED from [com.google.android.gms:play-services-location:21.2.0] /home/naufal/.gradle/caches/transforms-3/a164cb3aeac0cc744e7a4907eeb99cf1/transformed/jetified-play-services-location-21.2.0/AndroidManifest.xml:7:5-20
 MERGED from [com.google.android.gms:play-services-location:21.2.0] /home/naufal/.gradle/caches/transforms-3/a164cb3aeac0cc744e7a4907eeb99cf1/transformed/jetified-play-services-location-21.2.0/AndroidManifest.xml:7:5-20
 MERGED from [androidx.window:window:1.0.0-beta04] /home/naufal/.gradle/caches/transforms-3/4c30fce11ecf66bd4315a090a19e086f/transformed/jetified-window-1.0.0-beta04/AndroidManifest.xml:24:5-31:19
@@ -62,11 +64,11 @@ MERGED from [com.google.android.datatransport:transport-runtime:3.1.8] /home/nau
 	android:name
 		INJECTED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml
 manifest
-ADDED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:1:1-50:12
-INJECTED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:1:1-50:12
-INJECTED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:1:1-50:12
-INJECTED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:1:1-50:12
-MERGED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:1:1-50:12
+ADDED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:1:1-57:12
+INJECTED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:1:1-57:12
+INJECTED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:1:1-57:12
+INJECTED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:1:1-57:12
+MERGED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:1:1-57:12
 MERGED from [:shared_preferences_android] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/shared_preferences_android/intermediates/merged_manifest/debug/AndroidManifest.xml:2:1-9:12
 MERGED from [:cloud_firestore] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/cloud_firestore/intermediates/merged_manifest/debug/AndroidManifest.xml:2:1-17:12
 MERGED from [:firebase_messaging] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/firebase_messaging/intermediates/merged_manifest/debug/AndroidManifest.xml:2:1-50:12
@@ -75,6 +77,7 @@ MERGED from [:geolocator_android] /home/naufal/project/nebeng-fullstack/customer
 MERGED from [:image_picker_android] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:2:1-36:12
 MERGED from [:flutter_plugin_android_lifecycle] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/flutter_plugin_android_lifecycle/intermediates/merged_manifest/debug/AndroidManifest.xml:2:1-9:12
 MERGED from [:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:2:1-34:12
+MERGED from [:url_launcher_android] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/url_launcher_android/intermediates/merged_manifest/debug/AndroidManifest.xml:2:1-16:12
 MERGED from [com.google.android.gms:play-services-location:21.2.0] /home/naufal/.gradle/caches/transforms-3/a164cb3aeac0cc744e7a4907eeb99cf1/transformed/jetified-play-services-location-21.2.0/AndroidManifest.xml:2:1-9:12
 MERGED from [androidx.window:window-java:1.0.0-beta04] /home/naufal/.gradle/caches/transforms-3/d87a65fdde4108d792096eee37d1a08a/transformed/jetified-window-java-1.0.0-beta04/AndroidManifest.xml:17:1-23:12
 MERGED from [androidx.window:window:1.0.0-beta04] /home/naufal/.gradle/caches/transforms-3/4c30fce11ecf66bd4315a090a19e086f/transformed/jetified-window-1.0.0-beta04/AndroidManifest.xml:17:1-33:12
@@ -84,6 +87,7 @@ MERGED from [com.google.firebase:firebase-installations:17.2.0] /home/naufal/.gr
 MERGED from [com.google.firebase:firebase-common-ktx:20.4.3] /home/naufal/.gradle/caches/transforms-3/65bde737e1813ae35e33e29ad538572c/transformed/jetified-firebase-common-ktx-20.4.3/AndroidManifest.xml:2:1-18:12
 MERGED from [com.google.firebase:firebase-common:20.4.3] /home/naufal/.gradle/caches/transforms-3/117e0596424dae302b1802767e67aa4b/transformed/jetified-firebase-common-20.4.3/AndroidManifest.xml:15:1-41:12
 MERGED from [androidx.media:media:1.1.0] /home/naufal/.gradle/caches/transforms-3/912d92363bab222e183c0f4222463aa3/transformed/media-1.1.0/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.browser:browser:1.5.0] /home/naufal/.gradle/caches/transforms-3/fdb1be1f7b877d72f6e0543dded7a73c/transformed/browser-1.5.0/AndroidManifest.xml:17:1-22:12
 MERGED from [com.google.firebase:firebase-appcheck-interop:17.0.0] /home/naufal/.gradle/caches/transforms-3/c83c8fccda0014aa5527fc09b5c63d31/transformed/jetified-firebase-appcheck-interop-17.0.0/AndroidManifest.xml:15:1-25:12
 MERGED from [com.google.firebase:firebase-database-collection:18.0.1] /home/naufal/.gradle/caches/transforms-3/33529621216b3e331ff14a7734827b39/transformed/jetified-firebase-database-collection-18.0.1/AndroidManifest.xml:2:1-9:12
 MERGED from [com.google.android.gms:play-services-base:18.3.0] /home/naufal/.gradle/caches/transforms-3/25e78ba83c2029ea8b5d616749f280a1/transformed/jetified-play-services-base-18.3.0/AndroidManifest.xml:16:1-24:12
@@ -134,15 +138,15 @@ INJECTED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/andr
 INJECTED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/debug/AndroidManifest.xml:1:1-7:12
 	package
 		INJECTED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml
-		ADDED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:1:1-50:12
+		ADDED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:1:1-57:12
 		INJECTED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/debug/AndroidManifest.xml
 	android:versionName
 		INJECTED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml
-		ADDED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:1:1-50:12
+		ADDED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:1:1-57:12
 		INJECTED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/debug/AndroidManifest.xml
 	android:versionCode
 		INJECTED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml
-		ADDED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:1:1-50:12
+		ADDED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:1:1-57:12
 		INJECTED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/debug/AndroidManifest.xml
 	xmlns:android
 		ADDED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:1:11-69
@@ -170,18 +174,28 @@ uses-permission#android.permission.ACCESS_FINE_LOCATION
 ADDED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:5:5-79
 	android:name
 		ADDED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:5:22-76
-queries
-ADDED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:44:5-49:15
-intent#action:name:android.intent.action.PROCESS_TEXT+data:mimeType:text/plain
-ADDED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:45:9-48:18
-action#android.intent.action.PROCESS_TEXT
-ADDED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:46:13-72
+uses-permission#android.permission.CALL_PHONE
+ADDED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:7:5-69
 	android:name
-		ADDED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:46:21-70
+		ADDED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:7:22-66
+queries
+ADDED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:46:5-56:15
+intent#action:name:android.intent.action.PROCESS_TEXT+data:mimeType:text/plain
+ADDED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:47:9-50:18
+action#android.intent.action.PROCESS_TEXT
+ADDED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:48:13-72
+	android:name
+		ADDED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:48:21-70
 data
-ADDED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:47:13-50
+ADDED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:49:13-50
 	android:mimeType
-		ADDED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:47:19-48
+		ADDED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:49:19-48
+intent#action:name:android.intent.action.DIAL+data:scheme:tel
+ADDED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:52:9-55:18
+action#android.intent.action.DIAL
+ADDED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:53:13-64
+	android:name
+		ADDED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml:53:21-62
 uses-sdk
 INJECTED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/AndroidManifest.xml
@@ -202,6 +216,8 @@ MERGED from [:flutter_plugin_android_lifecycle] /home/naufal/project/nebeng-full
 MERGED from [:flutter_plugin_android_lifecycle] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/flutter_plugin_android_lifecycle/intermediates/merged_manifest/debug/AndroidManifest.xml:5:5-7:41
 MERGED from [:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:5:5-7:41
 MERGED from [:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:5:5-7:41
+MERGED from [:url_launcher_android] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/url_launcher_android/intermediates/merged_manifest/debug/AndroidManifest.xml:5:5-7:41
+MERGED from [:url_launcher_android] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/url_launcher_android/intermediates/merged_manifest/debug/AndroidManifest.xml:5:5-7:41
 MERGED from [com.google.android.gms:play-services-location:21.2.0] /home/naufal/.gradle/caches/transforms-3/a164cb3aeac0cc744e7a4907eeb99cf1/transformed/jetified-play-services-location-21.2.0/AndroidManifest.xml:5:5-44
 MERGED from [com.google.android.gms:play-services-location:21.2.0] /home/naufal/.gradle/caches/transforms-3/a164cb3aeac0cc744e7a4907eeb99cf1/transformed/jetified-play-services-location-21.2.0/AndroidManifest.xml:5:5-44
 MERGED from [androidx.window:window-java:1.0.0-beta04] /home/naufal/.gradle/caches/transforms-3/d87a65fdde4108d792096eee37d1a08a/transformed/jetified-window-java-1.0.0-beta04/AndroidManifest.xml:19:5-21:41
@@ -220,6 +236,8 @@ MERGED from [com.google.firebase:firebase-common:20.4.3] /home/naufal/.gradle/ca
 MERGED from [com.google.firebase:firebase-common:20.4.3] /home/naufal/.gradle/caches/transforms-3/117e0596424dae302b1802767e67aa4b/transformed/jetified-firebase-common-20.4.3/AndroidManifest.xml:19:5-44
 MERGED from [androidx.media:media:1.1.0] /home/naufal/.gradle/caches/transforms-3/912d92363bab222e183c0f4222463aa3/transformed/media-1.1.0/AndroidManifest.xml:20:5-22:41
 MERGED from [androidx.media:media:1.1.0] /home/naufal/.gradle/caches/transforms-3/912d92363bab222e183c0f4222463aa3/transformed/media-1.1.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.browser:browser:1.5.0] /home/naufal/.gradle/caches/transforms-3/fdb1be1f7b877d72f6e0543dded7a73c/transformed/browser-1.5.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.browser:browser:1.5.0] /home/naufal/.gradle/caches/transforms-3/fdb1be1f7b877d72f6e0543dded7a73c/transformed/browser-1.5.0/AndroidManifest.xml:20:5-44
 MERGED from [com.google.firebase:firebase-appcheck-interop:17.0.0] /home/naufal/.gradle/caches/transforms-3/c83c8fccda0014aa5527fc09b5c63d31/transformed/jetified-firebase-appcheck-interop-17.0.0/AndroidManifest.xml:18:5-20:41
 MERGED from [com.google.firebase:firebase-appcheck-interop:17.0.0] /home/naufal/.gradle/caches/transforms-3/c83c8fccda0014aa5527fc09b5c63d31/transformed/jetified-firebase-appcheck-interop-17.0.0/AndroidManifest.xml:18:5-20:41
 MERGED from [com.google.firebase:firebase-database-collection:18.0.1] /home/naufal/.gradle/caches/transforms-3/33529621216b3e331ff14a7734827b39/transformed/jetified-firebase-database-collection-18.0.1/AndroidManifest.xml:5:5-7:41
@@ -540,6 +558,14 @@ action#com.htc.intent.action.QUICKBOOT_POWERON
 ADDED from [:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:29:17-82
 	android:name
 		ADDED from [:flutter_local_notifications] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:29:25-79
+activity#io.flutter.plugins.urllauncher.WebViewActivity
+ADDED from [:url_launcher_android] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/url_launcher_android/intermediates/merged_manifest/debug/AndroidManifest.xml:10:9-13:74
+	android:exported
+		ADDED from [:url_launcher_android] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/url_launcher_android/intermediates/merged_manifest/debug/AndroidManifest.xml:12:13-37
+	android:theme
+		ADDED from [:url_launcher_android] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/url_launcher_android/intermediates/merged_manifest/debug/AndroidManifest.xml:13:13-71
+	android:name
+		ADDED from [:url_launcher_android] /home/naufal/project/nebeng-fullstack/customer-mitra/frontend/build/url_launcher_android/intermediates/merged_manifest/debug/AndroidManifest.xml:11:13-74
 uses-library#androidx.window.extensions
 ADDED from [androidx.window:window:1.0.0-beta04] /home/naufal/.gradle/caches/transforms-3/4c30fce11ecf66bd4315a090a19e086f/transformed/jetified-window-1.0.0-beta04/AndroidManifest.xml:25:9-27:40
 	android:required

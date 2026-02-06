@@ -73,6 +73,7 @@ class VerifikasiCustomerController extends Controller
                     'nama_lengkap' => $verifikasi->nama_lengkap,
                     'nik' => $verifikasi->nik,
                     'tanggal_lahir' => $verifikasi->tanggal_lahir,
+                    'jenis_kelamin' => $verifikasi->jenis_kelamin,
                     'alamat' => $verifikasi->alamat,
                     'reviewed_at' => $verifikasi->reviewed_at,
                     'created_at' => $verifikasi->created_at,
@@ -202,6 +203,7 @@ class VerifikasiCustomerController extends Controller
             $verifikasi->nama_lengkap = $request->nama_lengkap;
             $verifikasi->nik = $request->nik;
             $verifikasi->tanggal_lahir = $request->tanggal_lahir;
+            $verifikasi->jenis_kelamin = $request->jenis_kelamin;
             $verifikasi->alamat = $request->alamat;
             $verifikasi->status = 'pending';
             $verifikasi->save();
@@ -245,6 +247,7 @@ class VerifikasiCustomerController extends Controller
                 'nama_lengkap' => 'required|string|max:255',
                 'nik' => 'required|string|size:16',
                 'tanggal_lahir' => 'required|date',
+                'jenis_kelamin' => 'required|in:Laki-laki,Perempuan',
                 'alamat' => 'required|string',
             ]);
             
@@ -275,6 +278,7 @@ class VerifikasiCustomerController extends Controller
             $verifikasi->nama_lengkap = $request->nama_lengkap;
             $verifikasi->nik = $request->nik;
             $verifikasi->tanggal_lahir = $request->tanggal_lahir;
+            $verifikasi->jenis_kelamin = $request->jenis_kelamin;
             $verifikasi->alamat = $request->alamat;
             $verifikasi->status = 'pending';
             $verifikasi->save();

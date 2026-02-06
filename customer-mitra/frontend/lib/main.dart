@@ -5,10 +5,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'services/notification_service.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'services/shared/notification_service.dart';
+import 'models/user_role.dart';
 import 'screens/auth/splash_screen.dart';
 import 'screens/customer/main_page.dart';
 import 'screens/mitra/main_page.dart';
+import 'screens/posmitra/main_page.dart';
 import 'package:http/http.dart' as http;
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -81,6 +84,27 @@ Future<void> main() async {
         // ignore errors
       }
 
+      // Listen for token refreshes and update backend when it happens
+      FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
+        try {
+          print('FCM token refreshed: $newToken');
+          final prefs = await SharedPreferences.getInstance();
+          final apiToken = prefs.getString('api_token');
+          if (newToken != null && apiToken != null && apiToken.isNotEmpty) {
+            final uri = Uri.parse(
+                '${const String.fromEnvironment('API_BASE_URL', defaultValue: 'http://10.0.2.2:8000')}/api/v1/user/fcm-token');
+            await http.post(uri,
+                headers: {
+                  'Authorization': 'Bearer $apiToken',
+                  'Content-Type': 'application/json'
+                },
+                body: '{"fcm_token":"$newToken"}');
+          }
+        } catch (e) {
+          // ignore
+        }
+      });
+
       // Foreground message handler
       FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
         final n = message.notification;
@@ -99,7 +123,17 @@ Future<void> main() async {
     }
   }
 
-  runApp(const MyApp());
+  // Initialize EasyLocalization
+  await EasyLocalization.ensureInitialized();
+
+  runApp(
+    EasyLocalization(
+      supportedLocales: const [Locale('id'), Locale('en')],
+      path: 'assets/translations',
+      fallbackLocale: const Locale('id'),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -115,7 +149,9 @@ class MyApp extends StatelessWidget {
         fontFamily: 'Roboto',
         scaffoldBackgroundColor: Colors.white,
       ),
-      locale: const Locale('id', 'ID'),
+      localizationsDelegates: context.localizationDelegates,
+      supportedLocales: context.supportedLocales,
+      locale: context.locale,
       home: const AuthChecker(),
       debugShowCheckedModeBanner: false,
     );
@@ -148,12 +184,20 @@ class _AuthCheckerState extends State<AuthChecker> {
 
     if (token != null && token.isNotEmpty) {
       // User sudah login, redirect berdasarkan role
-      if (role == 'mitra') {
+      final userRole = UserRole.fromString(role);
+
+      if (userRole.isMitra) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const MitraMainPage()),
         );
+      } else if (userRole.isPosMitra) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const PosMitraMainPage()),
+        );
       } else {
+        // Default customer atau role lainnya
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const MainPage()),
@@ -170,18 +214,34 @@ class _AuthCheckerState extends State<AuthChecker> {
 
   @override
   Widget build(BuildContext context) {
-    // Tampilkan loading indicator sementara mengecek auth
+    // Tampilkan splash yang sama dengan splash login
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: Center(
-        child: SizedBox(
-          width: 60,
-          height: 60,
-          child: CircularProgressIndicator(
-            strokeWidth: 5,
-            valueColor: AlwaysStoppedAnimation<Color>(
-              Theme.of(context).primaryColor,
-            ),
+      backgroundColor: const Color(0xFF1D4ED8),
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                'Nebeng',
+                style: TextStyle(
+                  fontSize: 56,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  letterSpacing: 0,
+                  height: 1,
+                ),
+              ),
+              const SizedBox(height: 40),
+              const SizedBox(
+                width: 40,
+                height: 40,
+                child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+            ],
           ),
         ),
       ),

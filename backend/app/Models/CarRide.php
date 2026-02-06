@@ -32,6 +32,7 @@ class CarRide extends Model
         'bagasi_capacity',
         'jumlah_bagasi',
         'kendaraan_mitra_id',
+        'qr_code_data',
     ];
 
     protected $casts = [
