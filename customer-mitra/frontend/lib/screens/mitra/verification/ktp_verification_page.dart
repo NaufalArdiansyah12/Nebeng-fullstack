@@ -27,6 +27,7 @@ class _KtpVerificationPageState extends State<KtpVerificationPage> {
     _ktpNumberController.dispose();
     _ktpNameController.dispose();
     _birthDateController.dispose();
+
     _addressController.dispose();
     super.dispose();
   }

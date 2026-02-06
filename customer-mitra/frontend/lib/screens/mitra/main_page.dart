@@ -38,6 +38,14 @@ class _MitraMainPageState extends State<MitraMainPage>
     // report location in background (non-blocking)
     Future.microtask(() => _reportCurrentLocation());
     _startLocationTimer();
+
+    // initialize pages with callback so child can request opening history tab
+    _pages.addAll([
+      MitraHomePage(onOpenHistory: () => setState(() => _currentIndex = 1)),
+      const MitraRiwayatPage(),
+      const MitraChatsPage(),
+      const MitraProfilePage(),
+    ]);
   }
 
   @override

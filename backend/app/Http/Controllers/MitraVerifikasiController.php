@@ -127,22 +127,38 @@ class MitraVerifikasiController extends Controller
                 'overall_status' => $overallStatus,
                 'ktp' => [
                     'status' => $mitraVerifikasi->ktpVerification?->status,
+
                     'photo' => $mitraVerifikasi->ktpVerification?->photo_ktp ?? $mitraVerifikasi->ktpVerification?->ktp_photo ?? null,
+
+                    'photo' => $mitraVerifikasi->ktpVerification?->photo_ktp,
+
                     'reviewed_at' => $mitraVerifikasi->ktpVerification?->reviewed_at,
                 ],
                 'sim' => [
                     'status' => $mitraVerifikasi->simVerification?->status,
+
                     'photo' => $mitraVerifikasi->simVerification?->sim_photo ?? $mitraVerifikasi->simVerification?->photo_sim ?? null,
+
+                    'photo' => $mitraVerifikasi->simVerification?->photo_sim,
+
                     'reviewed_at' => $mitraVerifikasi->simVerification?->reviewed_at,
                 ],
                 'skck' => [
                     'status' => $mitraVerifikasi->skckVerification?->status,
+
                     'photo' => $mitraVerifikasi->skckVerification?->skck_photo ?? $mitraVerifikasi->skckVerification?->photo_skck ?? null,
+
+                    'photo' => $mitraVerifikasi->skckVerification?->photo_skck,
+
                     'reviewed_at' => $mitraVerifikasi->skckVerification?->reviewed_at,
                 ],
                 'bank' => [
                     'status' => $mitraVerifikasi->bankVerification?->status,
+
                     'photo' => $mitraVerifikasi->bankVerification?->bank_account_photo ?? $mitraVerifikasi->bankVerification?->photo_buku_tabungan ?? null,
+
+                    'photo' => $mitraVerifikasi->bankVerification?->photo_buku_tabungan,
+
                     'reviewed_at' => $mitraVerifikasi->bankVerification?->reviewed_at,
                 ],
                 'submitted_at' => $mitraVerifikasi->created_at,
@@ -151,6 +167,7 @@ class MitraVerifikasiController extends Controller
             'status' => $overallStatus
         ], 200);
     }
+
 
     // Development helper: sync existing individual verifications into mitra_verifikasi
     // This is forgiving and will link any existing verifications for the current user.
@@ -204,4 +221,5 @@ class MitraVerifikasiController extends Controller
             'data' => $mitraVerifikasi
         ], 200);
     }
+
 }

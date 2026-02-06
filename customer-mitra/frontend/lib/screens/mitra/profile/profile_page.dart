@@ -7,9 +7,10 @@ import 'settings/edit_profile_page.dart';
 import 'settings/settings_page.dart';
 import '../help/help_center_page.dart';
 import '../../pin/create_pin_page.dart';
-
 import 'documents/documents_page.dart';
 import 'account_status_page.dart';
+import 'package:nebeng/screens/mitra/riwayat_page.dart';
+import '../verification/verification_documents_page.dart';
 
 class MitraProfilePage extends StatefulWidget {
   const MitraProfilePage({Key? key}) : super(key: key);
@@ -226,10 +227,29 @@ class _MitraProfilePageState extends State<MitraProfilePage> {
       child: Column(
         children: [
           _buildMenuItem(
+
             icon: Icons.settings_outlined,
             title: 'Pengaturan',
             onTap: () async {
               await Navigator.push(
+            icon: Icons.verified_user_outlined,
+            iconColor: const Color(0xFF1E40AF),
+            title: 'Verifikasi Dokumen',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const VerificationDocumentsPage(),
+                ),
+              );
+            },
+          ),
+          _buildMenuItem(
+            icon: Icons.receipt_long_outlined,
+            iconColor: Colors.black87,
+            title: 'Riwayat Transaksi',
+            onTap: () {
+              Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => const SettingsPage(),

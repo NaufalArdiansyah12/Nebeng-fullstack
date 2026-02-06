@@ -53,7 +53,7 @@ Route::prefix('api/v1')->group(function () {
         try {
             $service = app(\App\Services\PosMitraConversationService::class);
             $result = $service->createTebenganConversations(2, 3, 1, 'motor');
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Conversation creation tested',
@@ -386,6 +386,68 @@ Route::prefix('api/v1')->group(function () {
     // Payment testing routes (development only)
     Route::get('/payments/test/pending', [PaymentTestController::class, 'getPendingPayments']);
     Route::post('/payments/test/{id}/simulate', [PaymentTestController::class, 'simulatePayment']);
+
+
+    // Tebengan Titip Barang routes
+    Route::get('/tebengan-titip-barang', [TebenganTitipBarangController::class, 'index']);
+    Route::get('/tebengan-titip-barang/{id}', [TebenganTitipBarangController::class, 'show']);
+    Route::post('/tebengan-titip-barang', [TebenganTitipBarangController::class, 'store']);
+    Route::put('/tebengan-titip-barang/{id}', [TebenganTitipBarangController::class, 'update']);
+    Route::delete('/tebengan-titip-barang/{id}', [TebenganTitipBarangController::class, 'destroy']);
+    Route::get('/tebengan-titip-barang/my/list', [TebenganTitipBarangController::class, 'myTebengan']);
+
+    // Mitra: riwayat tebengan (partner history)
+    Route::get('/mitra/riwayat', [MitraHistoryController::class, 'index']);
+
+    // Customer: riwayat transaksi (transaction history) - uses custom ApiToken auth
+    Route::get('/transactions/history', [TransactionHistoryController::class, 'index']);
+
+    // Rewards (points / merchandise)
+    Route::get('/rewards', [\App\Http\Controllers\Api\RewardController::class, 'index']);
+    Route::post('/rewards/{id}/redeem', [\App\Http\Controllers\Api\RewardController::class, 'redeem']);
+    Route::get('/rewards/my', [\App\Http\Controllers\Api\RewardController::class, 'myRedemptions']);
+
+    // Customer Verification (requires auth via bearer token)
+    Route::get('/customer/verification/status', [\App\Http\Controllers\Api\VerifikasiCustomerController::class, 'getStatus']);
+    Route::get('/customer/verification', [\App\Http\Controllers\Api\VerifikasiCustomerController::class, 'getVerification']);
+    Route::post('/customer/verification/upload-face', [\App\Http\Controllers\Api\VerifikasiCustomerController::class, 'uploadFacePhoto']);
+    Route::post('/customer/verification/upload-ktp', [\App\Http\Controllers\Api\VerifikasiCustomerController::class, 'uploadKtpPhoto']);
+    Route::post('/customer/verification/upload-face-ktp', [\App\Http\Controllers\Api\VerifikasiCustomerController::class, 'uploadFaceKtpPhoto']);
+    Route::post('/customer/verification/submit', [\App\Http\Controllers\Api\VerifikasiCustomerController::class, 'submitVerification']);
+
+    // Mitra Verification (requires auth via bearer token)
+    Route::get('/mitra/verification/ktp', [\App\Http\Controllers\VerifikasiKtpController::class, 'show']);
+    Route::post('/mitra/verification/ktp', [\App\Http\Controllers\VerifikasiKtpController::class, 'store']);
+    Route::put('/mitra/verification/ktp', [\App\Http\Controllers\VerifikasiKtpController::class, 'update']);
+
+    Route::get('/mitra/verification/sim', [\App\Http\Controllers\VerifikasiSimController::class, 'show']);
+    Route::post('/mitra/verification/sim', [\App\Http\Controllers\VerifikasiSimController::class, 'store']);
+    Route::put('/mitra/verification/sim', [\App\Http\Controllers\VerifikasiSimController::class, 'update']);
+
+    Route::get('/mitra/verification/skck', [\App\Http\Controllers\VerifikasiSkckController::class, 'show']);
+    Route::post('/mitra/verification/skck', [\App\Http\Controllers\VerifikasiSkckController::class, 'store']);
+    Route::put('/mitra/verification/skck', [\App\Http\Controllers\VerifikasiSkckController::class, 'update']);
+
+    Route::get('/mitra/verification/bank', [\App\Http\Controllers\VerifikasiBankController::class, 'show']);
+    Route::post('/mitra/verification/bank', [\App\Http\Controllers\VerifikasiBankController::class, 'store']);
+    Route::put('/mitra/verification/bank', [\App\Http\Controllers\VerifikasiBankController::class, 'update']);
+
+    // Link all verifications to mitra_verifikasi table
+    Route::post('/mitra/verification/link', [\App\Http\Controllers\MitraVerifikasiController::class, 'linkVerifications']);
+
+    // Get verification status
+    Route::get('/mitra/verification/status', [\App\Http\Controllers\MitraVerifikasiController::class, 'getVerificationStatus']);
+
+    Route::get('/mitra/verification/bank', [\App\Http\Controllers\VerifikasiBankController::class, 'show']);
+    Route::post('/mitra/verification/bank', [\App\Http\Controllers\VerifikasiBankController::class, 'store']);
+    Route::put('/mitra/verification/bank', [\App\Http\Controllers\VerifikasiBankController::class, 'update']);
+
+    // Admin routes for managing locations (requires auth:sanctum)
+    Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
+        Route::post('/locations', [LocationController::class, 'store']);
+        Route::put('/locations/{id}', [LocationController::class, 'update']);
+        Route::delete('/locations/{id}', [LocationController::class, 'destroy']);
+    });
 });
 
 // =====================================================

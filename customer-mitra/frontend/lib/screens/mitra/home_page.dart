@@ -26,6 +26,7 @@ class _MitraHomePageState extends State<MitraHomePage> {
   int _totalRatings = 0;
   Map<int, int> _ratingCounts = {5: 0, 4: 0, 3: 0, 2: 0, 1: 0};
   int? _mitraId;
+
   double _balance = 0.0;
   bool _isBalanceVisible = true;
 
@@ -75,6 +76,7 @@ class _MitraHomePageState extends State<MitraHomePage> {
         } catch (e) {
           // ignore error, keep default balance
         }
+
 
         // Try to fetch driver rating stats via ratings API (preferred)
         final id = user['id'] ?? user['user_id'] ?? user['mitra_id'] ?? userId;
