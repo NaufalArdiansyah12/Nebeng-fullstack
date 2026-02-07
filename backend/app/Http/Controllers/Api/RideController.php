@@ -62,6 +62,7 @@ class RideController extends Controller
         }
 
         // If client requests barang rides, fetch from BarangRide (tebengan_barang)
+        // AND TebenganTitipBarang (tebengan_titip_barang) combined
         if ($request->has('ride_type') && $request->ride_type === 'barang') {
             $barangQuery = \App\Models\BarangRide::with(['user', 'originLocation', 'destinationLocation', 'kendaraanMitra'])
                 ->where('status', 'active');
@@ -76,9 +77,33 @@ class RideController extends Controller
                 $barangQuery->whereDate('departure_date', $request->date);
             }
 
-            $rides = $barangQuery->orderBy('departure_date')
+            $barangRides = $barangQuery->orderBy('departure_date')
                 ->orderBy('departure_time')
                 ->get();
+
+            // Also fetch from TebenganTitipBarang
+            $titipQuery = \App\Models\TebenganTitipBarang::with(['user', 'originLocation', 'destinationLocation', 'kendaraanMitra'])
+                ->where('status', 'active');
+
+            if ($request->has('origin_location_id')) {
+                $titipQuery->where('origin_location_id', $request->origin_location_id);
+            }
+            if ($request->has('destination_location_id')) {
+                $titipQuery->where('destination_location_id', $request->destination_location_id);
+            }
+            if ($request->has('date')) {
+                $titipQuery->whereDate('departure_date', $request->date);
+            }
+
+            $titipRides = $titipQuery->orderBy('departure_date')
+                ->orderBy('departure_time')
+                ->get();
+
+            // Combine both collections and sort
+            $rides = $barangRides->concat($titipRides)->sortBy([
+                ['departure_date', 'asc'],
+                ['departure_time', 'asc']
+            ])->values();
 
             return response()->json([
                 'success' => true,

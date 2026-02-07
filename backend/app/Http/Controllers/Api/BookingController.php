@@ -71,6 +71,12 @@ class BookingController extends Controller
         $isBarang = false;
         $isTitipBarang = false;
         
+        // Debug log
+        Log::info('BookingController store - Finding ride', [
+            'ride_id' => $request->ride_id,
+            'ride_type' => $rideType,
+        ]);
+        
         // Search based on ride_type parameter
         if ($rideType === 'mobil') {
             $ride = \App\Models\CarRide::find($request->ride_id);
@@ -87,6 +93,10 @@ class BookingController extends Controller
             if ($ride) {
                 $isTitipBarang = true;
             }
+            Log::info('BookingController - Searched TebenganTitipBarang', [
+                'found' => $ride !== null,
+                'isTitipBarang' => $isTitipBarang,
+            ]);
         } else {
             // Default to motor (Ride table)
             $ride = Ride::find($request->ride_id);

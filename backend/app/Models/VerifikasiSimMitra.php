@@ -11,6 +11,7 @@ class VerifikasiSimMitra extends Model
 
     protected $fillable = [
         'user_id',
+        'nama_lengkap',
         'sim_number',
         'sim_type',
         'sim_expiry_date',

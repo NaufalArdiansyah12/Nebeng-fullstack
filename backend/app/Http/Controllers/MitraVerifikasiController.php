@@ -7,7 +7,10 @@ use App\Models\VerifikasiKtpMitra;
 use App\Models\VerifikasiSimMitra;
 use App\Models\VerifikasiSkckMitra;
 use App\Models\VerifikasiBankMitra;
+use App\Models\User;
+use App\Services\FcmService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class MitraVerifikasiController extends Controller
 {
@@ -110,6 +113,9 @@ class MitraVerifikasiController extends Controller
         // If all approved
         if (array_filter($statuses, fn($s) => $s === 'approved') === $statuses) {
             $overallStatus = 'approved';
+            
+            // Check and update user role if all documents approved
+            $this->checkAndUpdateUserRole($apiToken->user_id);
         }
         // If any rejected
         elseif (in_array('rejected', $statuses)) {
@@ -220,6 +226,100 @@ class MitraVerifikasiController extends Controller
             'message' => 'Synced mitra_verifikasi links',
             'data' => $mitraVerifikasi
         ], 200);
+    }
+
+    /**
+     * Check if all documents are approved and update user role to 'mitra'
+     * Send notification to user when role is changed
+     */
+    private function checkAndUpdateUserRole($userId)
+    {
+        $user = User::find($userId);
+        
+        if (!$user) {
+            Log::error('User not found for role update', ['user_id' => $userId]);
+            return;
+        }
+
+        // Save old role before checking
+        $oldRole = $user->role;
+
+        // If already mitra, no need to update or send notification again
+        if ($oldRole === 'mitra') {
+            return;
+        }
+
+        // Get all verifications
+        $mitraVerifikasi = MitraVerifikasi::with([
+            'ktpVerification',
+            'simVerification',
+            'skckVerification',
+            'bankVerification'
+        ])->where('user_id', $userId)->first();
+
+        if (!$mitraVerifikasi) {
+            return;
+        }
+
+        // Check if all documents are approved
+        $allApproved = 
+            $mitraVerifikasi->ktpVerification?->status === 'approved' &&
+            $mitraVerifikasi->simVerification?->status === 'approved' &&
+            $mitraVerifikasi->skckVerification?->status === 'approved' &&
+            $mitraVerifikasi->bankVerification?->status === 'approved';
+
+        if ($allApproved) {
+            // Update user role to mitra
+            $user->role = 'mitra';
+            $user->save();
+
+            Log::info('User role updated to mitra', [
+                'user_id' => $userId,
+                'name' => $user->name,
+                'email' => $user->email,
+                'old_role' => $oldRole
+            ]);
+
+            // Send notification ONLY if role just changed from customer to mitra
+            if ($oldRole === 'customer') {
+                $this->sendApprovalNotification($user);
+            }
+        }
+    }
+
+    /**
+     * Send FCM notification when user becomes mitra
+     */
+    private function sendApprovalNotification(User $user)
+    {
+        if (empty($user->fcm_token)) {
+            Log::warning('User has no FCM token, skipping notification', ['user_id' => $user->id]);
+            return;
+        }
+
+        $title = '🎉 Selamat! Verifikasi Disetujui';
+        $body = 'Semua dokumen Anda telah diverifikasi. Anda sekarang adalah Mitra Nebeng!';
+
+        $success = FcmService::sendToToken(
+            $user->fcm_token,
+            $title,
+            $body,
+            [
+                'type' => 'verification_approved',
+                'user_id' => (string) $user->id,
+            ]
+        );
+
+        if ($success) {
+            Log::info('Verification approval notification sent', [
+                'user_id' => $user->id,
+                'fcm_token' => substr($user->fcm_token, 0, 20) . '...'
+            ]);
+        } else {
+            Log::error('Failed to send verification approval notification', [
+                'user_id' => $user->id
+            ]);
+        }
     }
 
 }

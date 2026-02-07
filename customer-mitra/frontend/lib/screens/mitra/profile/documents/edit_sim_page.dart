@@ -18,6 +18,7 @@ class EditSimPage extends StatefulWidget {
 class _EditSimPageState extends State<EditSimPage> {
   final _formKey = GlobalKey<FormState>();
   final _simNumberController = TextEditingController();
+  final _namaLengkapController = TextEditingController();
   final _expiryDateController = TextEditingController();
 
   File? _simPhoto;
@@ -30,6 +31,7 @@ class _EditSimPageState extends State<EditSimPage> {
     super.initState();
     if (widget.existingData != null) {
       _simNumberController.text = widget.existingData?['sim_number'] ?? '';
+      _namaLengkapController.text = widget.existingData?['nama_lengkap'] ?? '';
       _selectedSimType = widget.existingData?['sim_type'] ?? 'C';
       if (widget.existingData?['sim_expiry_date'] != null) {
         try {
@@ -47,6 +49,7 @@ class _EditSimPageState extends State<EditSimPage> {
   @override
   void dispose() {
     _simNumberController.dispose();
+    _namaLengkapController.dispose();
     _expiryDateController.dispose();
     super.dispose();
   }
@@ -160,6 +163,7 @@ class _EditSimPageState extends State<EditSimPage> {
           ? await ApiService.updateSim(
               token: token,
               simNumber: _simNumberController.text,
+              namaLengkap: _namaLengkapController.text,
               simType: _selectedSimType ?? 'C',
               expiryDate: DateFormat('yyyy-MM-dd').format(_selectedDate!),
               simPhoto: _simPhoto ?? widget.existingData?['sim_photo'],
@@ -167,6 +171,7 @@ class _EditSimPageState extends State<EditSimPage> {
           : await ApiService.uploadSim(
               token: token,
               simNumber: _simNumberController.text,
+              namaLengkap: _namaLengkapController.text,
               expiryDate: DateFormat('yyyy-MM-dd').format(_selectedDate!),
               simPhoto: _simPhoto,
             );
@@ -282,6 +287,33 @@ class _EditSimPageState extends State<EditSimPage> {
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'Nomor SIM harus diisi';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            // Nama Lengkap
+            TextFormField(
+              controller: _namaLengkapController,
+              keyboardType: TextInputType.text,
+              decoration: InputDecoration(
+                labelText: 'Nama Lengkap',
+                hintText: 'Masukkan nama lengkap sesuai SIM',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFF1A43BF)),
+                ),
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Nama lengkap harus diisi';
                 }
                 return null;
               },

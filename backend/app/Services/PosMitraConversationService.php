@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\User;
+use App\Models\PosMitraUser;
 use Illuminate\Support\Facades\Log;
 use Kreait\Firebase\Contract\Firestore;
 
@@ -37,13 +38,11 @@ class PosMitraConversationService
 
         try {
             // Find pos mitra user for origin location
-            $originPosMitra = User::where('role', 'posmitra')
-                ->where('assigned_location_id', $originLocationId)
+            $originPosMitra = PosMitraUser::where('location_id', $originLocationId)
                 ->first();
 
             // Find pos mitra user for destination location
-            $destinationPosMitra = User::where('role', 'posmitra')
-                ->where('assigned_location_id', $destinationLocationId)
+            $destinationPosMitra = PosMitraUser::where('location_id', $destinationLocationId)
                 ->first();
 
             // Create conversation with origin pos mitra
@@ -110,7 +109,17 @@ class PosMitraConversationService
 
             // Get user details
             $user1 = User::find($user1Id);
-            $user2 = User::find($user2Id);
+            $user2 = null;
+            
+            // Check if user2 is a PosMitra user
+            if ($user2Role === 'posmitra') {
+                $user2 = PosMitraUser::find($user2Id);
+            }
+            
+            // Fallback to regular User table
+            if (!$user2) {
+                $user2 = User::find($user2Id);
+            }
 
             if (!$user1 || !$user2) {
                 Log::error("User not found: user1=$user1Id, user2=$user2Id");
@@ -166,12 +175,11 @@ class PosMitraConversationService
      * Get pos mitra user for a location
      * 
      * @param int $locationId
-     * @return User|null
+     * @return PosMitraUser|null
      */
-    public function getPosMitraForLocation(int $locationId): ?User
+    public function getPosMitraForLocation(int $locationId): ?PosMitraUser
     {
-        return User::where('role', 'posmitra')
-            ->where('assigned_location_id', $locationId)
+        return PosMitraUser::where('location_id', $locationId)
             ->first();
     }
 

@@ -684,7 +684,7 @@ class _MitraRiwayatPageState extends State<MitraRiwayatPage> {
         children: [
           _filterChips(),
           _typeChips(),
-          Expanded(
+          Flexible(
             child: Builder(
               builder: (_) {
                 if (loading) {
@@ -748,22 +748,19 @@ class _MitraRiwayatPageState extends State<MitraRiwayatPage> {
                     ),
                   );
                 }
-                return Column(
-                  children: [
-                    Expanded(
-                      child: RefreshIndicator(
-                        onRefresh: _loadAndFetch,
-                        color: const Color(0xFF0F4AA3),
-                        child: ListView.builder(
-                          padding: const EdgeInsets.only(top: 16, bottom: 24),
-                          itemCount: _paginatedItems.length,
-                          itemBuilder: (context, i) =>
-                              _card(_paginatedItems[i]),
-                        ),
-                      ),
-                    ),
-                    _buildPagination(),
-                  ],
+                return SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(height: 16),
+                      // Cards
+                      ..._paginatedItems.map((item) => _card(item)).toList(),
+                      // Pagination - LANGSUNG DI BAWAH CARD TERAKHIR
+                      _buildPagination(),
+                      const SizedBox(
+                          height: 80), // Extra space untuk bottom nav
+                    ],
+                  ),
                 );
               },
             ),

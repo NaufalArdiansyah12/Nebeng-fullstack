@@ -1035,38 +1035,6 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
       }
     }
 
-    // Status color and text
-    Color statusColor;
-    String statusText;
-    IconData statusIcon;
-
-    switch (status) {
-      case 'pending':
-        statusColor = Colors.orange;
-        statusText = 'Menunggu';
-        statusIcon = Icons.access_time;
-        break;
-      case 'confirmed':
-        statusColor = Colors.blue;
-        statusText = 'Dikonfirmasi';
-        statusIcon = Icons.check_circle_outline;
-        break;
-      case 'proses':
-        statusColor = Colors.blue;
-        statusText = 'Proses';
-        statusIcon = Icons.autorenew;
-        break;
-      case 'in_progress':
-        statusColor = Colors.green;
-        statusText = 'Dalam Perjalanan';
-        statusIcon = Icons.directions;
-        break;
-      default:
-        statusColor = Colors.grey;
-        statusText = status;
-        statusIcon = Icons.info_outline;
-    }
-
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -1145,35 +1113,7 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
                         ),
                       ],
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            statusIcon,
-                            size: 14,
-                            color: statusColor,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            statusText,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: statusColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    _buildStatusBadge(status),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -1349,6 +1289,74 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
             ),
           )
         : const SizedBox.shrink();
+  }
+
+  Widget _buildStatusBadge(String status) {
+    final s = status.toLowerCase();
+    String label;
+    Color bg;
+    Color textColor;
+
+    if (s.contains('cancel') || s.contains('batalkan')) {
+      label = 'Dibatalkan';
+      bg = const Color(0xFFFFEBEE);
+      textColor = const Color(0xFFEF4444);
+    } else if (s.contains('completed') ||
+        s.contains('selesai') ||
+        s.contains('done') ||
+        s.contains('success')) {
+      label = 'Selesai';
+      bg = const Color(0xFFE8F5E9);
+      textColor = const Color(0xFF4CAF50);
+    } else if (s == 'menuju_penjemputan') {
+      label = 'Menuju Penjemputan';
+      bg = const Color(0xFFE3F2FD);
+      textColor = const Color(0xFF1E3A8A);
+    } else if (s == 'sudah_di_penjemputan') {
+      label = 'Di Penjemputan';
+      bg = const Color(0xFFE3F2FD);
+      textColor = const Color(0xFF1E3A8A);
+    } else if (s == 'menuju_tujuan') {
+      label = 'Menuju Tujuan';
+      bg = const Color(0xFFE3F2FD);
+      textColor = const Color(0xFF1E3A8A);
+    } else if (s == 'sudah_sampai_tujuan') {
+      label = 'Sampai Tujuan';
+      bg = const Color(0xFFE3F2FD);
+      textColor = const Color(0xFF1E3A8A);
+    } else if (s == 'scheduled') {
+      label = 'Dijadwalkan';
+      bg = const Color(0xFFF3E5F5);
+      textColor = Colors.purple;
+    } else if (s.contains('paid') || s.contains('confirmed')) {
+      label = 'Menunggu';
+      bg = const Color(0xFFFFF4E5);
+      textColor = const Color(0xFFFF9800);
+    } else if (s == 'pending') {
+      label = 'Pending';
+      bg = Colors.grey[200]!;
+      textColor = Colors.grey[700]!;
+    } else {
+      label = status;
+      bg = Colors.grey[200]!;
+      textColor = Colors.grey[700]!;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: textColor,
+        ),
+      ),
+    );
   }
 }
 

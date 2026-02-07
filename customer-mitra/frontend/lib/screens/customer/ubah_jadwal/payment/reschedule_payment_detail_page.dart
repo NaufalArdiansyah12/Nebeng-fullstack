@@ -124,15 +124,78 @@ class _ReschedulePaymentDetailPageState
 
   @override
   Widget build(BuildContext context) {
+    final bookingType =
+        (widget.bookingData['booking_type'] ?? '').toString().toLowerCase();
     final dateStr = widget.newRideData['departure_date'] ?? '04 September 2024';
     final timeStr =
         '${widget.newRideData['departure_time'] ?? '09:00'} - ${widget.newRideData['arrival_time'] ?? '13:00'}';
     final fromLocation = widget.newRideData['from_location'] ?? 'Yogyakarta';
     final toLocation = widget.newRideData['to_location'] ?? 'Purwokerto';
-    final vehicleName =
-        widget.newRideData['vehicle']?['name'] ?? 'Mobil Avanza';
-    final vehiclePlate =
-        widget.newRideData['vehicle']?['plate_number'] ?? 'R 2424 MJ';
+
+    String vehicleName;
+    String vehiclePlate;
+
+    // For titip barang, use transportation type
+    if (bookingType == 'titip') {
+      final transportationType = (widget.newRideData['transportation_type'] ??
+              widget.newRideData['transportationType'] ??
+              widget.newRideData['transportation'] ??
+              '')
+          .toString()
+          .toLowerCase();
+
+      switch (transportationType) {
+        case 'kereta':
+          vehicleName = 'Kereta';
+          break;
+        case 'pesawat':
+          vehicleName = 'Pesawat';
+          break;
+        case 'bus':
+          vehicleName = 'Bus';
+          break;
+        default:
+          vehicleName = 'Transportasi Umum';
+      }
+      vehiclePlate = ''; // No plate for public transportation
+    } else {
+      // Get vehicle data from newRideData
+      final vehicleData = widget.newRideData['vehicle'] ??
+          widget.newRideData['kendaraan_mitra'];
+
+      if (vehicleData != null && vehicleData is Map) {
+        // Try to get vehicle name from database in order of priority
+        vehicleName = vehicleData['name']?.toString() ?? '';
+
+        // If name is empty, try brand + model
+        if (vehicleName.isEmpty) {
+          final brand = vehicleData['brand']?.toString() ?? '';
+          final model = vehicleData['model']?.toString() ?? '';
+          vehicleName = '$brand $model'.trim();
+        }
+
+        // If still empty, use vehicle_name or other fields
+        if (vehicleName.isEmpty) {
+          vehicleName = vehicleData['vehicle_name']?.toString() ??
+              vehicleData['merk']?.toString() ??
+              vehicleData['merek_kendaraan']?.toString() ??
+              '';
+        }
+
+        // Last resort fallback
+        if (vehicleName.isEmpty) {
+          vehicleName = bookingType == 'motor' ? 'Motor' : 'Mobil';
+        }
+
+        vehiclePlate = vehicleData['plate_number']?.toString() ??
+            vehicleData['plat_number']?.toString() ??
+            vehicleData['nomor_plat']?.toString() ??
+            'R 2424 MJ';
+      } else {
+        vehicleName = bookingType == 'motor' ? 'Motor' : 'Mobil';
+        vehiclePlate = 'R 2424 MJ';
+      }
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFF1E3A8A),
@@ -250,23 +313,25 @@ class _ReschedulePaymentDetailPageState
                                   color: Colors.grey[700],
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              Container(
-                                width: 4,
-                                height: 4,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[400],
-                                  shape: BoxShape.circle,
+                              if (vehiclePlate.isNotEmpty) ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  width: 4,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[400],
+                                    shape: BoxShape.circle,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                vehiclePlate,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.grey[700],
+                                const SizedBox(width: 8),
+                                Text(
+                                  vehiclePlate,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey[700],
+                                  ),
                                 ),
-                              ),
+                              ],
                             ],
                           ),
                           const SizedBox(height: 12),

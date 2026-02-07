@@ -9,25 +9,29 @@ class ChatService {
   /// Mendukung format lama (customerId/mitraId) dan format baru (participants)
   Stream<List<Map<String, dynamic>>> getConversations(
       int userId, String userRole) {
-    return _firestore
-        .collection('conversations')
-        .orderBy('last_message_at', descending: true)
-        .snapshots()
-        .map((snapshot) {
+    print('🔍 Getting conversations for userId: $userId, role: $userRole');
+    return _firestore.collection('conversations').snapshots().map((snapshot) {
+      print('📦 Received ${snapshot.docs.length} conversations from Firestore');
       final List<Map<String, dynamic>> allConversations = [];
 
       for (var doc in snapshot.docs) {
         final data = doc.data();
+        print('🔎 Checking doc ${doc.id}: ${data.keys}');
 
         // Format lama: customer-mitra conversation
         if (data.containsKey('customerId') || data.containsKey('mitraId')) {
           String userField = userRole == 'customer' ? 'customerId' : 'mitraId';
+          print(
+              '   Format lama: checking $userField == $userId (actual: ${data[userField]})');
           if (data[userField] == userId) {
+            print('   ✅ Match! Adding to list');
             allConversations.add({
               'id': doc.id,
               ...data,
               '_type': 'old_format', // marker for debugging
             });
+          } else {
+            print('   ❌ No match');
           }
         }
 
@@ -59,8 +63,8 @@ class ChatService {
               'id': doc.id,
               'customerName': otherUserName, // gunakan field yang sama
               'customerPhoto': otherUserPhoto,
-              'lastMessage': data['last_message'] ?? '',
-              'lastMessageAt': data['last_message_at'],
+              'lastMessage': data['lastMessage'] ?? data['last_message'] ?? '',
+              'lastMessageAt': data['lastMessageAt'] ?? data['last_message_at'],
               'unreadMitra':
                   0, // TODO: hitung unread dari messages subcollection
               'bookingType': tebenganType,
@@ -74,14 +78,15 @@ class ChatService {
 
       // Sort by last message time
       allConversations.sort((a, b) {
-        final aTime = a['lastMessageAt'] ?? a['last_message_at'];
-        final bTime = b['lastMessageAt'] ?? b['last_message_at'];
+        final aTime = a['lastMessageAt'];
+        final bTime = b['lastMessageAt'];
         if (aTime == null && bTime == null) return 0;
         if (aTime == null) return 1;
         if (bTime == null) return -1;
         return (bTime as Timestamp).compareTo(aTime as Timestamp);
       });
 
+      print('📋 Returning ${allConversations.length} conversations');
       return allConversations;
     });
   }
@@ -334,7 +339,7 @@ class ChatService {
     // Query semua conversations, filter di client side
     return _firestore
         .collection('conversations')
-        .orderBy('last_message_at', descending: true)
+        .orderBy('lastMessageAt', descending: true)
         .snapshots();
   }
 
@@ -372,8 +377,8 @@ class ChatService {
 
       // Update last message in conversation
       await _firestore.collection('conversations').doc(conversationId).update({
-        'last_message': text,
-        'last_message_at': FieldValue.serverTimestamp(),
+        'lastMessage': text,
+        'lastMessageAt': FieldValue.serverTimestamp(),
       });
 
       print('✅ Message sent successfully');
@@ -406,6 +411,44 @@ class ChatService {
       print('✅ Marked ${messagesSnapshot.docs.length} messages as read');
     } catch (e) {
       print('❌ Error marking messages as read: $e');
+    }
+  }
+
+  /// Mark booking as completed - triggers auto-delete after 24 hours
+  Future<void> markBookingCompleted(String conversationId) async {
+    try {
+      await _firestore.collection('conversations').doc(conversationId).update({
+        'booking_completed_at': FieldValue.serverTimestamp(),
+        'booking_status': 'completed',
+      });
+      print('✅ Booking marked as completed for conversation: $conversationId');
+    } catch (e) {
+      print('❌ Error marking booking as completed: $e');
+      rethrow;
+    }
+  }
+
+  /// Mark booking as completed by rideId (for cases where conversationId not known)
+  Future<void> markBookingCompletedByRide({
+    required int rideId,
+    required int customerId,
+    required int mitraId,
+  }) async {
+    try {
+      final querySnapshot = await _firestore
+          .collection('conversations')
+          .where('rideId', isEqualTo: rideId)
+          .where('customerId', isEqualTo: customerId)
+          .where('mitraId', isEqualTo: mitraId)
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        final conversationId = querySnapshot.docs.first.id;
+        await markBookingCompleted(conversationId);
+      }
+    } catch (e) {
+      print('❌ Error marking booking as completed by ride: $e');
     }
   }
 }

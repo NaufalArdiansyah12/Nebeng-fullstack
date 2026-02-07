@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../shared/api_config.dart';
+import '../shared/chat_service.dart';
 
 /// Ride Service - handles ride operations
 class RideService {
@@ -282,6 +283,9 @@ class RideService {
     required int bookingId,
     required String token,
     String bookingType = 'motor',
+    int? rideId,
+    int? customerId,
+    int? mitraId,
   }) async {
     String endpoint;
     if (bookingType == 'mobil') {
@@ -306,6 +310,21 @@ class RideService {
     if (resp.statusCode == 200) {
       final body = json.decode(resp.body);
       if (body is Map && body['success'] == true) {
+        // Mark conversation as completed for auto-delete after 24 hours
+        if (rideId != null && customerId != null && mitraId != null) {
+          try {
+            final chatService = ChatService();
+            await chatService.markBookingCompletedByRide(
+              rideId: rideId,
+              customerId: customerId,
+              mitraId: mitraId,
+            );
+          } catch (e) {
+            print('⚠️ Failed to mark conversation as completed: $e');
+            // Don't fail the whole operation if chat update fails
+          }
+        }
+
         return Map<String, dynamic>.from(body['data']);
       }
       throw Exception(body['message'] ?? 'Failed to complete trip');

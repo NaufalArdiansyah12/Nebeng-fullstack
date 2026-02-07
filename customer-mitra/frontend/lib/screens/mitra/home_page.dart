@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/api_service.dart';
+import '../../services/shared/notification_api_service.dart';
+import '../../services/shared/api_config.dart';
 import 'create_tebengan_motor/pages/create_ride_page.dart';
 import 'rating_review_page.dart';
 import 'riwayat_page.dart';
@@ -10,6 +12,7 @@ import 'titip_barang/pages/create_titip_barang_page.dart';
 import 'vehicles/vehicle_type_page.dart';
 import 'withdrawal/tarik_saldo_page.dart';
 import 'withdrawal/withdrawal_history_page.dart';
+import 'notification_page.dart';
 
 class MitraHomePage extends StatefulWidget {
   final VoidCallback? onOpenHistory;
@@ -30,10 +33,75 @@ class _MitraHomePageState extends State<MitraHomePage> {
   double _balance = 0.0;
   bool _isBalanceVisible = true;
 
+  // Verification status
+  String?
+      _verificationStatus; // 'not_submitted', 'pending', 'approved', 'rejected'
+  bool _isVerificationLoading = true;
+
+  // Notification unread count
+  int _unreadNotificationCount = 0;
+
+  // User profile data
+  String _userName = 'Mitra';
+  String? _userProfileImage;
+
   @override
   void initState() {
     super.initState();
     _loadData();
+    _checkVerificationStatus();
+    _loadUnreadNotificationCount();
+  }
+
+  Future<void> _checkVerificationStatus() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('api_token');
+
+      if (token != null) {
+        final result = await ApiService.getMitraVerificationStatus(token);
+        if (mounted) {
+          setState(() {
+            _verificationStatus = result['status'];
+            _isVerificationLoading = false;
+          });
+          print('Verification status loaded: $_verificationStatus'); // Debug
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _verificationStatus = 'not_submitted';
+            _isVerificationLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error checking verification status: $e'); // Debug
+      if (mounted) {
+        setState(() {
+          _verificationStatus = 'not_submitted';
+          _isVerificationLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadUnreadNotificationCount() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('api_token');
+
+      if (token != null) {
+        final count = await NotificationApiService.getUnreadCount(token: token);
+        if (mounted) {
+          setState(() {
+            _unreadNotificationCount = count;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading unread notification count: $e');
+    }
   }
 
   Future<void> _loadData() async {
@@ -45,6 +113,8 @@ class _MitraHomePageState extends State<MitraHomePage> {
 
       if (token != null && token.isNotEmpty) {
         final profile = await ApiService.getProfile(token: token);
+        print('Profile response: $profile'); // Debug
+
         Map<String, dynamic> user = {};
         if (profile['success'] == true && profile['data'] != null) {
           user = profile['data']['user'] ?? profile['data'];
@@ -52,6 +122,33 @@ class _MitraHomePageState extends State<MitraHomePage> {
           user = profile['data'];
         } else {
           user = profile;
+        }
+
+        print('User data extracted: $user'); // Debug
+        print('User name: ${user['name']}'); // Debug
+
+        // Save user profile data
+        if (mounted) {
+          setState(() {
+            _userName = user['name'] ?? user['full_name'] ?? 'Mitra';
+            _userProfileImage = user['profile_photo'] ??
+                user['profile_image'] ??
+                user['profile_picture'] ??
+                user['photo'];
+
+            // Normalize profile_photo to absolute URL if needed
+            if (_userProfileImage != null && _userProfileImage!.isNotEmpty) {
+              if (!_userProfileImage!.startsWith('http')) {
+                final base = ApiConfig.baseUrl;
+                _userProfileImage = _userProfileImage!.startsWith('/')
+                    ? '$base$_userProfileImage'
+                    : '$base/$_userProfileImage';
+              }
+            }
+
+            print('Set _userName to: $_userName'); // Debug
+            print('Set _userProfileImage to: $_userProfileImage'); // Debug
+          });
         }
 
         // Fetch balance
@@ -76,7 +173,6 @@ class _MitraHomePageState extends State<MitraHomePage> {
         } catch (e) {
           // ignore error, keep default balance
         }
-
 
         // Try to fetch driver rating stats via ratings API (preferred)
         final id = user['id'] ?? user['user_id'] ?? user['mitra_id'] ?? userId;
@@ -223,26 +319,32 @@ class _MitraHomePageState extends State<MitraHomePage> {
                       border: Border.all(color: Colors.white, width: 2),
                     ),
                     child: ClipOval(
-                      child: Image.asset(
-                        'assets/profile.png',
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return const Icon(
-                            Icons.person,
-                            size: 30,
-                            color: Color(0xFF10367d),
-                          );
-                        },
-                      ),
+                      child: _userProfileImage != null
+                          ? Image.network(
+                              _userProfileImage!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Icon(
+                                  Icons.person,
+                                  size: 30,
+                                  color: Color(0xFF10367d),
+                                );
+                              },
+                            )
+                          : const Icon(
+                              Icons.person,
+                              size: 30,
+                              color: Color(0xFF10367d),
+                            ),
                     ),
                   ),
                   const SizedBox(width: 12),
                   // Name
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        const Text(
                           'Halo,',
                           style: TextStyle(
                             fontSize: 13,
@@ -250,28 +352,75 @@ class _MitraHomePageState extends State<MitraHomePage> {
                           ),
                         ),
                         Text(
-                          'Kamado Tanjiro',
-                          style: TextStyle(
+                          _userName,
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
                         ),
                       ],
                     ),
                   ),
                   // Notification icon
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.notifications_outlined,
-                      color: Colors.white,
-                      size: 22,
+                  GestureDetector(
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const MitraNotificationPage(),
+                        ),
+                      );
+                      // Reload unread count after returning from notification page
+                      _loadUnreadNotificationCount();
+                    },
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.notifications_outlined,
+                            color: Colors.white,
+                            size: 22,
+                          ),
+                        ),
+                        if (_unreadNotificationCount > 0)
+                          Positioned(
+                            right: -2,
+                            top: -2,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                              constraints: const BoxConstraints(
+                                minWidth: 18,
+                                minHeight: 18,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  _unreadNotificationCount > 99
+                                      ? '99+'
+                                      : _unreadNotificationCount.toString(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ],
@@ -301,7 +450,7 @@ class _MitraHomePageState extends State<MitraHomePage> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 const Text(
-                                  'Pendapatan Hari Ini',
+                                  'Saldo Anda Saat Ini',
                                   style: TextStyle(
                                     fontSize: 14,
                                     color: Colors.white,
@@ -472,6 +621,10 @@ class _MitraHomePageState extends State<MitraHomePage> {
                               icon: Icons.motorcycle,
                               label: 'Nebeng Motor',
                               onTap: () {
+                                if (!_canAccessFeatures) {
+                                  _showVerificationRequiredDialog();
+                                  return;
+                                }
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
@@ -486,6 +639,10 @@ class _MitraHomePageState extends State<MitraHomePage> {
                               icon: Icons.directions_car,
                               label: 'Nebeng Mobil',
                               onTap: () {
+                                if (!_canAccessFeatures) {
+                                  _showVerificationRequiredDialog();
+                                  return;
+                                }
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
@@ -500,6 +657,10 @@ class _MitraHomePageState extends State<MitraHomePage> {
                               icon: Icons.inventory_2_outlined,
                               label: 'Nebeng Barang',
                               onTap: () {
+                                if (!_canAccessFeatures) {
+                                  _showVerificationRequiredDialog();
+                                  return;
+                                }
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
@@ -514,6 +675,10 @@ class _MitraHomePageState extends State<MitraHomePage> {
                               icon: Icons.local_shipping_outlined,
                               label: 'Titip\nBarang',
                               onTap: () {
+                                if (!_canAccessFeatures) {
+                                  _showVerificationRequiredDialog();
+                                  return;
+                                }
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
@@ -714,237 +879,432 @@ class _MitraHomePageState extends State<MitraHomePage> {
 
                     const SizedBox(height: 16),
 
-                    // Booking Card (dynamic upcoming rides)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Container(
-                        padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(14),
-                          border:
-                              Border.all(color: Color(0xFFF0F0F0), width: 1),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.12),
-                              blurRadius: 14,
-                              offset: const Offset(0, 6),
+                    // Booking Cards (dynamic upcoming rides)
+                    _isLoading
+                        ? Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Container(
+                              height: 120,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                    color: const Color(0xFFE8E8E8), width: 1),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.04),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: const Center(
+                                child: CircularProgressIndicator(
+                                  color: Color(0xFF10367d),
+                                ),
+                              ),
                             ),
-                          ],
-                        ),
-                        child: _isLoading
-                            ? SizedBox(
-                                height: 80,
-                                child: Center(
-                                    child: CircularProgressIndicator(
-                                  color: const Color(0xFF10367d),
-                                )),
+                          )
+                        : _upcomingRides.isEmpty
+                            ? Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 16),
+                                child: Container(
+                                  height: 120,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                        color: const Color(0xFFE8E8E8),
+                                        width: 1),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.04),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Center(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.event_busy_outlined,
+                                          size: 40,
+                                          color: Colors.grey[400],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Tidak ada tebengan hari ini',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey[600],
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                               )
-                            : _upcomingRides.isEmpty
-                                ? SizedBox(
-                                    height: 80,
-                                    child: Center(
-                                      child: Text(
-                                        'Tidak ada tebengan hari ini',
-                                        style: TextStyle(
-                                          color: Colors.grey[600],
+                            : Column(
+                                children:
+                                    _upcomingRides.asMap().entries.map((entry) {
+                                  final index = entry.key;
+                                  final ride = entry.value;
+                                  final r = ride as Map<String, dynamic>;
+                                  final date =
+                                      (r['departure_date'] ?? r['date'] ?? '')
+                                          .toString();
+                                  final time =
+                                      (r['departure_time'] ?? r['time'] ?? '')
+                                          .toString();
+                                  final service = (r['ride_type'] ??
+                                          r['service_type'] ??
+                                          'Nebeng')
+                                      .toString();
+                                  final origin = (r['origin_location'] is Map)
+                                      ? (r['origin_location']['name'] ?? '')
+                                      : (r['origin'] ?? '');
+                                  final destination = (r['destination_location']
+                                          is Map)
+                                      ? (r['destination_location']['name'] ??
+                                          '')
+                                      : (r['destination'] ?? '');
+                                  final available = r['available_seats'] ??
+                                      r['seats'] ??
+                                      null;
+                                  // derive status from multiple possible shapes returned by API
+                                  dynamic rawStatusVal = r['status'] ??
+                                      ((r['ride'] is Map)
+                                          ? r['ride']['status']
+                                          : null) ??
+                                      r['ride_status'] ??
+                                      r['rideStatus'];
+                                  final rawStatus = (rawStatusVal ?? '')
+                                      .toString()
+                                      .toLowerCase();
+                                  String statusLabel;
+                                  Color badgeBg;
+                                  Color badgeText;
+
+                                  switch (rawStatus) {
+                                    case 'active':
+                                      // Show DB status as 'Aktif'. If seats available, append count.
+                                      statusLabel = 'Aktif';
+                                      if (available != null &&
+                                          (available is num
+                                              ? available > 0
+                                              : available.toString() != '0')) {
+                                        statusLabel =
+                                            'Aktif · ${available.toString()} tersisa';
+                                      }
+                                      badgeBg = const Color(0xFFFFF4EA);
+                                      badgeText = const Color(0xFFFF8C00);
+                                      break;
+                                    case 'completed':
+                                      statusLabel = 'Selesai';
+                                      badgeBg = const Color(0xFFE8F5E9);
+                                      badgeText = const Color(0xFF2E7D32);
+                                      break;
+                                    case 'cancelled':
+                                      statusLabel = 'Dibatalkan';
+                                      badgeBg = const Color(0xFFF5F5F5);
+                                      badgeText = const Color(0xFF757575);
+                                      break;
+                                    case 'full':
+                                      statusLabel = 'Penuh';
+                                      badgeBg = const Color(0xFFFFE6E6);
+                                      badgeText = const Color(0xFFD32F2F);
+                                      break;
+                                    default:
+                                      // Fallback: if status empty, show availability; otherwise capitalize raw status
+                                      if (rawStatus.isEmpty) {
+                                        if (available != null &&
+                                            (available is num
+                                                ? available > 0
+                                                : available.toString() !=
+                                                    '0')) {
+                                          statusLabel =
+                                              '${available.toString()} tersisa';
+                                          badgeBg = const Color(0xFFFFF4EA);
+                                          badgeText = const Color(0xFFFF8C00);
+                                        } else {
+                                          statusLabel = 'Kosong';
+                                          badgeBg = const Color(0xFFFFE6E6);
+                                          badgeText = const Color(0xFFD32F2F);
+                                        }
+                                      } else {
+                                        statusLabel =
+                                            rawStatus[0].toUpperCase() +
+                                                rawStatus.substring(1);
+                                        badgeBg = const Color(0xFFF5F5F5);
+                                        badgeText = const Color(0xFF757575);
+                                      }
+                                  }
+
+                                  // Determine service icon and color
+                                  IconData serviceIcon;
+                                  Color serviceColor;
+                                  switch (service.toLowerCase()) {
+                                    case 'motor':
+                                    case 'nebeng motor':
+                                      serviceIcon = Icons.two_wheeler;
+                                      serviceColor = const Color(0xFF10367d);
+                                      break;
+                                    case 'mobil':
+                                    case 'nebeng mobil':
+                                      serviceIcon = Icons.directions_car;
+                                      serviceColor = const Color(0xFF10367d);
+                                      break;
+                                    case 'barang':
+                                    case 'nebeng barang':
+                                      serviceIcon = Icons.inventory_2_outlined;
+                                      serviceColor = const Color(0xFF10367d);
+                                      break;
+                                    case 'titip barang':
+                                      serviceIcon =
+                                          Icons.local_shipping_outlined;
+                                      serviceColor = const Color(0xFF10367d);
+                                      break;
+                                    default:
+                                      serviceIcon = Icons.directions;
+                                      serviceColor = const Color(0xFF10367d);
+                                  }
+
+                                  return Padding(
+                                    padding: EdgeInsets.only(
+                                      left: 16,
+                                      right: 16,
+                                      bottom: index < _upcomingRides.length - 1
+                                          ? 12
+                                          : 0,
+                                    ),
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: const Color(0xFFE8E8E8),
+                                          width: 1,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color:
+                                                Colors.black.withOpacity(0.04),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(16),
+                                        child: Material(
+                                          color: Colors.transparent,
+                                          child: InkWell(
+                                            onTap: () {
+                                              // Handle card tap - could navigate to ride details
+                                            },
+                                            child: Padding(
+                                              padding: const EdgeInsets.all(16),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  // Header: Date, Time, Service Type, and Status
+                                                  Row(
+                                                    children: [
+                                                      // Service Icon
+                                                      Container(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .all(8),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color: serviceColor
+                                                              .withOpacity(0.1),
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                        ),
+                                                        child: Icon(
+                                                          serviceIcon,
+                                                          size: 20,
+                                                          color: serviceColor,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 12),
+                                                      Expanded(
+                                                        child: Column(
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .start,
+                                                          children: [
+                                                            Text(
+                                                              service,
+                                                              style:
+                                                                  const TextStyle(
+                                                                fontSize: 14,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w600,
+                                                                color: Color(
+                                                                    0xFF1a1a1a),
+                                                              ),
+                                                            ),
+                                                            const SizedBox(
+                                                                height: 2),
+                                                            Text(
+                                                              _formatHeaderDate(
+                                                                  date, time),
+                                                              style: TextStyle(
+                                                                fontSize: 12,
+                                                                color: Colors
+                                                                    .grey[600],
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                      // Status Badge
+                                                      Container(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                          horizontal: 12,
+                                                          vertical: 6,
+                                                        ),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color: badgeBg,
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(20),
+                                                        ),
+                                                        child: Text(
+                                                          statusLabel,
+                                                          style: TextStyle(
+                                                            fontSize: 11,
+                                                            color: badgeText,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+
+                                                  const SizedBox(height: 16),
+
+                                                  // Route: Origin to Destination
+                                                  Row(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      // Route indicator
+                                                      Column(
+                                                        children: [
+                                                          Container(
+                                                            width: 10,
+                                                            height: 10,
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              color: const Color(
+                                                                  0xFF10367d),
+                                                              shape: BoxShape
+                                                                  .circle,
+                                                              border:
+                                                                  Border.all(
+                                                                color: const Color(
+                                                                    0xFF10367d),
+                                                                width: 2,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                          Container(
+                                                            width: 2,
+                                                            height: 32,
+                                                            color: const Color(
+                                                                0xFFE0E0E0),
+                                                          ),
+                                                          Container(
+                                                            width: 10,
+                                                            height: 10,
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              color:
+                                                                  Colors.white,
+                                                              shape: BoxShape
+                                                                  .circle,
+                                                              border:
+                                                                  Border.all(
+                                                                color: const Color(
+                                                                    0xFF10367d),
+                                                                width: 2,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      const SizedBox(width: 12),
+                                                      // Origin and Destination
+                                                      Expanded(
+                                                        child: Column(
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .start,
+                                                          children: [
+                                                            Text(
+                                                              origin.toString(),
+                                                              style:
+                                                                  const TextStyle(
+                                                                fontSize: 15,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w600,
+                                                                color: Color(
+                                                                    0xFF1a1a1a),
+                                                              ),
+                                                              maxLines: 2,
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .ellipsis,
+                                                            ),
+                                                            const SizedBox(
+                                                                height: 16),
+                                                            Text(
+                                                              destination
+                                                                  .toString(),
+                                                              style: TextStyle(
+                                                                fontSize: 15,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w600,
+                                                                color: Colors
+                                                                    .grey[700],
+                                                              ),
+                                                              maxLines: 2,
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .ellipsis,
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  )
-                                : Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: _upcomingRides.map((ride) {
-                                      final r = ride as Map<String, dynamic>;
-                                      final date = (r['departure_date'] ??
-                                              r['date'] ??
-                                              '')
-                                          .toString();
-                                      final time = (r['departure_time'] ??
-                                              r['time'] ??
-                                              '')
-                                          .toString();
-                                      final service = (r['ride_type'] ??
-                                              r['service_type'] ??
-                                              'Nebeng')
-                                          .toString();
-                                      final origin = (r['origin_location']
-                                              is Map)
-                                          ? (r['origin_location']['name'] ?? '')
-                                          : (r['origin'] ?? '');
-                                      final destination =
-                                          (r['destination_location'] is Map)
-                                              ? (r['destination_location']
-                                                      ['name'] ??
-                                                  '')
-                                              : (r['destination'] ?? '');
-                                      final available = r['available_seats'] ??
-                                          r['seats'] ??
-                                          null;
-                                      // derive status from multiple possible shapes returned by API
-                                      dynamic rawStatusVal = r['status'] ??
-                                          ((r['ride'] is Map)
-                                              ? r['ride']['status']
-                                              : null) ??
-                                          r['ride_status'] ??
-                                          r['rideStatus'];
-                                      final rawStatus = (rawStatusVal ?? '')
-                                          .toString()
-                                          .toLowerCase();
-                                      String statusLabel;
-                                      Color badgeBg;
-                                      Color badgeText;
-
-                                      switch (rawStatus) {
-                                        case 'active':
-                                          // Show DB status as 'Aktif'. If seats available, append count.
-                                          statusLabel = 'Aktif';
-                                          if (available != null &&
-                                              (available is num
-                                                  ? available > 0
-                                                  : available.toString() !=
-                                                      '0')) {
-                                            statusLabel =
-                                                'Aktif · ${available.toString()} tersisa';
-                                          }
-                                          badgeBg = const Color(0xFFFFF4EA);
-                                          badgeText = const Color(0xFFFF8C00);
-                                          break;
-                                        case 'completed':
-                                          statusLabel = 'Selesai';
-                                          badgeBg = const Color(0xFFE8F5E9);
-                                          badgeText = const Color(0xFF2E7D32);
-                                          break;
-                                        case 'cancelled':
-                                          statusLabel = 'Dibatalkan';
-                                          badgeBg = const Color(0xFFF5F5F5);
-                                          badgeText = const Color(0xFF757575);
-                                          break;
-                                        case 'full':
-                                          statusLabel = 'Penuh';
-                                          badgeBg = const Color(0xFFFFE6E6);
-                                          badgeText = const Color(0xFFD32F2F);
-                                          break;
-                                        default:
-                                          // Fallback: if status empty, show availability; otherwise capitalize raw status
-                                          if (rawStatus.isEmpty) {
-                                            if (available != null &&
-                                                (available is num
-                                                    ? available > 0
-                                                    : available.toString() !=
-                                                        '0')) {
-                                              statusLabel =
-                                                  '${available.toString()} tersisa';
-                                              badgeBg = const Color(0xFFFFF4EA);
-                                              badgeText =
-                                                  const Color(0xFFFF8C00);
-                                            } else {
-                                              statusLabel = 'Kosong';
-                                              badgeBg = const Color(0xFFFFE6E6);
-                                              badgeText =
-                                                  const Color(0xFFD32F2F);
-                                            }
-                                          } else {
-                                            statusLabel =
-                                                rawStatus[0].toUpperCase() +
-                                                    rawStatus.substring(1);
-                                            badgeBg = const Color(0xFFF5F5F5);
-                                            badgeText = const Color(0xFF757575);
-                                          }
-                                      }
-
-                                      return Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Expanded(
-                                                child: Text(
-                                                  '${_formatHeaderDate(date, time)} | $service',
-                                                  style: const TextStyle(
-                                                    fontSize: 12,
-                                                    color: Color(0xFF666666),
-                                                  ),
-                                                ),
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                  horizontal: 10,
-                                                  vertical: 4,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color:
-                                                      const Color(0xFFFFE4CC),
-                                                  borderRadius:
-                                                      BorderRadius.circular(12),
-                                                ),
-                                                child: Text(
-                                                  statusLabel,
-                                                  style: const TextStyle(
-                                                    fontSize: 11,
-                                                    color: Color(0xFFFF8C00),
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 12),
-                                          Row(
-                                            children: [
-                                              Container(
-                                                width: 8,
-                                                height: 8,
-                                                decoration: const BoxDecoration(
-                                                  color: Color(0xFF10367d),
-                                                  shape: BoxShape.circle,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Text(
-                                                origin.toString(),
-                                                style: const TextStyle(
-                                                  fontSize: 15,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: Color(0xFF1a1a1a),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Padding(
-                                            padding:
-                                                const EdgeInsets.only(left: 4),
-                                            child: Container(
-                                              width: 2,
-                                              height: 20,
-                                              color: const Color(0xFFE0E0E0),
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Row(
-                                            children: [
-                                              const SizedBox(width: 8),
-                                              Text(
-                                                destination.toString(),
-                                                style: const TextStyle(
-                                                  fontSize: 13,
-                                                  color: Color(0xFF666666),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 12),
-                                        ],
-                                      );
-                                    }).toList(),
-                                  ),
-                      ),
-                    ),
+                                  );
+                                }).toList(),
+                              ),
 
                     const SizedBox(height: 80),
                   ],
@@ -1050,6 +1410,154 @@ class _MitraHomePageState extends State<MitraHomePage> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildVerificationWarningBanner() {
+    Color bgColor;
+    Color iconColor;
+    String title;
+    String message;
+    IconData icon;
+
+    switch (_verificationStatus) {
+      case 'pending':
+        bgColor = const Color(0xFFFEF3C7);
+        iconColor = const Color(0xFFF59E0B);
+        icon = Icons.pending_outlined;
+        title = 'Dokumen Sedang Diverifikasi';
+        message =
+            'Mohon tunggu, dokumen Anda sedang direview oleh tim kami (1-3 hari kerja).';
+        break;
+      case 'rejected':
+        bgColor = const Color(0xFFFEE2E2);
+        iconColor = const Color(0xFFEF4444);
+        icon = Icons.error_outline;
+        title = 'Verifikasi Ditolak';
+        message = 'Dokumen Anda ditolak. Silakan lengkapi dokumen kembali.';
+        break;
+      case 'not_submitted':
+      default:
+        bgColor = const Color(0xFFFEE2E2);
+        iconColor = const Color(0xFFEF4444);
+        icon = Icons.warning_amber_outlined;
+        title = 'Kamu belum melakukan verifikasi dokumen';
+        message = 'Ayo verifikasi sekarang untuk mulai menerima tebengan!';
+    }
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: iconColor.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: iconColor, size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: iconColor.withOpacity(0.9),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  message,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: iconColor.withOpacity(0.8),
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  bool get _canAccessFeatures {
+    print(
+        'Can access features check: $_verificationStatus == approved? ${_verificationStatus == 'approved'}'); // Debug
+    return _verificationStatus == 'approved';
+  }
+
+  void _showVerificationRequiredDialog() {
+    print(
+        'Showing verification required dialog. Status: $_verificationStatus'); // Debug
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.lock_outline,
+                size: 60,
+                color: Color(0xFFEF4444),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Verifikasi Diperlukan',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                _verificationStatus == 'pending'
+                    ? 'Dokumen Anda sedang dalam proses review. Mohon tunggu approval dari tim kami.'
+                    : 'Anda harus menyelesaikan verifikasi dokumen terlebih dahulu untuk mengakses fitur ini.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.black54,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1E40AF),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    'Mengerti',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

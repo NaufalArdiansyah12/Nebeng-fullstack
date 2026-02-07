@@ -14,6 +14,7 @@ class SimVerificationPage extends StatefulWidget {
 class _SimVerificationPageState extends State<SimVerificationPage> {
   final _formKey = GlobalKey<FormState>();
   final _simNumberController = TextEditingController();
+  final _namaLengkapController = TextEditingController();
   final _expiryDateController = TextEditingController();
 
   File? _simPhoto;
@@ -25,6 +26,7 @@ class _SimVerificationPageState extends State<SimVerificationPage> {
   @override
   void dispose() {
     _simNumberController.dispose();
+    _namaLengkapController.dispose();
     _expiryDateController.dispose();
     super.dispose();
   }
@@ -92,6 +94,7 @@ class _SimVerificationPageState extends State<SimVerificationPage> {
       final prefs = await SharedPreferences.getInstance();
       final simData = {
         'sim_number': _simNumberController.text,
+        'nama_lengkap': _namaLengkapController.text,
         'sim_type': _selectedSimType!,
         'sim_expiry_date': formattedDate,
         'sim_photo': _simPhoto!.path,
@@ -153,6 +156,18 @@ class _SimVerificationPageState extends State<SimVerificationPage> {
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'Nomor SIM harus diisi';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            _buildTextField(
+              controller: _namaLengkapController,
+              label: 'Nama Lengkap',
+              hint: 'Masukkan nama lengkap sesuai SIM',
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Nama lengkap harus diisi';
                 }
                 return null;
               },

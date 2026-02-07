@@ -7,6 +7,7 @@ import 'ktp_verification_page.dart';
 import 'sim_verification_page.dart';
 import 'skck_verification_page.dart';
 import 'bank_verification_page.dart';
+import 'verification_success_page.dart';
 
 class VerificationDocumentsPage extends StatefulWidget {
   const VerificationDocumentsPage({Key? key}) : super(key: key);
@@ -125,6 +126,7 @@ class _VerificationDocumentsPageState extends State<VerificationDocumentsPage> {
       final simResult = await ApiService.submitSimVerification(
         token: token,
         simNumber: simData!['sim_number'],
+        namaLengkap: simData!['nama_lengkap'] ?? '',
         simType: simData!['sim_type'],
         simExpiryDate: simData!['sim_expiry_date'],
         simPhotoPath: simData!['sim_photo'],
@@ -175,13 +177,12 @@ class _VerificationDocumentsPageState extends State<VerificationDocumentsPage> {
       await prefs.remove('temp_bank_data');
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Semua dokumen berhasil dikirim!'),
-            backgroundColor: Colors.green,
+        // Navigate to success page
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => const VerificationSuccessPage(),
           ),
         );
-        Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {

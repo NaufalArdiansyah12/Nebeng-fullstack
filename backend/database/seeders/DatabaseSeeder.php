@@ -21,6 +21,9 @@ class DatabaseSeeder extends Seeder
         // Seed default locations
         $this->call(\Database\Seeders\LocationSeeder::class);
 
+        // Seed PosMitra users
+        $this->call(\Database\Seeders\PosMitraUserSeeder::class);
+
         // Seed vehicles for mitra
         $this->call(\Database\Seeders\VehicleSeeder::class);
 

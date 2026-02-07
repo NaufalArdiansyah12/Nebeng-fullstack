@@ -17,4 +17,12 @@ class Location extends Model
         'longitude',
         'created_by_role',
     ];
+
+    /**
+     * Get all PosMitra users assigned to this location
+     */
+    public function posMitraUsers()
+    {
+        return $this->hasMany(PosMitraUser::class, 'location_id');
+    }
 }

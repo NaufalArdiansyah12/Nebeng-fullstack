@@ -178,11 +178,17 @@ class ApiService {
     required int bookingId,
     required String token,
     String bookingType = 'motor',
+    int? rideId,
+    int? customerId,
+    int? mitraId,
   }) =>
       RideService.completeTrip(
         bookingId: bookingId,
         token: token,
         bookingType: bookingType,
+        rideId: rideId,
+        customerId: customerId,
+        mitraId: mitraId,
       );
 
   // ========== Booking Service Methods ==========
@@ -451,6 +457,7 @@ class ApiService {
   static Future<Map<String, dynamic>> submitSimVerification({
     required String token,
     required String simNumber,
+    required String namaLengkap,
     required String simType,
     required String simExpiryDate,
     required String simPhotoPath,
@@ -458,6 +465,7 @@ class ApiService {
       VerificationService.submitSimVerification(
         token: token,
         simNumber: simNumber,
+        namaLengkap: namaLengkap,
         simType: simType,
         simExpiryDate: simExpiryDate,
         simPhotoPath: simPhotoPath,
@@ -541,6 +549,7 @@ class ApiService {
   static Future<Map<String, dynamic>> uploadSim({
     required String token,
     required String simNumber,
+    required String namaLengkap,
     required String expiryDate,
     required dynamic simPhoto, // Can be File or null
   }) async {
@@ -550,6 +559,7 @@ class ApiService {
     return submitSimVerification(
       token: token,
       simNumber: simNumber,
+      namaLengkap: namaLengkap,
       simType: 'C', // Default to C, can be parameterized if needed
       simExpiryDate: expiryDate,
       simPhotoPath: simPhoto.path,
@@ -559,6 +569,7 @@ class ApiService {
   static Future<Map<String, dynamic>> updateSim({
     required String token,
     required String simNumber,
+    required String namaLengkap,
     required String expiryDate,
     required String simType,
     dynamic simPhoto,
@@ -566,6 +577,7 @@ class ApiService {
     return VerificationService.updateSimVerification(
       token: token,
       simNumber: simNumber,
+      namaLengkap: namaLengkap,
       simType: simType,
       simExpiryDate: expiryDate,
       simPhotoPath: simPhoto is String

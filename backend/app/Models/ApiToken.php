@@ -11,6 +11,7 @@ class ApiToken extends Model
 
     protected $fillable = [
         'user_id',
+        'user_type',
         'token',
         'expires_at',
     ];
@@ -20,5 +21,21 @@ class ApiToken extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function posMitraUser()
+    {
+        return $this->belongsTo(PosMitraUser::class, 'user_id');
+    }
+
+    /**
+     * Get the actual user model based on user_type
+     */
+    public function getAuthenticatedUser()
+    {
+        if ($this->user_type === 'posmitra') {
+            return $this->posMitraUser;
+        }
+        return $this->user;
     }
 }

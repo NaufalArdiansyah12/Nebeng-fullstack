@@ -599,12 +599,25 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
       String createdBookingNumber = widget.bookingNumber;
       int? createdBookingId;
       try {
+        // Determine correct rideType based on trip source
+        // If trip has rideSource='titip', use 'titip', otherwise use widget.rideType
+        final correctRideType =
+            widget.trip.rideSource == 'titip' ? 'titip' : widget.rideType;
+
+        // Debug prints
+        print('🔍 DEBUG BOOKING:');
+        print('   Trip ID: ${widget.trip.id}');
+        print('   Trip rideSource: ${widget.trip.rideSource}');
+        print('   Trip transportation: ${widget.trip.transportation}');
+        print('   Widget rideType: ${widget.rideType}');
+        print('   Correct rideType: $correctRideType');
+
         final booking = await ApiService.createBooking(
           rideId: int.tryParse(widget.trip.id) ?? 1,
           userId: userId,
           seats: widget.totalPassengers,
           bookingNumber: widget.bookingNumber,
-          rideType: widget.rideType,
+          rideType: correctRideType,
           photoFilePath: widget.photoFile?.path,
           weight: widget.weight,
           description: widget.description,
@@ -637,7 +650,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
             final userPhone = prefs.getString('phone') ?? '';
             await ChatHelper.createConversationAfterBooking(
               rideId: int.tryParse(widget.trip.id) ?? 1,
-              bookingType: widget.rideType,
+              bookingType: widget.trip.rideSource ?? widget.rideType,
               customerData: {
                 'id': userId,
                 'name': userName,

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Vehicle;
+use App\Services\MitraNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -319,6 +320,10 @@ class VehicleController extends Controller
             'rejection_reason' => null,
         ]);
 
+        // Send notification to mitra
+        $vehicle->load('user');
+        MitraNotificationService::sendVehicleApprovedNotification($vehicle);
+
         return response()->json([
             'success' => true,
             'message' => 'Vehicle approved successfully',
@@ -388,6 +393,10 @@ class VehicleController extends Controller
             'approved_by' => $user->id,
             'rejection_reason' => $request->rejection_reason,
         ]);
+
+        // Send notification to mitra
+        $vehicle->load('user');
+        MitraNotificationService::sendVehicleRejectedNotification($vehicle, $request->rejection_reason);
 
         return response()->json([
             'success' => true,
