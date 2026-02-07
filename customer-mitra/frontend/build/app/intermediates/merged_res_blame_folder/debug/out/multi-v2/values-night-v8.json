@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.nebeng.app-mergeDebugResources-28:/values-night-v8/values-night-v8.xml",
+            "outputFile": "com.example.nebeng.app-mergeDebugResources-31:/values-night-v8/values-night-v8.xml",
             "map": [
                 {
                     "source": "/home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/res/values-night/styles.xml",

@@ -6,7 +6,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../services/api_service.dart';
 import '../../../widgets/custom_calendar_widget.dart';
-import '../barang_umum/pages/penerima_picker_page.dart';
 import 'ubah_jadwal_list_page.dart';
 
 class UbahJadwalPage extends StatefulWidget {
@@ -32,9 +31,9 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
     'large',
   ];
   final Map<String, String> _barangSizeDescriptions = {
-    'small': 'max_5kg',
-    'medium': 'max_10kg',
-    'large': 'max_20kg',
+    'small': 'Maksimal 5 kg',
+    'medium': 'Maksimal 10 kg',
+    'large': 'Maksimal 20 kg',
   };
 
   final ImagePicker _picker = ImagePicker();
@@ -63,15 +62,18 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
   }
 
   void _showPenerimaPicker() async {
+    final nameController = TextEditingController(text: _dataPenerima);
+    final phoneController = TextEditingController();
+
     final result = await showModalBottomSheet<Map<String, String>>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.75,
-        minChildSize: 0.5,
-        maxChildSize: 0.9,
-        builder: (context, scrollController) => Container(
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: Container(
           decoration: const BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.only(
@@ -79,9 +81,113 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
               topRight: Radius.circular(20),
             ),
           ),
-          child: PenerimaPickerPage(
-            currentPenerima: _dataPenerima,
-            scrollController: scrollController,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Colors.black),
+                    onPressed: () => Navigator.pop(context),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Data Penerima',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Nama Penerima',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(
+                  hintText: 'Masukkan nama penerima',
+                  hintStyle: TextStyle(color: Colors.grey[400]),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  contentPadding: const EdgeInsets.all(16),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'No. Telepon',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: phoneController,
+                keyboardType: TextInputType.phone,
+                decoration: InputDecoration(
+                  hintText: 'Masukkan nomor telepon',
+                  hintStyle: TextStyle(color: Colors.grey[400]),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  contentPadding: const EdgeInsets.all(16),
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    if (nameController.text.trim().isNotEmpty) {
+                      Navigator.pop(context, {
+                        'name': nameController.text.trim(),
+                        'phone': phoneController.text.trim(),
+                      });
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1E40AF),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Simpan',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -327,17 +433,63 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
 
     String vehicle = '';
     String plate = '';
-    if (ride['kendaraan_mitra'] is Map && ride['kendaraan_mitra'] != null) {
-      final kendaraan = ride['kendaraan_mitra'];
-      vehicle = (kendaraan['brand'] ?? '') + ' ' + (kendaraan['model'] ?? '');
-      vehicle = vehicle.trim();
-      if (vehicle.isEmpty) {
-        vehicle = kendaraan['name'] ??
-            (bookingType == 'motor' ? 'Yamaha NMAX' : 'Mobil Avanza');
+
+    // For titip barang, use transportation type instead of vehicle
+    if (bookingType == 'titip') {
+      final transportationType = (ride['transportation_type'] ??
+              ride['transportationType'] ??
+              ride['transportation'] ??
+              '')
+          .toString()
+          .toLowerCase();
+
+      switch (transportationType) {
+        case 'kereta':
+          vehicle = 'Kereta';
+          break;
+        case 'pesawat':
+          vehicle = 'Pesawat';
+          break;
+        case 'bus':
+          vehicle = 'Bus';
+          break;
+        default:
+          vehicle = 'Transportasi Umum';
       }
-      plate = kendaraan['plate_number'] ?? 'B 5678 ABC';
+      plate = ''; // No plate for public transportation
+    } else if (ride['kendaraan_mitra'] is Map &&
+        ride['kendaraan_mitra'] != null) {
+      final kendaraan = ride['kendaraan_mitra'];
+
+      // Try to get vehicle name from database in order of priority
+      vehicle = kendaraan['name']?.toString() ?? '';
+
+      // If name is empty, try brand + model
+      if (vehicle.isEmpty) {
+        final brand = kendaraan['brand']?.toString() ?? '';
+        final model = kendaraan['model']?.toString() ?? '';
+        vehicle = '$brand $model'.trim();
+      }
+
+      // If still empty, use vehicle_name or other fields
+      if (vehicle.isEmpty) {
+        vehicle = kendaraan['vehicle_name']?.toString() ??
+            kendaraan['merk']?.toString() ??
+            kendaraan['merek_kendaraan']?.toString() ??
+            '';
+      }
+
+      // Last resort fallback
+      if (vehicle.isEmpty) {
+        vehicle = bookingType == 'motor' ? 'Motor' : 'Mobil';
+      }
+
+      plate = kendaraan['plate_number']?.toString() ??
+          kendaraan['plat_number']?.toString() ??
+          kendaraan['nomor_plat']?.toString() ??
+          'B 5678 ABC';
     } else {
-      vehicle = bookingType == 'motor' ? 'Yamaha NMAX' : 'Mobil Avanza';
+      vehicle = bookingType == 'motor' ? 'Motor' : 'Mobil';
       plate = 'B 5678 ABC';
     }
 
@@ -491,7 +643,11 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
                             child: Icon(
                               bookingType == 'motor'
                                   ? Icons.two_wheeler
-                                  : Icons.directions_car,
+                                  : bookingType == 'titip'
+                                      ? Icons.luggage
+                                      : bookingType == 'barang'
+                                          ? Icons.local_shipping
+                                          : Icons.directions_car,
                               color: Colors.white,
                               size: 24,
                             ),
@@ -511,7 +667,9 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  '$vehicle  •  $plate',
+                                  bookingType == 'titip'
+                                      ? vehicle // For titip, only show transportation type
+                                      : '$vehicle  •  $plate',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Colors.grey[600],
@@ -881,6 +1039,16 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
                                             final desc =
                                                 _barangSizeDescriptions[key] ??
                                                     '';
+                                            // Format title berdasarkan key
+                                            String title;
+                                            if (key == 'small') {
+                                              title = 'Kecil';
+                                            } else if (key == 'medium') {
+                                              title = 'Sedang';
+                                            } else {
+                                              title = 'Besar';
+                                            }
+
                                             return InkWell(
                                               onTap: () =>
                                                   Navigator.of(ctx).pop(key),
@@ -912,13 +1080,29 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
                                                     ),
                                                     const SizedBox(width: 12),
                                                     Expanded(
-                                                      child: Text(
-                                                        '$key - $desc',
-                                                        style: const TextStyle(
-                                                            fontSize: 14,
-                                                            fontWeight:
-                                                                FontWeight
-                                                                    .w600),
+                                                      child: Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: [
+                                                          Text(
+                                                            title,
+                                                            style: const TextStyle(
+                                                                fontSize: 14,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w600),
+                                                          ),
+                                                          const SizedBox(
+                                                              height: 2),
+                                                          Text(
+                                                            desc,
+                                                            style: TextStyle(
+                                                                fontSize: 12,
+                                                                color: Colors
+                                                                    .grey[600]),
+                                                          ),
+                                                        ],
                                                       ),
                                                     ),
                                                     if (_selectedBarangSize ==
@@ -961,7 +1145,19 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
                               child: Text(
                                 _selectedBarangSize == null
                                     ? 'Pilih ukuran barang anda'
-                                    : '$_selectedBarangSize - ${_barangSizeDescriptions[_selectedBarangSize] ?? ''}',
+                                    : () {
+                                        String title = '';
+                                        if (_selectedBarangSize == 'small') {
+                                          title = 'Kecil';
+                                        } else if (_selectedBarangSize ==
+                                            'medium') {
+                                          title = 'Sedang';
+                                        } else if (_selectedBarangSize ==
+                                            'large') {
+                                          title = 'Besar';
+                                        }
+                                        return '$title - ${_barangSizeDescriptions[_selectedBarangSize] ?? ''}';
+                                      }(),
                                 style: TextStyle(
                                   fontSize: 15,
                                   color: _selectedBarangSize == null
@@ -1051,7 +1247,7 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
                               ),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 32),
                     // Data Penerima section (only for barang/titip)
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1112,6 +1308,7 @@ class _UbahJadwalPageState extends State<UbahJadwalPage> {
                         ],
                       ),
                     ),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),

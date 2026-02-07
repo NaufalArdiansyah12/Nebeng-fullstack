@@ -79,6 +79,7 @@ Route::prefix('api/v1')->group(function () {
     // Auth
     Route::post('/auth/register', [\App\Http\Controllers\Api\AuthController::class, 'register']);
     Route::post('/auth/login', [\App\Http\Controllers\Api\AuthController::class, 'login']);
+    Route::post('/auth/login/posmitra', [\App\Http\Controllers\Api\AuthController::class, 'loginPosMitra']);
     Route::post('/auth/logout', [\App\Http\Controllers\Api\AuthController::class, 'logout']);
     Route::post('/auth/change-password', [\App\Http\Controllers\Api\AuthController::class, 'changePassword']);
     Route::get('/auth/me', [\App\Http\Controllers\Api\AuthController::class, 'me']);
@@ -146,6 +147,14 @@ Route::prefix('api/v1')->group(function () {
     // Vehicle deletion approval (admin only)
     Route::post('/vehicles/{id}/approve-deletion', [VehicleController::class, 'approveDeletion']);
     Route::post('/vehicles/{id}/reject-deletion', [VehicleController::class, 'rejectDeletion']);
+
+    // =====================================================
+    // WITHDRAWAL ADMIN (requires bearer token, admin only)
+    // =====================================================
+    Route::get('/admin/withdrawals', [\App\Http\Controllers\Api\WithdrawalAdminController::class, 'index']);
+    Route::post('/admin/withdrawals/{id}/approve', [\App\Http\Controllers\Api\WithdrawalAdminController::class, 'approve']);
+    Route::post('/admin/withdrawals/{id}/complete', [\App\Http\Controllers\Api\WithdrawalAdminController::class, 'complete']);
+    Route::post('/admin/withdrawals/{id}/reject', [\App\Http\Controllers\Api\WithdrawalAdminController::class, 'reject']);
 
     // =====================================================
     // MITRA - VERIFICATION & DOCUMENTS

@@ -10,9 +10,11 @@ import '../../pin/create_pin_page.dart';
 import '../main_page.dart';
 import 'reward_page.dart';
 import 'verifikasi_intro_page.dart';
+import 'mitra_registration_intro_page.dart';
 import 'language_page.dart';
 import 'transaction_history_page.dart';
 import '../refund/refund_landing_page.dart';
+import '../../mitra/main_page.dart' as mitra;
 
 class ProfilePage extends StatefulWidget {
   final bool showBottomNav;
@@ -27,6 +29,7 @@ class _ProfilePageState extends State<ProfilePage> {
   String? _name;
   String? _email;
   String? _profilePhotoUrl;
+  String? _userRole; // Add role tracking
   bool _isLoadingProfile = false;
 
   @override
@@ -52,7 +55,12 @@ class _ProfilePageState extends State<ProfilePage> {
           _name = user['name'] as String? ?? '';
           _email = user['email'] as String? ?? '';
           _profilePhotoUrl = user['profile_photo'] as String?;
+          _userRole =
+              user['role'] as String? ?? 'customer'; // Get role from API
         });
+
+        // Update stored role
+        await prefs.setString('user_role', _userRole ?? 'customer');
       }
     } catch (e) {
       // ignore, keep defaults
@@ -281,6 +289,19 @@ class _ProfilePageState extends State<ProfilePage> {
             },
           ),
           _buildMenuItem(
+            icon: Icons.card_membership,
+            iconColor: const Color(0xFF10B981),
+            title: 'Daftar Jadi Mitra',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const MitraRegistrationIntroPage(),
+                ),
+              );
+            },
+          ),
+          _buildMenuItem(
             icon: Icons.receipt_long_outlined,
             iconColor: Colors.black87,
             title: 'transaction_history'.tr(),
@@ -328,6 +349,31 @@ class _ProfilePageState extends State<ProfilePage> {
             },
           ),
           const SizedBox(height: 16),
+
+          // Beralih ke Mitra button (only shown if role is 'mitra')
+          if (_userRole == 'mitra') ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+              child: Text(
+                'Mode',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ),
+            _buildMenuItem(
+              icon: Icons.switch_account,
+              iconColor: const Color(0xFF10B981),
+              title: 'Beralih ke Mitra',
+              onTap: () {
+                _showSwitchToMitraDialog();
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
+
           // Lainnya Section
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
@@ -586,6 +632,113 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         ),
       ),
+    );
+  }
+
+  void _showSwitchToMitraDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.warning_amber_rounded,
+                size: 60,
+                color: Colors.orange,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Peringatan!',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Setelah beralih ke mode Mitra, Anda tidak dapat kembali ke mode Customer.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Colors.black54,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF1E3A8A),
+                        side: const BorderSide(color: Color(0xFF1E3A8A)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        'Batal',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _performSwitchToMitra();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF10B981),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Lanjutkan',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _performSwitchToMitra() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_role', 'mitra');
+
+    if (!mounted) return;
+    Navigator.of(context).pop(); // remove progress dialog
+
+    // Navigate to mitra main page and clear navigation stack
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const mitra.MitraMainPage()),
+      (route) => false,
     );
   }
 

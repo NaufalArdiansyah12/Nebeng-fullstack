@@ -23,7 +23,6 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
-        'assigned_location_id',
         'fcm_token',
         'address',
         'phone',
@@ -69,13 +68,5 @@ class User extends Authenticatable
     public function phoneOtps()
     {
         return $this->hasMany(PhoneOtp::class);
-    }
-
-    /**
-     * Relasi ke Location (untuk pos mitra)
-     */
-    public function assignedLocation()
-    {
-        return $this->belongsTo(\App\Models\Location::class, 'assigned_location_id');
     }
 }

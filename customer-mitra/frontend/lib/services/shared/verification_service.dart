@@ -108,6 +108,7 @@ class VerificationService {
   static Future<Map<String, dynamic>> submitSimVerification({
     required String token,
     required String simNumber,
+    required String namaLengkap,
     required String simType,
     required String simExpiryDate,
     required String simPhotoPath,
@@ -119,6 +120,7 @@ class VerificationService {
     request.headers['Accept'] = 'application/json';
 
     request.fields['sim_number'] = simNumber;
+    request.fields['nama_lengkap'] = namaLengkap;
     request.fields['sim_type'] = simType;
     request.fields['sim_expiry_date'] = simExpiryDate;
 
@@ -145,6 +147,7 @@ class VerificationService {
   static Future<Map<String, dynamic>> updateSimVerification({
     required String token,
     required String simNumber,
+    required String namaLengkap,
     required String simType,
     required String simExpiryDate,
     String? simPhotoPath,
@@ -160,6 +163,7 @@ class VerificationService {
           },
           body: json.encode({
             'sim_number': simNumber,
+            'nama_lengkap': namaLengkap,
             'sim_type': simType,
             'sim_expiry_date': simExpiryDate,
           }));
@@ -181,6 +185,7 @@ class VerificationService {
     request.headers['Authorization'] = 'Bearer $token';
     request.headers['Accept'] = 'application/json';
     request.fields['sim_number'] = simNumber;
+    request.fields['nama_lengkap'] = namaLengkap;
     request.fields['sim_type'] = simType;
     request.fields['sim_expiry_date'] = simExpiryDate;
 

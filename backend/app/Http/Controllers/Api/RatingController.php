@@ -9,9 +9,11 @@ use App\Models\Booking;
 use App\Models\BookingMobil;
 use App\Models\BookingBarang;
 use App\Models\BookingTitipBarang;
+use App\Services\MitraNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class RatingController extends Controller
 {
@@ -109,6 +111,35 @@ class RatingController extends Controller
             $this->updateDriverRating($request->driver_id);
 
             DB::commit();
+
+            // Send notification to driver/mitra
+            try {
+                $driver = User::find($request->driver_id);
+                if ($driver) {
+                    // Load user and booking relationship for notification
+                    $rating->load(['user', 'driver']);
+                    
+                    // Get booking for more details
+                    $booking = $this->getBooking($request->booking_id, $request->booking_type);
+                    if ($booking) {
+                        $rating->booking = $booking;
+                        $rating->booking_id = $booking->id;
+                    }
+                    
+                    MitraNotificationService::sendRatingReceivedNotification($rating, $driver);
+                    Log::info('Rating notification sent to driver', [
+                        'rating_id' => $rating->id,
+                        'driver_id' => $driver->id,
+                        'customer_id' => $apiToken->user_id,
+                    ]);
+                }
+            } catch (\Exception $e) {
+                // Don't fail the request if notification fails
+                Log::error('Failed to send rating notification', [
+                    'error' => $e->getMessage(),
+                    'rating_id' => $rating->id ?? null,
+                ]);
+            }
 
             return response()->json([
                 'success' => true,

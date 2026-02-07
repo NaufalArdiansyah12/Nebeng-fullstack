@@ -7,6 +7,7 @@ class User {
   final String? profileImage;
   final String? phone;
   final bool phoneVerified;
+  final String role; // customer, mitra, posmitra, admin, etc
 
   User({
     required this.id,
@@ -17,6 +18,7 @@ class User {
     this.profileImage,
     this.phone,
     this.phoneVerified = false,
+    this.role = 'customer',
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -29,6 +31,7 @@ class User {
       profileImage: json['profile_image'],
       phone: json['phone'],
       phoneVerified: json['phone_verified'] ?? false,
+      role: json['role'] ?? 'customer',
     );
   }
 
@@ -42,6 +45,7 @@ class User {
       'profile_image': profileImage,
       'phone': phone,
       'phone_verified': phoneVerified,
+      'role': role,
     };
   }
 }

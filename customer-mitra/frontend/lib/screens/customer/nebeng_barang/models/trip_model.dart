@@ -19,6 +19,8 @@ class TripModel {
   final int? jumlahBagasi;
   final String? serviceType;
   final String? transportation;
+  final String?
+      rideSource; // 'barang' or 'titip' - to identify which table the ride comes from
 
   TripModel({
     required this.id,
@@ -41,6 +43,7 @@ class TripModel {
     this.jumlahBagasi,
     this.serviceType,
     this.transportation,
+    this.rideSource,
   });
 
   factory TripModel.fromApi(Map<String, dynamic> json) {
@@ -188,6 +191,21 @@ class TripModel {
       serviceType:
           (json['service_type'] ?? json['serviceType'] ?? json['service'] ?? '')
               .toString(),
+      // Determine rideSource: if transportation_type exists (kereta/pesawat/bus), it's titip barang
+      rideSource: () {
+        final transportType = (json['transportation_type'] ??
+                json['transportationType'] ??
+                json['transportation'] ??
+                '')
+            .toString()
+            .toLowerCase();
+        if (transportType.contains('kereta') ||
+            transportType.contains('pesawat') ||
+            transportType.contains('bus')) {
+          return 'titip';
+        }
+        return 'barang';
+      }(),
     );
   }
 }

@@ -60,6 +60,7 @@ class VerifikasiSimController extends Controller
 
         $validator = Validator::make($request->all(), [
             'sim_number' => 'required|string|max:255',
+            'nama_lengkap' => 'required|string|max:255',
             'sim_type' => 'required|in:A,B1,B2,C',
             'sim_expiry_date' => 'required|date|after:today',
             'sim_photo' => 'required|image|mimes:jpeg,png,jpg|max:5120',
@@ -88,6 +89,7 @@ class VerifikasiSimController extends Controller
         $verification = VerifikasiSimMitra::create([
             'user_id' => $apiToken->user_id,
             'sim_number' => $request->sim_number,
+            'nama_lengkap' => $request->nama_lengkap,
             'sim_type' => $request->sim_type,
             'sim_expiry_date' => $request->sim_expiry_date,
             'sim_photo' => $photoPath,
@@ -131,6 +133,7 @@ class VerifikasiSimController extends Controller
 
         $validator = Validator::make($request->all(), [
             'sim_number' => 'required|string|max:255',
+            'nama_lengkap' => 'required|string|max:255',
             'sim_type' => 'required|in:A,B1,B2,C',
             'sim_expiry_date' => 'required|date|after:today',
             'sim_photo' => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
@@ -155,6 +158,7 @@ class VerifikasiSimController extends Controller
 
         $updateData = [
             'sim_number' => $request->sim_number,
+            'nama_lengkap' => $request->nama_lengkap,
             'sim_type' => $request->sim_type,
             'sim_expiry_date' => $request->sim_expiry_date,
             'status' => 'pending',

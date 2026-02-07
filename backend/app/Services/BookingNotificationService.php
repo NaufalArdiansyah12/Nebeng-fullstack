@@ -210,4 +210,137 @@ class BookingNotificationService
             Log::error('Failed to send driver notification', ['error' => $e->getMessage()]);
         }
     }
+
+    /**
+     * Send notification to driver when new booking is created
+     * This also saves to database for in-app notifications
+     */
+    public static function sendNewBookingToDriver($booking): void
+    {
+        try {
+            if (!$booking) {
+                Log::warning('Cannot send new booking notification: booking missing');
+                return;
+            }
+
+            // Get driver from booking's ride/trip
+            $driver = null;
+            if ($booking->ride && $booking->ride->user) {
+                $driver = $booking->ride->user;
+            } elseif ($booking->trip && $booking->trip->user) {
+                $driver = $booking->trip->user;
+            } elseif ($booking->driver_id) {
+                $driver = \App\Models\User::find($booking->driver_id);
+            }
+
+            if (!$driver) {
+                Log::warning('Cannot find driver for booking notification', ['booking_id' => $booking->id]);
+                return;
+            }
+
+            // Use MitraNotificationService to send notification with DB save
+            \App\Services\MitraNotificationService::sendNewBookingNotification($booking, $driver);
+        } catch (\Exception $e) {
+            Log::error('Failed to send new booking to driver', ['error' => $e->getMessage(), 'booking_id' => $booking->id ?? null]);
+        }
+    }
+
+    /**
+     * Send notification when booking is completed and driver receives payment
+     */
+    public static function sendPaymentReceivedToDriver($booking, float $driverEarnings): void
+    {
+        try {
+            if (!$booking) {
+                Log::warning('Cannot send payment notification: booking missing');
+                return;
+            }
+
+            // Get driver from booking
+            $driver = null;
+            if ($booking->ride && $booking->ride->user) {
+                $driver = $booking->ride->user;
+            } elseif ($booking->trip && $booking->trip->user) {
+                $driver = $booking->trip->user;
+            } elseif ($booking->driver_id) {
+                $driver = \App\Models\User::find($booking->driver_id);
+            }
+
+            if (!$driver) {
+                Log::warning('Cannot find driver for payment notification', ['booking_id' => $booking->id]);
+                return;
+            }
+
+            // Use MitraNotificationService
+            \App\Services\MitraNotificationService::sendPaymentReceivedNotification($booking, $driver, $driverEarnings);
+        } catch (\Exception $e) {
+            Log::error('Failed to send payment notification to driver', ['error' => $e->getMessage(), 'booking_id' => $booking->id ?? null]);
+        }
+    }
+
+    /**
+     * Send notification when booking is cancelled
+     */
+    public static function sendBookingCancelledToDriver($booking): void
+    {
+        try {
+            if (!$booking) {
+                Log::warning('Cannot send cancellation notification: booking missing');
+                return;
+            }
+
+            // Get driver from booking
+            $driver = null;
+            if ($booking->ride && $booking->ride->user) {
+                $driver = $booking->ride->user;
+            } elseif ($booking->trip && $booking->trip->user) {
+                $driver = $booking->trip->user;
+            } elseif ($booking->driver_id) {
+                $driver = \App\Models\User::find($booking->driver_id);
+            }
+
+            if (!$driver) {
+                Log::warning('Cannot find driver for cancellation notification', ['booking_id' => $booking->id]);
+                return;
+            }
+
+            // Use MitraNotificationService
+            \App\Services\MitraNotificationService::sendBookingCancelledNotification($booking, $driver);
+        } catch (\Exception $e) {
+            Log::error('Failed to send cancellation notification to driver', ['error' => $e->getMessage(), 'booking_id' => $booking->id ?? null]);
+        }
+    }
+
+    /**
+     * Send notification when booking is completed
+     */
+    public static function sendBookingCompletedToDriver($booking, float $earnings): void
+    {
+        try {
+            if (!$booking) {
+                Log::warning('Cannot send completion notification: booking missing');
+                return;
+            }
+
+            // Get driver from booking
+            $driver = null;
+            if ($booking->ride && $booking->ride->user) {
+                $driver = $booking->ride->user;
+            } elseif ($booking->trip && $booking->trip->user) {
+                $driver = $booking->trip->user;
+            } elseif ($booking->driver_id) {
+                $driver = \App\Models\User::find($booking->driver_id);
+            }
+
+            if (!$driver) {
+                Log::warning('Cannot find driver for completion notification', ['booking_id' => $booking->id]);
+                return;
+            }
+
+            // Use MitraNotificationService
+            \App\Services\MitraNotificationService::sendBookingCompletedNotification($booking, $driver, $earnings);
+        } catch (\Exception $e) {
+            Log::error('Failed to send completion notification to driver', ['error' => $e->getMessage(), 'booking_id' => $booking->id ?? null]);
+        }
+    }
 }

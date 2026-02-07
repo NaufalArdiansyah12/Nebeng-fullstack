@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\ApiToken;
 use App\Models\User;
+use App\Models\PosMitraUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -77,9 +78,31 @@ class AuthController extends Controller
         $request->validate([
             'email' => 'required|email',
             'password' => 'required|string',
+            'user_type' => 'sometimes|string|in:user,posmitra', // optional parameter
         ]);
 
-        $user = User::where('email', $request->email)->first();
+        // Default ke 'user' jika tidak ada user_type
+        $userType = $request->input('user_type', 'user');
+
+        // Cari user berdasarkan tipe
+        if ($userType === 'posmitra') {
+            $user = PosMitraUser::where('email', $request->email)->first();
+            $tableName = 'pos mitra';
+        } else {
+            $user = User::where('email', $request->email)->first();
+            $tableName = 'user';
+        }
+
+        // Jika tidak ditemukan dan user_type default (user), coba cek di tabel posmitra_users
+        if (!$user && $userType === 'user') {
+            $userFromPosMitra = PosMitraUser::where('email', $request->email)->first();
+            if ($userFromPosMitra) {
+                $user = $userFromPosMitra;
+                $userType = 'posmitra';
+                $tableName = 'pos mitra';
+            }
+        }
+
         if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json([
                 'success' => false,
@@ -87,26 +110,39 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // create simple token entry
+        // create simple token entry with user_type
         $token = Str::random(60);
         $apiToken = ApiToken::create([
             'user_id' => $user->id,
+            'user_type' => $userType,
             'token' => hash('sha256', $token),
             'expires_at' => now()->addDays(30),
         ]);
 
+        // Format response berdasarkan user type
+        $userData = [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'user_type' => $userType,
+        ];
+
+        // Add additional fields untuk regular user
+        if ($userType === 'user') {
+            $userData['reward_points'] = $user->reward_points ?? 0;
+            $userData['average_rating'] = $user->average_rating ?? null;
+            $userData['total_ratings'] = $user->total_ratings ?? 0;
+            $userData['role'] = $user->role;
+        } else {
+            // PosMitra specific fields
+            $userData['location_id'] = $user->location_id ?? null;
+            $userData['role'] = 'posmitra'; // Set role untuk routing di frontend
+        }
+
         return response()->json([
             'success' => true,
             'data' => [
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'reward_points' => $user->reward_points ?? 0,
-                    'average_rating' => $user->average_rating ?? null,
-                    'total_ratings' => $user->total_ratings ?? 0,
-                    'role' => $user->role,
-                ],
+                'user' => $userData,
                 'token' => $token,
             ],
         ]);
@@ -121,6 +157,52 @@ class AuthController extends Controller
         $hashed = hash('sha256', $bearer);
         ApiToken::where('token', $hashed)->delete();
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Login specifically for PosMitra users
+     * This is a convenience endpoint that automatically sets user_type to 'posmitra'
+     */
+    public function loginPosMitra(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string',
+        ]);
+
+        $user = PosMitraUser::where('email', $request->email)->first();
+        
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Email atau password salah untuk Pos Mitra',
+            ], 401);
+        }
+
+        // create token entry for posmitra
+        $token = Str::random(60);
+        $apiToken = ApiToken::create([
+            'user_id' => $user->id,
+            'user_type' => 'posmitra',
+            'token' => hash('sha256', $token),
+            'expires_at' => now()->addDays(30),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'user_type' => 'posmitra',
+                    'role' => 'posmitra', // Untuk routing di frontend
+                    'location_id' => $user->location_id ?? null,
+                    'balance' => $user->balance ?? 0,
+                ],
+                'token' => $token,
+            ],
+        ]);
     }
 
     public function changePassword(Request $request)
@@ -289,7 +371,15 @@ class AuthController extends Controller
             ], 401);
         }
 
-        $user = User::find($apiToken->user_id);
+        // Get user berdasarkan user_type
+        if ($apiToken->user_type === 'posmitra') {
+            $user = PosMitraUser::find($apiToken->user_id);
+            $userType = 'posmitra';
+        } else {
+            $user = User::find($apiToken->user_id);
+            $userType = 'user';
+        }
+
         if (!$user) {
             return response()->json([
                 'success' => false,
@@ -297,23 +387,35 @@ class AuthController extends Controller
             ], 404);
         }
 
+        // Build user data berdasarkan tipe
+        $userData = [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'profile_photo' => $user->profile_photo,
+            'user_type' => $userType,
+        ];
+
+        // Add fields spesifik untuk regular user
+        if ($userType === 'user') {
+            $userData['address'] = $user->address;
+            $userData['average_rating'] = $user->average_rating ?? null;
+            $userData['total_ratings'] = $user->total_ratings ?? 0;
+            $userData['role'] = $user->role;
+            $userData['reward_points'] = $user->reward_points ?? 0;
+            $userData['balance'] = $user->balance ?? 0;
+        } else {
+            // Add fields spesifik untuk posmitra
+            $userData['location_id'] = $user->location_id ?? null;
+            $userData['balance'] = $user->balance ?? 0;
+            $userData['role'] = 'posmitra'; // Set role untuk frontend
+        }
+
         return response()->json([
             'success' => true,
             'data' => [
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'address' => $user->address,
-                    'phone' => $user->phone,
-                    'profile_photo' => $user->profile_photo,
-                        'average_rating' => $user->average_rating ?? null,
-                        'total_ratings' => $user->total_ratings ?? 0,
-                    'role' => $user->role,
-                    'average_rating' => $user->average_rating ?? null,
-                    'total_ratings' => $user->total_ratings ?? 0,
-                    'reward_points' => $user->reward_points ?? 0,
-                ],
+                'user' => $userData,
             ],
         ]);
     }

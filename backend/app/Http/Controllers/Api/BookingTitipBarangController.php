@@ -13,7 +13,7 @@ use App\Http\Controllers\Api\Traits\CreatesConversation;
 class BookingTitipBarangController extends Controller
 {
     use CreatesConversation;
-    public function store(Request $request)
+    public function store(Request $request, $ride = null)
     {
         $validator = Validator::make($request->all(), [
             'ride_id' => 'required|integer',
@@ -34,12 +34,19 @@ class BookingTitipBarangController extends Controller
             ], 422);
         }
 
-        // locate ride (supports polymorphic ride types)
-        $ride = \App\Models\Ride::find($request->ride_id);
-        $isBarang = false;
+        // If ride not passed from parent controller, locate ride (supports polymorphic ride types)
         if (!$ride) {
-            $ride = \App\Models\BarangRide::find($request->ride_id);
-            if ($ride) $isBarang = true;
+            $ride = \App\Models\TebenganTitipBarang::find($request->ride_id);
+            $isBarang = false;
+            
+            if (!$ride) {
+                $ride = \App\Models\Ride::find($request->ride_id);
+            }
+            
+            if (!$ride) {
+                $ride = \App\Models\BarangRide::find($request->ride_id);
+                if ($ride) $isBarang = true;
+            }
         }
 
         if (!$ride) {

@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.nebeng.app-mergeDebugResources-28:/values-km/values-km.xml",
+            "outputFile": "com.example.nebeng.app-mergeDebugResources-31:/values-km/values-km.xml",
             "map": [
                 {
                     "source": "/home/naufal/.gradle/caches/transforms-3/65235f76a9e044798db35ae3ab34c640/transformed/jetified-play-services-basement-18.3.0/res/values-km/values.xml",

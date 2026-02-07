@@ -24,6 +24,9 @@ class Kernel extends ConsoleKernel
     {
         // Run the auto-start command every minute
         $schedule->command('trips:auto-start')->everyMinute();
+        
+        // Run conversation cleanup every hour
+        $schedule->command('conversations:cleanup')->hourly();
     }
 
     /**

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\PosMitra;
 use App\Http\Controllers\Controller;
 use App\Models\ApiToken;
 use App\Models\User;
+use App\Models\PosMitraUser;
 use App\Models\Ride;
 use App\Models\CarRide;
 use App\Enums\UserRole;
@@ -43,7 +44,7 @@ class BerandaController extends Controller
         }
 
         // Cek apakah pos mitra memiliki assigned location
-        if (!$user->assigned_location_id) {
+        if (!$user->location_id) {
             return response()->json([
                 'success' => true,
                 'message' => 'Pos mitra belum memiliki lokasi yang ditugaskan',
@@ -55,7 +56,7 @@ class BerandaController extends Controller
 
         // Get tebengan motor (from rides table)
         $motorRides = Ride::with(['user', 'originLocation', 'destinationLocation'])
-            ->where('destination_location_id', $user->assigned_location_id)
+            ->where('destination_location_id', $user->location_id)
             ->whereIn('status', ['active', 'full'])
             ->where('departure_date', '>=', now()->toDateString())
             ->orderBy('departure_date')
@@ -99,7 +100,7 @@ class BerandaController extends Controller
 
         // Get tebengan mobil (from tebengan_mobil table)
         $mobilRides = CarRide::with(['user', 'originLocation', 'destinationLocation', 'kendaraanMitra'])
-            ->where('destination_location_id', $user->assigned_location_id)
+            ->where('destination_location_id', $user->location_id)
             ->whereIn('status', ['active', 'full'])
             ->where('departure_date', '>=', now()->toDateString())
             ->orderBy('departure_date')
@@ -165,7 +166,7 @@ class BerandaController extends Controller
         }
 
         // Cek apakah pos mitra memiliki assigned location
-        if (!$user->assigned_location_id) {
+        if (!$user->location_id) {
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -178,25 +179,25 @@ class BerandaController extends Controller
         }
 
         // Count Nabung Motor (completed rides)
-        $nabungMotor = Ride::where('destination_location_id', $user->assigned_location_id)
+        $nabungMotor = Ride::where('destination_location_id', $user->location_id)
             ->where('status', 'completed')
             ->where('service_type', 'tebengan')
             ->count();
 
         // Count Nabung Mobil (completed car rides)
-        $nabungMobil = CarRide::where('destination_location_id', $user->assigned_location_id)
+        $nabungMobil = CarRide::where('destination_location_id', $user->location_id)
             ->where('status', 'completed')
             ->count();
 
         // Count Nabung Barang (motor with barang service)
-        $nabungBarang = Ride::where('destination_location_id', $user->assigned_location_id)
+        $nabungBarang = Ride::where('destination_location_id', $user->location_id)
             ->where('status', 'completed')
             ->whereIn('service_type', ['barang', 'both'])
             ->count();
 
         // Count Titip Barang (from tebengan_titip_barang table)
         $titipBarang = \DB::table('tebengan_titip_barang')
-            ->where('destination_location_id', $user->assigned_location_id)
+            ->where('destination_location_id', $user->location_id)
             ->where('status', 'completed')
             ->count();
 
@@ -237,6 +238,13 @@ class BerandaController extends Controller
             ], 401);
         }
 
+        // Check first in PosMitraUser table
+        $posMitraUser = PosMitraUser::find($apiToken->user_id);
+        if ($posMitraUser) {
+            return $posMitraUser;
+        }
+
+        // Fallback to User table for backward compatibility
         $user = User::find($apiToken->user_id);
         if (!$user || $user->role !== UserRole::POSMITRA) {
             return response()->json([
