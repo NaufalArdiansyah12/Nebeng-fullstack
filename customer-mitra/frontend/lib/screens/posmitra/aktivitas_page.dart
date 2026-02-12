@@ -41,15 +41,20 @@ class _AktivitasPageState extends State<AktivitasPage> {
     }
   }
 
-  List<Map<String, dynamic>> getFilteredActivities() {
-    if (selectedTab == 0) {
-      return allRides; // Semua
-    } else if (selectedTab == 1) {
-      return allRides.where((ride) => ride['status'] == 'active').toList();
-    } else {
-      return allRides.where((ride) => ride['status'] == 'full').toList();
-    }
+List<Map<String, dynamic>> getFilteredActivities() {
+  if (selectedTab == 0) {
+    // Semua, termasuk completed
+    return allRides;
+  } else if (selectedTab == 1) {
+    // Proses / aktif
+    return allRides.where((ride) => ride['status'] == 'active').toList();
+  } else if (selectedTab == 2) {
+    // Selesai (sebelumnya Kosong / full)
+    return allRides.where((ride) => ride['status'] == 'completed').toList();
+  } else {
+    return allRides;
   }
+}
 
   String _formatDateTime(String date, String time) {
     try {
@@ -94,7 +99,7 @@ class _AktivitasPageState extends State<AktivitasPage> {
   String _getStatusLabel(String status) {
     switch (status) {
       case 'active':
-        return 'Proses';
+        return 'akan datang';
       case 'full':
         return 'Kosong';
       case 'completed':
@@ -115,10 +120,17 @@ class _AktivitasPageState extends State<AktivitasPage> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF212121)),
-          onPressed: () => Navigator.pop(context),
-        ),
+leading: IconButton(
+  icon: const Icon(Icons.arrow_back, color: Color(0xFF212121)),
+  onPressed: () {
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    } else {
+      Navigator.pushReplacementNamed(context, '/home');
+    }
+  },
+),
+
         title: const Text(
           'Tebengan Akan Datang',
           style: TextStyle(
@@ -139,9 +151,9 @@ class _AktivitasPageState extends State<AktivitasPage> {
               children: [
                 _buildTabButton('Semua', 0),
                 const SizedBox(width: 12),
-                _buildTabButton('Proses', 1),
+                _buildTabButton('Akan Datang', 1),
                 const SizedBox(width: 12),
-                _buildTabButton('Kosong', 2),
+                _buildTabButton('selesai', 2),
               ],
             ),
           ),

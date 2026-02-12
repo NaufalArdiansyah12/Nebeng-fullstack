@@ -188,6 +188,7 @@ class DetailPencairanPage extends StatelessWidget {
                       MaterialPageRoute(
                         builder: (context) => WithdrawalProgressPage(
                           amount: transaction['amount'].abs(),
+                          status: 'pending',
                         ),
                       ),
                     );

@@ -4,10 +4,12 @@ import 'withdrawal_progress_page.dart';
 
 class WithdrawalProcessingPage extends StatefulWidget {
   final double amount;
+  final String status;
 
   const WithdrawalProcessingPage({
     Key? key,
     required this.amount,
+    required this.status,
   }) : super(key: key);
 
   @override
@@ -33,7 +35,10 @@ class _WithdrawalProcessingPageState extends State<WithdrawalProcessingPage>
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => WithdrawalProgressPage(amount: widget.amount),
+            builder: (context) => WithdrawalProgressPage(
+              amount: widget.amount,
+              status: widget.status, // <--- wajib diisi
+            ),
           ),
         );
       }
@@ -119,8 +124,10 @@ class _WithdrawalProcessingPageState extends State<WithdrawalProcessingPage>
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (context) =>
-                            WithdrawalProgressPage(amount: widget.amount),
+                        builder: (context) => WithdrawalProgressPage(
+                          amount: widget.amount,
+                          status: widget.status, // <--- wajib diisi
+                        ),
                       ),
                     );
                   },

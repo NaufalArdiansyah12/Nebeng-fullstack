@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'withdrawal_processing_page.dart';
+import '/services/posmitra/posmitra_service.dart';
 
 class PinVerificationPage extends StatefulWidget {
   final double amount;
+  final String bankName;
+  final String accountNumber;
 
   const PinVerificationPage({
     Key? key,
     required this.amount,
+    required this.bankName,
+    required this.accountNumber,
   }) : super(key: key);
 
   @override
@@ -16,7 +22,6 @@ class PinVerificationPage extends StatefulWidget {
 class _PinVerificationPageState extends State<PinVerificationPage> {
   String pin = '';
   final int pinLength = 6;
-  final String correctPin = '123456'; // Demo PIN
 
   void _onNumberPressed(String number) {
     if (pin.length < pinLength) {
@@ -41,27 +46,92 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
     }
   }
 
-  void _verifyPin() {
-    if (pin == correctPin) {
-      // PIN correct - navigate to processing page
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => WithdrawalProcessingPage(amount: widget.amount),
-        ),
+  Future<void> _verifyPin() async {
+    // Tampilkan loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('api_token');
+
+      if (token == null || token.isEmpty) {
+        Navigator.pop(context); // Tutup loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Token tidak ditemukan. Silakan login kembali.'),
+            backgroundColor: Color(0xFFEF5350),
+          ),
+        );
+        return;
+      }
+
+      // ✅ KIRIM DATA KE API BACKEND
+      final response = await PosMitraService.withdrawBalance(
+        token: token,
+        amount: widget.amount,
+        bankName: widget.bankName,
+        accountNumber: widget.accountNumber,
+        pin: pin,
       );
-    } else {
-      // PIN incorrect - show error
+
+      Navigator.pop(context); // Tutup loading
+
+      if (response['success'] == true) {
+        // ✅ BERHASIL - Navigasi ke halaman processing
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => WithdrawalProcessingPage(
+              amount: widget.amount,
+              status: 'pending', 
+            ),
+          ),
+        );
+      } else {
+        // ❌ GAGAL - Tampilkan error dan reset PIN
+        setState(() {
+          pin = '';
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(response['message'] ?? 'Penarikan gagal'),
+            backgroundColor: const Color(0xFFEF5350),
+          ),
+        );
+      }
+    } catch (e) {
+      Navigator.pop(context); // Tutup loading
       setState(() {
         pin = '';
       });
+      
+      // Cek apakah error dari PIN salah
+      String errorMessage = 'Terjadi kesalahan: $e';
+      if (e.toString().contains('PIN salah')) {
+        errorMessage = 'PIN yang Anda masukkan salah';
+      } else if (e.toString().contains('Saldo tidak mencukupi')) {
+        errorMessage = 'Saldo tidak mencukupi';
+      }
+      
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('PIN yang Anda masukkan salah'),
-          backgroundColor: Color(0xFFEF5350),
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: const Color(0xFFEF5350),
         ),
       );
     }
+  }
+
+  String _formatCurrency(double amount) {
+    final formatted = amount.toStringAsFixed(0);
+    final regex = RegExp(r'\B(?=(\d{3})+(?!\d))');
+    return formatted.replaceAllMapped(regex, (match) => '.');
   }
 
   @override
@@ -76,7 +146,7 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          'Tarik Saldo',
+          'Verifikasi PIN',
           style: TextStyle(
             color: Color(0xFF212121),
             fontSize: 18,
@@ -88,85 +158,131 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
       body: Column(
         children: [
           Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Lock Icon
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1E3A8A).withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.lock_outline,
-                    size: 40,
-                    color: Color(0xFF1E3A8A),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                // Title
-                const Text(
-                  'Masukkan PIN yang telah Anda buat',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF212121),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                // Subtitle
-                const Text(
-                  'PIN berupa 6 digit angka',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF757575),
-                    fontWeight: FontWeight.w400,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 32),
-                // PIN Dots
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    pinLength,
-                    (index) => Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: pin.length > index
-                                ? const Color(0xFF1E3A8A)
-                                : const Color(0xFFE0E0E0),
-                            width: 2,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 20),
+                  
+                  // ✅ KONFIRMASI DATA
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.06),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Konfirmasi Penarikan',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF212121),
                           ),
                         ),
-                        child: Center(
-                          child: pin.length > index
-                              ? Container(
-                                  width: 12,
-                                  height: 12,
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFF1E3A8A),
-                                    shape: BoxShape.circle,
-                                  ),
-                                )
-                              : null,
+                        const SizedBox(height: 16),
+                        _buildInfoRow('Jumlah', 'Rp ${_formatCurrency(widget.amount)}'),
+                        const SizedBox(height: 8),
+                        _buildInfoRow('Bank', widget.bankName),
+                        const SizedBox(height: 8),
+                        _buildInfoRow('No. Rekening', widget.accountNumber),
+                      ],
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 32),
+                  
+                  // Lock Icon
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E3A8A).withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.lock_outline,
+                      size: 40,
+                      color: Color(0xFF1E3A8A),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  // Title
+                  const Text(
+                    'Masukkan PIN yang telah Anda buat',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF212121),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  
+                  // Subtitle
+                  const Text(
+                    'PIN berupa 6 digit angka',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF757575),
+                      fontWeight: FontWeight.w400,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 32),
+                  
+                  // PIN Dots
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(
+                      pinLength,
+                      (index) => Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: pin.length > index
+                                  ? const Color(0xFF1E3A8A)
+                                  : const Color(0xFFE0E0E0),
+                              width: 2,
+                            ),
+                          ),
+                          child: Center(
+                            child: pin.length > index
+                                ? Container(
+                                    width: 12,
+                                    height: 12,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFF1E3A8A),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  )
+                                : null,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
+          
           // Numpad
           Container(
             padding: const EdgeInsets.all(16),
@@ -182,7 +298,7 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
             ),
             child: Column(
               children: [
-                // Lanjut Button (only enabled when PIN is complete)
+                // Lanjut Button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -209,10 +325,10 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
                   ),
                 ),
                 const SizedBox(height: 16),
+                
                 // Number Pad
                 Column(
                   children: [
-                    // Row 1: 1, 2, 3
                     Row(
                       children: [
                         _buildNumberButton('1', 'ABC'),
@@ -223,7 +339,6 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    // Row 2: 4, 5, 6
                     Row(
                       children: [
                         _buildNumberButton('4', 'GHI'),
@@ -234,7 +349,6 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    // Row 3: 7, 8, 9
                     Row(
                       children: [
                         _buildNumberButton('7', 'PQRS'),
@@ -245,7 +359,6 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    // Row 4: 0, Delete
                     Row(
                       children: [
                         const Expanded(child: SizedBox()),
@@ -262,6 +375,30 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            color: Color(0xFF757575),
+            fontWeight: FontWeight.w400,
+          ),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 14,
+            color: Color(0xFF212121),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 

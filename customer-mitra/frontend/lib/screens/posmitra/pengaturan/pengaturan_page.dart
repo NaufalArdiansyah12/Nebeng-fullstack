@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'foto_profil_page.dart';
 import 'ubah_email_page.dart';
+import 'ubah_nomor_page.dart';
+
 
 class PengaturanPage extends StatelessWidget {
   const PengaturanPage({Key? key}) : super(key: key);
@@ -71,14 +73,15 @@ class PengaturanPage extends StatelessWidget {
                   icon: Icons.phone_outlined,
                   title: 'Nomor Telepon',
                   subtitle: 'Ubah nomor telepon Anda',
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Fitur ubah nomor telepon akan segera hadir'),
-                        backgroundColor: Color(0xFF1E3A8A),
-                      ),
-                    );
-                  },
+onTap: () {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => const UbahNomorPage(),
+    ),
+  );
+},
+
                 ),
                 _buildMenuItem(
                   context,

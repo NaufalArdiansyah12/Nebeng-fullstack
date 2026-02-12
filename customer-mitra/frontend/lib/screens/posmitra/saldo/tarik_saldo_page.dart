@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'pin_verification_page.dart';
+import '/services/posmitra/posmitra_service.dart';
 
 class TarikSaldoPage extends StatefulWidget {
   final double currentBalance;
@@ -16,14 +18,65 @@ class TarikSaldoPage extends StatefulWidget {
 
 class _TarikSaldoPageState extends State<TarikSaldoPage> {
   final TextEditingController _amountController = TextEditingController();
+  final TextEditingController _bankController = TextEditingController();
+  final TextEditingController _accountNumberController = TextEditingController();
+  
   String? errorMessage;
+  String userName = '-';
+  bool isLoadingProfile = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
 
   @override
   void dispose() {
     _amountController.dispose();
+    _bankController.dispose();
+    _accountNumberController.dispose();
     super.dispose();
   }
 
+  // ✅ Load user profile dari database
+// ✅ Load user profile dari database
+Future<void> _loadUserProfile() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('api_token');
+
+    if (token == null || token.isEmpty) {
+      setState(() {
+        userName = 'User';
+        isLoadingProfile = false;
+      });
+      return;
+    }
+
+    // ✅ Gunakan getProfile yang sudah ada
+    final response = await PosMitraService.getProfile(token);
+    
+    if (response['success'] == true) {
+      final userData = response['data']?['user'] as Map<String, dynamic>?;
+      setState(() {
+        userName = userData?['name'] ?? 'User';
+        isLoadingProfile = false;
+      });
+    } else {
+      setState(() {
+        userName = 'User';
+        isLoadingProfile = false;
+      });
+    }
+  } catch (e) {
+    print('Error loading profile: $e');
+    setState(() {
+      userName = 'User';
+      isLoadingProfile = false;
+    });
+  }
+}
   void _validateAndProceed() {
     setState(() {
       errorMessage = null;
@@ -61,11 +114,33 @@ class _TarikSaldoPageState extends State<TarikSaldoPage> {
       return;
     }
 
+    // ✅ Validasi bank dan nomor rekening
+    final bank = _bankController.text.trim();
+    final accountNumber = _accountNumberController.text.trim();
+
+    if (bank.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Masukkan nama bank')),
+      );
+      return;
+    }
+
+    if (accountNumber.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Masukkan nomor rekening')),
+      );
+      return;
+    }
+
     // Success - navigate to PIN verification
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => PinVerificationPage(amount: amount),
+        builder: (context) => PinVerificationPage(
+          amount: amount,
+          bankName: bank,
+          accountNumber: accountNumber,
+        ),
       ),
     );
   }
@@ -156,14 +231,24 @@ class _TarikSaldoPageState extends State<TarikSaldoPage> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
-                              'Farras',
-                              style: TextStyle(
-                                fontSize: 15,
-                                color: Color(0xFF212121),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                            // ✅ Nama dari database
+                            isLoadingProfile
+                                ? const Text(
+                                    'Loading...',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      color: Color(0xFF757575),
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  )
+                                : Text(
+                                    userName,
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      color: Color(0xFF212121),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                             Text(
                               'Rp ${_formatCurrency(widget.currentBalance)}',
                               style: const TextStyle(
@@ -178,7 +263,8 @@ class _TarikSaldoPageState extends State<TarikSaldoPage> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  // Informasi Rekening Card
+                  
+                  // ✅ Informasi Rekening Card (Editable)
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -204,53 +290,104 @@ class _TarikSaldoPageState extends State<TarikSaldoPage> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'Bank',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Color(0xFF757575),
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
-                            const Text(
-                              'Nomor Rekening',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Color(0xFF757575),
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
-                          ],
+                        
+                        // Input Nama Bank
+                        const Text(
+                          'Nama Bank',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF757575),
+                            fontWeight: FontWeight.w400,
+                          ),
                         ),
                         const SizedBox(height: 8),
-                        const Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'BRI',
-                              style: TextStyle(
-                                fontSize: 15,
-                                color: Color(0xFF212121),
-                                fontWeight: FontWeight.w600,
+                        TextField(
+                          controller: _bankController,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            color: Color(0xFF212121),
+                            fontWeight: FontWeight.w500,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Contoh: BRI, BCA, Mandiri',
+                            hintStyle: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[400],
+                              fontWeight: FontWeight.w400,
+                            ),
+                            filled: true,
+                            fillColor: const Color(0xFFF5F5F5),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide.none,
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(
+                                color: Color(0xFF1E3A8A),
+                                width: 1.5,
                               ),
                             ),
-                            Text(
-                              '1295192851925184*',
-                              style: TextStyle(
-                                fontSize: 15,
-                                color: Color(0xFF212121),
-                                fontWeight: FontWeight.w600,
-                              ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
                             ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        // Input Nomor Rekening
+                        const Text(
+                          'Nomor Rekening',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF757575),
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _accountNumberController,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
                           ],
+                          style: const TextStyle(
+                            fontSize: 15,
+                            color: Color(0xFF212121),
+                            fontWeight: FontWeight.w500,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Masukkan nomor rekening',
+                            hintStyle: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[400],
+                              fontWeight: FontWeight.w400,
+                            ),
+                            filled: true,
+                            fillColor: const Color(0xFFF5F5F5),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide.none,
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(
+                                color: Color(0xFF1E3A8A),
+                                width: 1.5,
+                              ),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
+                          ),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 16),
+                  
                   // Masukkan Jumlah
                   Container(
                     padding: const EdgeInsets.all(20),

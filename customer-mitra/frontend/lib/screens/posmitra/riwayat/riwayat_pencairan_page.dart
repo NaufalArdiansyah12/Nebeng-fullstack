@@ -1,5 +1,10 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'detail_pencairan_page.dart';
+import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../../services/posmitra/posmitra_service.dart';
+import 'package:nebeng/screens/posmitra/saldo/withdrawal_progress_page.dart';
 
 class RiwayatPencairanPage extends StatefulWidget {
   const RiwayatPencairanPage({Key? key}) : super(key: key);
@@ -9,79 +14,49 @@ class RiwayatPencairanPage extends StatefulWidget {
 }
 
 class _RiwayatPencairanPageState extends State<RiwayatPencairanPage> {
-  int selectedTab = 0; // 0: Semua, 1: Proses, 2: Berhasil
+  int selectedTab = 0; // 0 = Proses, 1 = Berhasil
+  bool isLoading = true;
+  List<dynamic> transactions = [];
 
-  final List<Map<String, dynamic>> transactions = [
-    {
-      'date': '21 Okt 2024',
-      'time': '09:00',
-      'title': 'Penarikan Saldo',
-      'amount': -50000.0,
-      'status': 'Proses',
-      'statusColor': Color(0xFFFFC107),
-    },
-    {
-      'date': '24 Okt 2024',
-      'time': '09:00',
-      'title': 'Penarikan Saldo',
-      'amount': -50000.0,
-      'status': 'Berhasil',
-      'statusColor': Color(0xFF4CAF50),
-    },
-    {
-      'date': '21 Okt 2024',
-      'time': '09:00',
-      'title': 'Penarikan Saldo',
-      'amount': -50000.0,
-      'status': 'Proses',
-      'statusColor': Color(0xFFFFC107),
-    },
-    {
-      'date': '24 Okt 2024',
-      'time': '09:00',
-      'title': 'Penarikan Saldo',
-      'amount': -50000.0,
-      'status': 'Berhasil',
-      'statusColor': Color(0xFF4CAF50),
-    },
-    {
-      'date': '21 Okt 2024',
-      'time': '09:00',
-      'title': 'Penarikan Saldo',
-      'amount': -50000.0,
-      'status': 'Proses',
-      'statusColor': Color(0xFFFFC107),
-    },
-    {
-      'date': '24 Okt 2024',
-      'time': '09:00',
-      'title': 'Penarikan Saldo',
-      'amount': -50000.0,
-      'status': 'Berhasil',
-      'statusColor': Color(0xFF4CAF50),
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    fetchWithdrawHistory();
+  }
 
-  List<Map<String, dynamic>> getFilteredTransactions() {
-    if (selectedTab == 0) {
-      return transactions; // Semua
-    } else if (selectedTab == 1) {
-      return transactions
-          .where((transaction) => transaction['status'] == 'Proses')
-          .toList();
-    } else {
-      return transactions
-          .where((transaction) => transaction['status'] == 'Berhasil')
-          .toList();
+  Future<void> fetchWithdrawHistory() async {
+    print("🔥 fetchWithdrawHistory TERPANGGIL");
+    try {
+      final data = await PosMitraService.getWithdrawalHistory();
+      setState(() {
+        transactions = data;
+        isLoading = false;
+      });
+    } catch (e) {
+      print("Error fetching withdrawal history: $e");
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 
-  String _formatCurrency(double amount) {
-    final absAmount = amount.abs();
-    final formatted = absAmount.toStringAsFixed(0);
-    final regex = RegExp(r'\B(?=(\d{3})+(?!\d))');
-    final result = formatted.replaceAllMapped(regex, (match) => '.');
-    return amount < 0 ? '-Rp $result' : 'Rp $result';
+  List<dynamic> getFilteredTransactions() {
+    if (selectedTab == 0) {
+      return transactions.where((trx) => trx['status'] != 'completed').toList();
+    } else {
+      return transactions.where((trx) => trx['status'] == 'completed').toList();
+    }
+  }
+
+  String formatCurrency(num amount) {
+    final format =
+        NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+    return format.format(amount);
+  }
+
+  String formatDate(String dateTime) {
+    final parsed = DateTime.parse(dateTime);
+    return DateFormat('dd MMM yyyy HH:mm', 'id_ID').format(parsed);
   }
 
   @override
@@ -93,72 +68,52 @@ class _RiwayatPencairanPageState extends State<RiwayatPencairanPage> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF212121)),
-          onPressed: () => Navigator.pop(context),
-        ),
         title: const Text(
           'Riwayat Pencairan',
           style: TextStyle(
             color: Color(0xFF212121),
-            fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
         ),
-        centerTitle: false,
+        iconTheme: const IconThemeData(color: Colors.black),
       ),
       body: Column(
         children: [
-          // Filter Tabs
+          // TAB FILTER
           Container(
             color: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
-                _buildTabButton('Semua', 0),
+                _buildTabButton('Proses', 0),
                 const SizedBox(width: 12),
-                _buildTabButton('Proses', 1),
-                const SizedBox(width: 12),
-                _buildTabButton('Berhasil', 2),
+                _buildTabButton('Berhasil', 1),
               ],
             ),
           ),
           const SizedBox(height: 8),
-          // Transaction List
+          // CONTENT
           Expanded(
-            child: filteredTransactions.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.receipt_long_outlined,
-                          size: 64,
-                          color: Colors.grey[400],
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : filteredTransactions.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'Tidak ada riwayat',
+                          style: TextStyle(fontSize: 16),
                         ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Tidak ada riwayat pencairan',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey[600],
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: filteredTransactions.length,
-                    itemBuilder: (context, index) {
-                      final transaction = filteredTransactions[index];
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: _buildTransactionCard(transaction),
-                      );
-                    },
-                  ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: filteredTransactions.length,
+                        itemBuilder: (context, index) {
+                          final trx = filteredTransactions[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _buildTransactionCard(trx),
+                          );
+                        },
+                      ),
           ),
         ],
       ),
@@ -167,6 +122,7 @@ class _RiwayatPencairanPageState extends State<RiwayatPencairanPage> {
 
   Widget _buildTabButton(String label, int index) {
     final isSelected = selectedTab == index;
+
     return Expanded(
       child: InkWell(
         onTap: () {
@@ -181,9 +137,7 @@ class _RiwayatPencairanPageState extends State<RiwayatPencairanPage> {
             color: isSelected ? const Color(0xFF1E3A8A) : Colors.white,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isSelected
-                  ? const Color(0xFF1E3A8A)
-                  : const Color(0xFFE0E0E0),
+              color: isSelected ? const Color(0xFF1E3A8A) : const Color(0xFFE0E0E0),
               width: 1.5,
             ),
           ),
@@ -191,7 +145,6 @@ class _RiwayatPencairanPageState extends State<RiwayatPencairanPage> {
             label,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 14,
               fontWeight: FontWeight.w600,
               color: isSelected ? Colors.white : const Color(0xFF424242),
             ),
@@ -201,80 +154,72 @@ class _RiwayatPencairanPageState extends State<RiwayatPencairanPage> {
     );
   }
 
-  Widget _buildTransactionCard(Map<String, dynamic> transaction) {
+  Widget _buildTransactionCard(dynamic trx) {
+    final isCompleted = trx['status'] == 'completed';
+
     return InkWell(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => DetailPencairanPage(transaction: transaction),
-          ),
-        );
-      },
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
+onTap: () {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => WithdrawalProgressPage(
+        amount: (trx['amount'] as num).toDouble(),
+        status: trx['status'],
+      ),
+    ),
+  );
+},
+      child: Card(
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 12,
-              offset: const Offset(0, 2),
-            ),
-          ],
         ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      formatDate(trx['submitted_at']),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Penarikan Saldo',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '${transaction['date']} ${transaction['time']}',
+                    isCompleted ? 'Berhasil' : 'Proses',
                     style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                      fontWeight: FontWeight.w400,
+                      fontWeight: FontWeight.w600,
+                      color: isCompleted ? Colors.green : Colors.orange,
                     ),
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    transaction['title'],
+                    formatCurrency(trx['amount']),
                     style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF212121),
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(width: 16),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  transaction['status'],
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: transaction['statusColor'],
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  _formatCurrency(transaction['amount']),
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF212121),
-                  ),
-                ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

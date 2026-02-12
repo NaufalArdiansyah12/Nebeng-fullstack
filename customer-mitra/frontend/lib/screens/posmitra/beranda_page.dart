@@ -16,7 +16,7 @@ class BerandaPage extends StatefulWidget {
 }
 
 class _BerandaPageState extends State<BerandaPage> {
-  DateTime selectedDate = DateTime(2025, 6, 20);
+  DateTime selectedDate = DateTime.now();
   bool isSaldoVisible = true;
 
   double _saldo = 0;
@@ -29,9 +29,9 @@ class _BerandaPageState extends State<BerandaPage> {
   bool _isLoadingRides = true;
 
   Map<String, dynamic> _statistics = {
-    'nabung_motor': 0,
-    'nabung_mobil': 0,
-    'nabung_barang': 0,
+    'nebeng_motor': 0,
+    'nebeng_mobil': 0,
+    'nebeng_barang': 0,
     'titip_barang': 0,
   };
   bool _isLoadingStatistics = true;
@@ -52,7 +52,7 @@ class _BerandaPageState extends State<BerandaPage> {
         _statistics = stats;
         _isLoadingStatistics = false;
       });
-    } catch (e) {
+    } catch (_) {
       setState(() {
         _isLoadingStatistics = false;
       });
@@ -63,53 +63,62 @@ class _BerandaPageState extends State<BerandaPage> {
     try {
       final rides = await PosMitraService.getUpcomingRides();
       setState(() {
-        _upcomingRides =
-            rides.take(2).toList(); // Only take first 2 for preview
+        _upcomingRides = rides.take(2).toList();
         _isLoadingRides = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoadingRides = false;
-      });
-    }
-  }
-
-  Future<void> _loadProfile() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('api_token');
-      if (token == null || token.isEmpty) {
-        setState(() {
-          _isLoadingProfile = false;
-        });
-        return;
-      }
-
-      final profile = await PosMitraService.getProfile();
-      setState(() {
-        _userProfile = profile;
-        _isLoadingProfile = false;
       });
     } catch (_) {
       setState(() {
-        _isLoadingProfile = false;
+        _isLoadingRides = false;
       });
     }
   }
 
-  Future<void> _loadSaldo() async {
-    try {
-      final saldo = await PosMitraService.getBalance();
+Future<void> _loadProfile() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('api_token');
+
+    if (token == null || token.isEmpty) {
+      // Jika token tidak ada, tidak bisa load profile
       setState(() {
-        _saldo = saldo;
-        _isLoadingSaldo = false;
+        _userProfile = null;
+        _isLoadingProfile = false;
       });
-    } catch (e) {
-      setState(() {
-        _isLoadingSaldo = false;
-      });
+      return;
     }
+
+    // Panggil getProfile dengan token
+    final profile = await PosMitraService.getProfile(token);
+
+    setState(() {
+      _userProfile = profile['data']?['user'] as Map<String, dynamic>?;
+      _isLoadingProfile = false;
+    });
+  } catch (e) {
+    // Jika gagal, tetap hentikan loading
+    setState(() {
+      _userProfile = null;
+      _isLoadingProfile = false;
+    });
   }
+}
+
+Future<void> _loadSaldo() async {
+  try {
+    final saldo = await PosMitraService.getBalance();
+    setState(() {
+      _saldo = saldo;
+      _isLoadingSaldo = false;
+    });
+  } catch (e) {
+    print('Error loading saldo: $e'); // ✅ Tambahkan debug print
+    setState(() {
+      _saldo = 0; // ✅ Set default value
+      _isLoadingSaldo = false;
+    });
+  }
+}
+
 
   Future<void> _showCustomCalendar() async {
     final DateTime? picked = await showDialog<DateTime>(
@@ -359,7 +368,7 @@ class _BerandaPageState extends State<BerandaPage> {
                                           ? NumberFormat.currency(
                                               locale: 'id_ID',
                                               symbol: 'Rp ',
-                                              decimalDigits: 2,
+                                              decimalDigits: 0,
                                             ).format(_saldo)
                                           : 'Rp ...',
                                       style: const TextStyle(
@@ -627,8 +636,8 @@ class _BerandaPageState extends State<BerandaPage> {
               child: _buildStatCard(
                 _isLoadingStatistics
                     ? '0'
-                    : '${_statistics['nabung_motor'] ?? 0}',
-                'Nabung Motor',
+                    : '${_statistics['nebeng_motor'] ?? 0}',
+                'Nebeng Motor',
                 Icons.two_wheeler,
               ),
             ),
@@ -637,8 +646,8 @@ class _BerandaPageState extends State<BerandaPage> {
               child: _buildStatCard(
                 _isLoadingStatistics
                     ? '0'
-                    : '${_statistics['nabung_mobil'] ?? 0}',
-                'Nabung Mobil',
+                    : '${_statistics['nebeng_mobil'] ?? 0}',
+                'Nebeng Mobil',
                 Icons.directions_car,
               ),
             ),
@@ -652,8 +661,8 @@ class _BerandaPageState extends State<BerandaPage> {
               child: _buildStatCard(
                 _isLoadingStatistics
                     ? '0'
-                    : '${_statistics['nabung_barang'] ?? 0}',
-                'Nabung Barang',
+                    : '${_statistics['nebeng_barang'] ?? 0}',
+                'Nebeng Barang',
                 Icons.shopping_bag_outlined,
               ),
             ),
@@ -784,8 +793,8 @@ class _BerandaPageState extends State<BerandaPage> {
 
   String _getRideTypeLabel(String rideType, String serviceType) {
     if (serviceType == 'barang') return 'Titip Barang';
-    if (rideType == 'motor') return 'Nabung Motor';
-    if (rideType == 'mobil') return 'Nabung Mobil';
+    if (rideType == 'motor') return 'Nebeng Motor';
+    if (rideType == 'mobil') return 'Nebeng Mobil';
     return 'Tebengan';
   }
 
@@ -807,7 +816,7 @@ class _BerandaPageState extends State<BerandaPage> {
   String _getStatusLabel(String status) {
     switch (status) {
       case 'active':
-        return 'Proses';
+        return 'akan datang';
       case 'full':
         return 'Konring';
       case 'completed':
