@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class WithdrawalPosmitra extends Model
 {
@@ -42,13 +41,28 @@ class WithdrawalPosmitra extends Model
         'rejected_at' => 'datetime',
     ];
 
-    public function posmitra(): BelongsTo
+    // Relasi ke PosMitraUser
+    public function posMitra()
     {
         return $this->belongsTo(PosMitraUser::class, 'posmitra_id');
     }
 
-    public function processor(): BelongsTo
+    // Relasi ke Admin yang memproses
+    public function processedBy()
     {
         return $this->belongsTo(User::class, 'processed_by');
+    }
+
+    // Generate Transaction ID unik
+    public static function generateTransactionId()
+    {
+        $date = now()->format('Ymd');
+        $lastWithdrawal = self::whereDate('created_at', now()->toDateString())
+            ->orderBy('id', 'desc')
+            ->first();
+
+        $number = $lastWithdrawal ? (int) substr($lastWithdrawal->transaction_id, -3) + 1 : 1;
+        
+        return 'WDP-' . $date . '-' . str_pad($number, 3, '0', STR_PAD_LEFT);
     }
 }

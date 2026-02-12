@@ -21,6 +21,7 @@ use App\Http\Controllers\Finance\UserController as FinanceUserController;
 use App\Http\Controllers\Finance\TransactionController;
 use App\Http\Controllers\PosMitra\ProfileController;
 use App\Http\Controllers\PosMitra\BerandaController;
+use App\Http\Controllers\PosMitra\WithdrawController;
 
 
 Route::get('/user', function (Request $request) {
@@ -368,8 +369,8 @@ Route::prefix('api/v1')->group(function () {
 
     Route::get('/pos-mitra/profile', [ProfileController::class, 'show']);
     Route::get('/posmitra/beranda', [BerandaController::class, 'beranda']);
-    Route::get('/posmitra/tebengan-akan-datang', [BerandaController::class, 'upcomingRides']);
-    Route::get('/posmitra/statistics', [BerandaController::class, 'statistics']);
+    // Route::get('/posmitra/tebengan-akan-datang', [BerandaController::class, 'upcomingRides']);
+    // Route::get('/posmitra/statistics', [BerandaController::class, 'statistics']);
 
     // =====================================================
     // ADMIN ROUTES
@@ -534,3 +535,26 @@ Route::prefix('finance')->group(function () {
         Route::put('/account/{id}', [FinanceUserController::class, 'updateAccount']);
     });
 });
+
+    
+    // Withdrawal routes
+Route::prefix('v1')->group(function () {
+    Route::post('posmitra/withdraw', [WithdrawController::class, 'withdraw']);
+    Route::get('posmitra/withdraw/history', [WithdrawController::class, 'history']);
+    Route::get('posmitra/withdraw/{id}', [WithdrawController::class, 'detail']);
+});
+
+Route::prefix('posmitra')->group(function () {
+    
+    // ✅ Beranda / Profile
+    Route::get('/beranda', [BerandaController::class, 'beranda']);
+    
+    // ✅ Statistics - untuk menampilkan card statistik
+    Route::get('/statistics', [BerandaController::class, 'statistics']);
+    
+    // ✅ Upcoming Rides - untuk tebengan akan datang
+    Route::get('/upcoming-rides', [BerandaController::class, 'upcomingRides']);
+    
+});
+
+Route::post('/posmitra/withdrawals/{id}/set-status', [WithdrawController::class, 'setStatus']);

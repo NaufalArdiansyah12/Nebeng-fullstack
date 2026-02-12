@@ -4,8 +4,8 @@ namespace App\Http\Controllers\PosMitra;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\PosMitraUser;
 use App\Models\ApiToken;
-use App\Enums\UserRole;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -17,14 +17,14 @@ class ProfileController extends Controller
     public function show(Request $request)
     {
         $user = $this->getAuthenticatedUser($request);
-        if ($user instanceof \Illuminate\Http\JsonResponse) {
-            return $user;
-        }
+        if ($user instanceof \Illuminate\Http\JsonResponse) return $user;
+
+        $user->load('location');
 
         return response()->json([
             'success' => true,
             'data' => [
-                'user' => $this->formatUser($user),
+                'user' => $this->mapUser($user),
             ],
         ]);
     }
@@ -40,7 +40,9 @@ class ProfileController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'email' => 'sometimes|email|unique:users,email,' . $user->id,
+            'name' => 'sometimes|string|max:255',
+            'email' => 'sometimes|email|unique:pos_mitra_users,email,' . $user->id,
+            'phone' => 'sometimes|string|max:20',
             'profile_photo' => 'sometimes|image|mimes:jpg,jpeg,png|max:5120',
         ]);
 
@@ -52,28 +54,36 @@ class ProfileController extends Controller
             ], 422);
         }
 
+        if ($request->filled('name')) {
+            $user->name = $request->name;
+        }
+
         if ($request->filled('email')) {
             $user->email = $request->email;
         }
 
+        if ($request->filled('phone')) {
+            $user->phone = $request->phone;
+        }
+
         if ($request->hasFile('profile_photo')) {
-            $path = $request->file('profile_photo')->storeAs(
+            $file = $request->file('profile_photo');
+            $path = $file->storeAs(
                 'profile_photos',
-                $user->id . '_' . time() . '.' . $request->file('profile_photo')->getClientOriginalExtension(),
+                'posmitra_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension(),
                 'public'
             );
-
-            // ✅ SIMPAN PATH SAJA (TANPA /storage)
-            $user->profile_photo = $path;
+            $user->profile_photo = $path; // simpan path saja
         }
 
         $user->save();
+        $user->load('location');
 
         return response()->json([
             'success' => true,
             'message' => 'Profil posmitra berhasil diperbarui',
             'data' => [
-                'user' => $this->formatUser($user),
+                'user' => $this->mapUser($user),
             ],
         ]);
     }
@@ -82,6 +92,9 @@ class ProfileController extends Controller
      * ================= HELPER =================
      */
 
+    /**
+     * Get authenticated user from bearer token
+     */
     private function getAuthenticatedUser(Request $request)
     {
         $bearer = $request->bearerToken();
@@ -101,15 +114,21 @@ class ProfileController extends Controller
         if (!$apiToken) {
             return response()->json([
                 'success' => false,
-                'message' => 'Token tidak valid atau sudah kadaluarsa',
+                'message' => 'Token tidak valid atau kadaluarsa',
             ], 401);
         }
 
-        $user = User::find($apiToken->user_id);
-        if (!$user || $user->role !== UserRole::POSMITRA) {
+        // Ambil user sesuai tipe token
+        if ($apiToken->user_type === 'posmitra') {
+            $user = PosMitraUser::find($apiToken->posmitra_id);
+        } else {
+            $user = User::find($apiToken->user_id);
+        }
+
+        if (!$user) {
             return response()->json([
                 'success' => false,
-                'message' => 'User tidak ditemukan atau bukan posmitra',
+                'message' => 'User tidak ditemukan',
             ], 404);
         }
 
@@ -117,32 +136,29 @@ class ProfileController extends Controller
     }
 
     /**
-     * Format user response (AMAN untuk data lama & baru)
+     * Mapping user data agar konsisten
      */
-    private function formatUser(User $user): array
+    private function mapUser($user)
     {
-        $photo = null;
-
-        if ($user->profile_photo) {
-            // 🔒 Jika data lama sudah mengandung /storage
-            if (str_starts_with($user->profile_photo, '/storage/')) {
-                $photo = asset(ltrim($user->profile_photo, '/'));
-            }
-            // 🔒 Data baru (path saja)
-            else {
-                $photo = asset('storage/' . $user->profile_photo);
-            }
-        }
-
         return [
             'id' => $user->id,
             'name' => $user->name,
-            'email' => $user->email,
-            'phone' => $user->phone,
-            'address' => $user->address,
-            'gender' => $user->gender,
-            'profile_photo' => $photo,
-            'role' => $user->role,
+            'email' => $user->email ?? null,
+            'phone' => $user->phone ?? null,
+            'profile_photo' => $user->profile_photo
+                ? asset('storage/' . ltrim($user->profile_photo, '/'))
+                : null,
+            'balance' => (float) ($user->balance ?? 0),
+            'location_id' => $user->location_id ?? null,
+            'location' => $user->location ? [
+                'id' => $user->location->id,
+                'name' => $user->location->name,
+                'city' => $user->location->city ?? null,
+                'address' => $user->location->address ?? null,
+                'latitude' => $user->location->latitude ?? null,
+                'longitude' => $user->location->longitude ?? null,
+            ] : null,
+            'role' => 'posmitra',
         ];
     }
 }

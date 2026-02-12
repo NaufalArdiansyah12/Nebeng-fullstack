@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
+    // =================== REGISTER ===================
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -21,15 +22,6 @@ class AuthController extends Controller
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8',
             'password_confirmation' => 'required|string|same:password',
-        ], [
-            'name.required' => 'Nama harus diisi',
-            'email.required' => 'Email harus diisi',
-            'email.email' => 'Format email tidak valid',
-            'email.unique' => 'Email sudah terdaftar',
-            'password.required' => 'Password harus diisi',
-            'password.min' => 'Password minimal 8 karakter',
-            'password_confirmation.required' => 'Konfirmasi password harus diisi',
-            'password_confirmation.same' => 'Konfirmasi password tidak sama dengan password',
         ]);
 
         if ($validator->fails()) {
@@ -40,67 +32,48 @@ class AuthController extends Controller
             ], 422);
         }
 
-        try {
-            // Create new user with default role 'customer'
-            $user = User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'password' => Hash::make($request->password),
-                'role' => 'customer', // default role
-                'balance' => 0,
-                'reward_points' => 0,
-                'phone_verified' => false,
-            ]);
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role' => 'customer',
+            'balance' => 0,
+            'reward_points' => 0,
+            'phone_verified' => false,
+        ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Registrasi berhasil',
-                'data' => [
-                    'user' => [
-                        'id' => $user->id,
-                        'name' => $user->name,
-                        'email' => $user->email,
-                        'role' => $user->role,
-                    ],
+        return response()->json([
+            'success' => true,
+            'message' => 'Registrasi berhasil',
+            'data' => [
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $user->role,
                 ],
-            ], 201);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan saat registrasi',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+            ],
+        ], 201);
     }
 
+    // =================== LOGIN ===================
     public function login(Request $request)
     {
         $request->validate([
             'email' => 'required|email',
             'password' => 'required|string',
-            'user_type' => 'sometimes|string|in:user,posmitra', // optional parameter
+            'user_type' => 'sometimes|string|in:user,posmitra',
         ]);
 
-        // Default ke 'user' jika tidak ada user_type
         $userType = $request->input('user_type', 'user');
 
-        // Cari user berdasarkan tipe
-        if ($userType === 'posmitra') {
-            $user = PosMitraUser::where('email', $request->email)->first();
-            $tableName = 'pos mitra';
-        } else {
-            $user = User::where('email', $request->email)->first();
-            $tableName = 'user';
-        }
+        // ambil user berdasarkan user_type
+        $user = $this->getUserByType($request->email, $userType);
 
-        // Jika tidak ditemukan dan user_type default (user), coba cek di tabel posmitra_users
+        // fallback: cek posmitra jika default user gagal
         if (!$user && $userType === 'user') {
-            $userFromPosMitra = PosMitraUser::where('email', $request->email)->first();
-            if ($userFromPosMitra) {
-                $user = $userFromPosMitra;
-                $userType = 'posmitra';
-                $tableName = 'pos mitra';
-            }
+            $user = $this->getUserByType($request->email, 'posmitra');
+            $userType = 'posmitra';
         }
 
         if (!$user || !Hash::check($request->password, $user->password)) {
@@ -110,34 +83,17 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // create simple token entry with user_type
         $token = Str::random(60);
-        $apiToken = ApiToken::create([
-            'user_id' => $user->id,
-            'user_type' => $userType,
-            'token' => hash('sha256', $token),
-            'expires_at' => now()->addDays(30),
-        ]);
+ApiToken::create([
+    'user_id'     => $userType === 'user' ? $user->id : null,
+    'posmitra_id' => $userType === 'posmitra' ? $user->id : null,
+    'user_type'   => $userType,
+    'token'       => hash('sha256', $token),
+    'expires_at'  => now()->addDays(30),
+]);
 
-        // Format response berdasarkan user type
-        $userData = [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'user_type' => $userType,
-        ];
 
-        // Add additional fields untuk regular user
-        if ($userType === 'user') {
-            $userData['reward_points'] = $user->reward_points ?? 0;
-            $userData['average_rating'] = $user->average_rating ?? null;
-            $userData['total_ratings'] = $user->total_ratings ?? 0;
-            $userData['role'] = $user->role;
-        } else {
-            // PosMitra specific fields
-            $userData['location_id'] = $user->location_id ?? null;
-            $userData['role'] = 'posmitra'; // Set role untuk routing di frontend
-        }
+        $userData = $this->formatUserData($user, $userType);
 
         return response()->json([
             'success' => true,
@@ -148,63 +104,57 @@ class AuthController extends Controller
         ]);
     }
 
+    // =================== LOGOUT ===================
     public function logout(Request $request)
     {
         $bearer = $request->bearerToken();
-        if (!$bearer) {
-            return response()->json(['success' => false, 'message' => 'No token provided'], 400);
-        }
-        $hashed = hash('sha256', $bearer);
-        ApiToken::where('token', $hashed)->delete();
+        if (!$bearer) return response()->json(['success' => false, 'message' => 'No token provided'], 400);
+
+        ApiToken::where('token', hash('sha256', $bearer))->delete();
+
         return response()->json(['success' => true]);
     }
 
-    /**
-     * Login specifically for PosMitra users
-     * This is a convenience endpoint that automatically sets user_type to 'posmitra'
-     */
-    public function loginPosMitra(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required|string',
-        ]);
+    // =================== LOGIN POSMITRA ===================
+public function loginPosMitra(Request $request)
+{
+    $request->validate([
+        'email' => 'required|email',
+        'password' => 'required|string',
+    ]);
 
-        $user = PosMitraUser::where('email', $request->email)->first();
-        
-        if (!$user || !Hash::check($request->password, $user->password)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Email atau password salah untuk Pos Mitra',
-            ], 401);
-        }
+    $userType = 'posmitra'; // ✅ WAJIB ADA
 
-        // create token entry for posmitra
-        $token = Str::random(60);
-        $apiToken = ApiToken::create([
-            'user_id' => $user->id,
-            'user_type' => 'posmitra',
-            'token' => hash('sha256', $token),
-            'expires_at' => now()->addDays(30),
-        ]);
+    $user = $this->getUserByType($request->email, $userType);
 
+    if (!$user || !Hash::check($request->password, $user->password)) {
         return response()->json([
-            'success' => true,
-            'data' => [
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'user_type' => 'posmitra',
-                    'role' => 'posmitra', // Untuk routing di frontend
-                    'location_id' => $user->location_id ?? null,
-                    'balance' => $user->balance ?? 0,
-                ],
-                'token' => $token,
-            ],
-        ]);
+            'success' => false,
+            'message' => 'Email atau password salah untuk Pos Mitra',
+        ], 401);
     }
 
+    $token = Str::random(60);
+
+    ApiToken::create([
+        'user_id'     => null,
+        'posmitra_id' => $user->id, // ✅ FIX
+        'user_type'   => 'posmitra',
+        'token'       => hash('sha256', $token),
+        'expires_at'  => now()->addDays(30),
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'data' => [
+            'user' => $this->formatUserData($user, 'posmitra'),
+            'token' => $token,
+        ],
+    ]);
+}
+
+
+    // =================== CHANGE PASSWORD ===================
     public function changePassword(Request $request)
     {
         $request->validate([
@@ -213,86 +163,24 @@ class AuthController extends Controller
             'new_password_confirmation' => 'required|string|same:new_password',
         ]);
 
-        // Get authenticated user from bearer token
-        $bearer = $request->bearerToken();
-        if (!$bearer) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Token tidak ditemukan',
-            ], 401);
-        }
+        $user = $this->getUserFromToken($request->bearerToken());
+        if (!$user) return response()->json(['success' => false, 'message' => 'Token tidak valid atau user tidak ditemukan'], 401);
 
-        $hashed = hash('sha256', $bearer);
-        $apiToken = ApiToken::where('token', $hashed)
-            ->where('expires_at', '>', now())
-            ->first();
-
-        if (!$apiToken) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Token tidak valid atau sudah kadaluarsa',
-            ], 401);
-        }
-
-        $user = User::find($apiToken->user_id);
-        if (!$user) {
-            return response()->json([
-                'success' => false,
-                'message' => 'User tidak ditemukan',
-            ], 404);
-        }
-
-        // Verify old password
         if (!Hash::check($request->old_password, $user->password)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Kata sandi lama tidak sesuai',
-            ], 400);
+            return response()->json(['success' => false, 'message' => 'Kata sandi lama tidak sesuai'], 400);
         }
 
-        // Update password
         $user->password = Hash::make($request->new_password);
         $user->save();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Kata sandi berhasil diubah',
-        ]);
+        return response()->json(['success' => true, 'message' => 'Kata sandi berhasil diubah']);
     }
 
-    /**
-     * Update user profile (name, email, address, phone, profile photo)
-     */
+    // =================== UPDATE PROFILE ===================
     public function updateProfile(Request $request)
     {
-        // Get authenticated user from bearer token
-        $bearer = $request->bearerToken();
-        if (!$bearer) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Token tidak ditemukan',
-            ], 401);
-        }
-
-        $hashed = hash('sha256', $bearer);
-        $apiToken = ApiToken::where('token', $hashed)
-            ->where('expires_at', '>', now())
-            ->first();
-
-        if (!$apiToken) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Token tidak valid atau sudah kadaluarsa',
-            ], 401);
-        }
-
-        $user = User::find($apiToken->user_id);
-        if (!$user) {
-            return response()->json([
-                'success' => false,
-                'message' => 'User tidak ditemukan',
-            ], 404);
-        }
+        $user = $this->getUserFromToken($request->bearerToken());
+        if (!$user) return response()->json(['success' => false, 'message' => 'Token tidak valid atau user tidak ditemukan'], 401);
 
         $rules = [
             'name' => 'sometimes|string|max:255',
@@ -303,23 +191,11 @@ class AuthController extends Controller
         ];
 
         $validator = Validator::make($request->all(), $rules);
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validasi gagal',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
+        if ($validator->fails()) return response()->json(['success' => false, 'message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
 
-        // Update fields
         $input = $request->only(['name', 'email', 'address', 'phone']);
-        foreach ($input as $key => $val) {
-            if ($val !== null) {
-                $user->{$key} = $val;
-            }
-        }
+        foreach ($input as $key => $val) if ($val !== null) $user->{$key} = $val;
 
-        // Handle photo upload if provided
         if ($request->hasFile('profile_photo')) {
             $file = $request->file('profile_photo');
             $filename = 'profile_photos/' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
@@ -329,94 +205,77 @@ class AuthController extends Controller
 
         $user->save();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Profil berhasil diperbarui',
-            'data' => [
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'address' => $user->address,
-                    'phone' => $user->phone,
-                    'profile_photo' => $user->profile_photo,
-                    'reward_points' => $user->reward_points ?? 0,
-                ],
-            ],
-        ]);
+        return response()->json(['success' => true, 'message' => 'Profil berhasil diperbarui', 'data' => ['user' => $this->formatUserData($user, $this->getUserType($user))]]);
     }
 
-    /**
-     * Return authenticated user profile (via bearer token)
-     */
+    // =================== GET PROFILE ===================
     public function me(Request $request)
     {
-        $bearer = $request->bearerToken();
-        if (!$bearer) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Token tidak ditemukan',
-            ], 401);
+        $user = $this->getUserFromToken($request->bearerToken());
+        if (!$user) return response()->json(['success' => false, 'message' => 'Token tidak valid atau user tidak ditemukan'], 401);
+
+        $userType = $this->getUserType($user);
+
+        return response()->json(['success' => true, 'data' => ['user' => $this->formatUserData($user, $userType)]]);
+    }
+
+    // =================== HELPER FUNCTIONS ===================
+
+    private function getUserByType($email, $type)
+    {
+        if ($type === 'posmitra') {
+            return PosMitraUser::where('email', $email)->first();
         }
+        return User::where('email', $email)->first();
+    }
 
-        $hashed = hash('sha256', $bearer);
-        $apiToken = ApiToken::where('token', $hashed)
-            ->where('expires_at', '>', now())
-            ->first();
+private function getUserFromToken($bearer)
+{
+    if (!$bearer) return null;
 
-        if (!$apiToken) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Token tidak valid atau sudah kadaluarsa',
-            ], 401);
-        }
+    $hashed = hash('sha256', $bearer);
 
-        // Get user berdasarkan user_type
-        if ($apiToken->user_type === 'posmitra') {
-            $user = PosMitraUser::find($apiToken->user_id);
-            $userType = 'posmitra';
-        } else {
-            $user = User::find($apiToken->user_id);
-            $userType = 'user';
-        }
+    $apiToken = ApiToken::where('token', $hashed)
+        ->where('expires_at', '>', now())
+        ->first();
 
-        if (!$user) {
-            return response()->json([
-                'success' => false,
-                'message' => 'User tidak ditemukan',
-            ], 404);
-        }
+    if (!$apiToken) return null;
 
-        // Build user data berdasarkan tipe
-        $userData = [
+    if ($apiToken->user_type === 'posmitra') {
+        return PosMitraUser::find($apiToken->posmitra_id);
+    }
+
+    return User::find($apiToken->user_id);
+}
+
+
+    private function getUserType($user)
+    {
+        if ($user instanceof PosMitraUser) return 'posmitra';
+        return 'user';
+    }
+
+    private function formatUserData($user, $userType)
+    {
+        $data = [
             'id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
-            'phone' => $user->phone,
-            'profile_photo' => $user->profile_photo,
             'user_type' => $userType,
+            'role' => $userType === 'posmitra' ? 'posmitra' : $user->role,
         ];
 
-        // Add fields spesifik untuk regular user
         if ($userType === 'user') {
-            $userData['address'] = $user->address;
-            $userData['average_rating'] = $user->average_rating ?? null;
-            $userData['total_ratings'] = $user->total_ratings ?? 0;
-            $userData['role'] = $user->role;
-            $userData['reward_points'] = $user->reward_points ?? 0;
-            $userData['balance'] = $user->balance ?? 0;
+            $data['address'] = $user->address ?? null;
+            $data['reward_points'] = $user->reward_points ?? 0;
+            $data['average_rating'] = $user->average_rating ?? null;
+            $data['total_ratings'] = $user->total_ratings ?? 0;
+            $data['balance'] = $user->balance ?? 0;
         } else {
-            // Add fields spesifik untuk posmitra
-            $userData['location_id'] = $user->location_id ?? null;
-            $userData['balance'] = $user->balance ?? 0;
-            $userData['role'] = 'posmitra'; // Set role untuk frontend
+            $data['location_id'] = $user->location_id ?? null;
+            $data['balance'] = $user->balance ?? 0;
         }
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'user' => $userData,
-            ],
-        ]);
+        return $data;
     }
 }
