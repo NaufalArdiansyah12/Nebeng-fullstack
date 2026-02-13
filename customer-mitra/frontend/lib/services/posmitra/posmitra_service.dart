@@ -743,41 +743,109 @@ static Future<Map<String, dynamic>> getProfile(String token) async {
 
   /// Get upcoming rides (tebengan akan datang)
   /// ✅ DIPERBAIKI: Endpoint yang benar
-  static Future<List<Map<String, dynamic>>> getUpcomingRides() async {
-    try {
-      print('🔄 [getUpcomingRides] Fetching upcoming rides...');
-      
-      final headers = await _getHeaders();
-      
-      // ✅ ENDPOINT YANG BENAR: /api/posmitra/upcoming-rides
-      final response = await http.get(
-        Uri.parse('$baseUrl/api/posmitra/upcoming-rides'),
-        headers: headers,
-      );
+ // ==================== RIDES / TEBENGAN UNTUK FILTER TAB ====================
 
-      print('📡 [getUpcomingRides] Status: ${response.statusCode}');
-      print('📡 [getUpcomingRides] Response: ${response.body}');
+/// 🟢 GET UPCOMING RIDES - Tab "Akan Datang"
+static Future<List<Map<String, dynamic>>> getUpcomingRides() async {
+  try {
+    print('🔄 [getUpcomingRides] Fetching upcoming rides...');
+    
+    final headers = await _getHeaders();
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/posmitra/upcoming-rides'),
+      headers: headers,
+    );
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['success'] == true) {
-          final rides = List<Map<String, dynamic>>.from(data['data'] ?? []);
-          print('✅ [getUpcomingRides] Found ${rides.length} rides');
-          return rides;
-        }
-        throw Exception(data['message'] ?? 'Gagal mengambil data tebengan');
-      } else if (response.statusCode == 401) {
-        throw Exception('Token tidak valid atau sudah kadaluarsa');
+    print('📡 [getUpcomingRides] Status: ${response.statusCode}');
+    
+    // 🔥 TAMBAH 1 BARIS INI UNTUK LIHAT ISI RESPONSE
+    print('📦 [getUpcomingRides] Response body: ${response.body}');
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['success'] == true) {
+        final rides = List<Map<String, dynamic>>.from(data['data'] ?? []);
+        print('✅ [getUpcomingRides] Found ${rides.length} upcoming rides');
+        return rides;
       }
-      throw Exception('Gagal mengambil data tebengan: ${response.statusCode}');
-    } catch (e) {
-      print('❌ [getUpcomingRides] Error: $e');
-      rethrow;
+      throw Exception(data['message'] ?? 'Gagal mengambil data tebengan');
     }
+    throw Exception('Gagal mengambil data tebengan: ${response.statusCode}');
+  } catch (e) {
+    print('❌ [getUpcomingRides] Error: $e');
+    return [];
   }
+}
 
-  // ==================== WITHDRAWAL ====================
-
+/// 🟢 GET COMPLETED RIDES - Tab "Selesai"
+/// 🔥 INI YANG ANDA BUTUHKAN!
+/// 🟢 GET COMPLETED RIDES - Tab "Selesai"
+static Future<List<Map<String, dynamic>>> getCompletedRides() async {
+  try {
+    print('🔄 [getCompletedRides] Fetching completed rides...');
+    
+    final headers = await _getHeaders();
+    
+    // 🔥 GUNAKAN 1 ENDPOINT INI SAJA - HAPUS ALTERNATIF LAINNYA
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/posmitra/completed-rides'),  // PASTIKAN ENDPOINT INI ADA DI BACKEND
+      headers: headers,
+    );
+    
+    print('📡 [getCompletedRides] Status: ${response.statusCode}');
+    print('📦 [getCompletedRides] Response: ${response.body}');
+    
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['success'] == true) {
+        final rides = List<Map<String, dynamic>>.from(data['data'] ?? []);
+        print('✅ [getCompletedRides] Found ${rides.length} completed rides');
+        return rides;
+      }
+    }
+    
+    print('❌ [getCompletedRides] No completed rides found');
+    return [];
+    
+  } catch (e) {
+    print('❌ [getCompletedRides] Error: $e');
+    return [];
+  }
+}
+/// 🟢 GET ALL RIDES - Tab "Semua"
+static Future<List<Map<String, dynamic>>> getAllRides() async {
+  try {
+    print('🔄 [getAllRides] Fetching all rides...');
+    
+    // Ambil upcoming dan completed secara parallel
+    final results = await Future.wait([
+      getUpcomingRides(),
+      getCompletedRides(),
+    ], eagerError: false);
+    
+    final upcoming = results[0];
+    final completed = results[1];
+    
+    // Gabungkan semua rides
+    final allRides = [...upcoming, ...completed];
+    
+    // Urutkan berdasarkan tanggal (terbaru ke terlama)
+    allRides.sort((a, b) {
+      final dateA = a['date']?.toString() ?? '';
+      final dateB = b['date']?.toString() ?? '';
+      return dateB.compareTo(dateA);
+    });
+    
+    print('✅ [getAllRides] Total: ${allRides.length} rides');
+    print('   - Upcoming: ${upcoming.length}');
+    print('   - Completed: ${completed.length}');
+    
+    return allRides;
+  } catch (e) {
+    print('❌ [getAllRides] Error: $e');
+    return []; // ⚠️ RETURN EMPTY LIST
+  }
+}
   /// Withdraw Balance
   static Future<Map<String, dynamic>> withdrawBalance({
     required String token,

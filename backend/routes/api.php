@@ -558,3 +558,5 @@ Route::prefix('posmitra')->group(function () {
 });
 
 Route::post('/posmitra/withdrawals/{id}/set-status', [WithdrawController::class, 'setStatus']);
+// Di routes/api.php
+Route::get('/posmitra/completed-rides', [BerandaController::class, 'completedRides']);

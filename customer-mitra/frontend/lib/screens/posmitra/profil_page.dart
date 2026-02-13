@@ -18,7 +18,6 @@ class _ProfilPageState extends State<ProfilPage> {
   Map<String, dynamic>? userProfile;
   bool isLoading = true;
   String? errorMessage;
-  int _photoCacheBuster = 0;
 
   @override
   void initState() {
@@ -26,62 +25,58 @@ class _ProfilPageState extends State<ProfilPage> {
     _loadProfile();
   }
 
-Future<void> _loadProfile() async {
-  setState(() => isLoading = true);
+  Future<void> _loadProfile() async {
+    setState(() => isLoading = true);
 
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('api_token') ?? '';
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('api_token') ?? '';
 
-    if (token.isEmpty) {
-      // Jika token kosong, langsung ke login
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Token tidak ditemukan, silakan login.'),
-          action: SnackBarAction(
-            label: 'Login',
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
-              );
-            },
+      if (token.isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Token tidak ditemukan, silakan login.'),
+            action: SnackBarAction(
+              label: 'Login',
+              onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                );
+              },
+            ),
           ),
-        ),
-      );
+        );
+        setState(() {
+          isLoading = false;
+          errorMessage = 'Token tidak ditemukan. Silakan login.';
+        });
+        return;
+      }
+
+      final response = await PosMitraService.getProfile(token);
+
+      if (response['success'] == true) {
+        final userData = response['data']?['user'] as Map<String, dynamic>?;
+
+        setState(() {
+          userProfile = userData;
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          errorMessage = response['message'] ?? 'Gagal mengambil profil.';
+          isLoading = false;
+        });
+      }
+    } catch (e) {
       setState(() {
+        errorMessage = 'Gagal mengambil profil: $e';
         isLoading = false;
-        errorMessage = 'Token tidak ditemukan. Silakan login.';
       });
-      return;
     }
-
-    // Ambil data profil dengan token
-    final response = await PosMitraService.getProfile(token);
-
-    if (response['success'] == true) {
-      final userData = response['data']?['user'] as Map<String, dynamic>?;
-
-      setState(() {
-        userProfile = userData;
-        _photoCacheBuster = DateTime.now().millisecondsSinceEpoch;
-        isLoading = false;
-      });
-    } else {
-      setState(() {
-        errorMessage = response['message'] ?? 'Gagal mengambil profil.';
-        isLoading = false;
-      });
-    }
-  } catch (e) {
-    setState(() {
-      errorMessage = 'Gagal mengambil profil: $e';
-      isLoading = false;
-    });
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -93,14 +88,10 @@ Future<void> _loadProfile() async {
 leading: IconButton(
   icon: const Icon(Icons.arrow_back, color: Color(0xFF212121)),
   onPressed: () {
-    if (Navigator.canPop(context)) {
-      Navigator.pop(context);
-    } else {
-      Navigator.pushReplacementNamed(context, '/home');
-    }
+    // ✅ SIMPLE: POP AJA, FLUTTER OTOMATIS ATUR
+    Navigator.pop(context);
   },
 ),
-
         title: const Text(
           'Akun',
           style: TextStyle(
@@ -175,8 +166,9 @@ leading: IconButton(
                   ],
                 ),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    /// FOTO PROFIL
+                    /// 🔥 FOTO PROFIL - FIX UNTUK DOUBLE STORAGE
                     Container(
                       width: 70,
                       height: 70,
@@ -190,42 +182,51 @@ leading: IconButton(
                       child: ClipOval(
                         child: Builder(
                           builder: (context) {
-                            // Bangun URL lengkap untuk foto profil berdasarkan API yang sudah ada
-                            String photoUrl =
-                                'https://i.pravatar.cc/150?img=12';
                             final raw = userProfile?['profile_photo'];
-
+                            
+                            debugPrint('📸 Raw photo: $raw');
+                            
+                            // Kalau ada foto
                             if (raw != null && raw.isNotEmpty) {
-                              if (raw.startsWith('http')) {
-                                photoUrl = raw;
-                              } else {
-                                final base = ApiService.baseUrl;
-                                photoUrl = raw.startsWith('/')
-                                    ? '$base$raw'
-                                    : '$base/$raw';
+                              String imageUrl = raw;
+                              
+                              // 🔥 CASE 1: Sudah full URL tapi double storage
+                              if (raw.contains('/storage/storage/')) {
+                                imageUrl = raw.replaceFirst('/storage/storage/', '/storage/');
                               }
+                              // 🔥 CASE 2: Sudah full URL
+                              else if (raw.startsWith('http')) {
+                                imageUrl = raw;
+                              }
+                              // 🔥 CASE 3: Masih path
+                              else {
+                                final cleanPath = raw.replaceFirst('/storage/', '');
+                                final baseUrl = ApiService.baseUrl.replaceFirst('/api', '');
+                                imageUrl = '$baseUrl/storage/$cleanPath';
+                              }
+                              
+                              debugPrint('✅ Final URL: $imageUrl');
+                              
+                              return Image.network(
+                                imageUrl,
+                                width: 70,
+                                height: 70,
+                                fit: BoxFit.cover,
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return const Center(
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) {
+                                  debugPrint('❌ Error: $error');
+                                  return _buildDefaultAvatar();
+                                },
+                              );
                             }
-
-                            return Image.network(
-                              '$photoUrl?t=$_photoCacheBuster',
-                              width: 70,
-                              height: 70,
-                              fit: BoxFit.cover,
-                              loadingBuilder:
-                                  (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return const Center(
-                                  child:
-                                      CircularProgressIndicator(strokeWidth: 2),
-                                );
-                              },
-                              errorBuilder: (context, error, stackTrace) {
-                                return Image.network(
-                                  'https://i.pravatar.cc/150?img=12',
-                                  fit: BoxFit.cover,
-                                );
-                              },
-                            );
+                            
+                            // Kalau ga ada foto
+                            return _buildDefaultAvatar();
                           },
                         ),
                       ),
@@ -233,83 +234,40 @@ leading: IconButton(
                     const SizedBox(width: 16),
 
                     /// INFO PROFIL
-/// INFO PROFIL
-Expanded(
-  child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        userProfile?['name'] ?? '-',
-        style: const TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
-          color: Color(0xFF212121),
-        ),
-      ),
-      const SizedBox(height: 4),
-      Text(
-        userProfile?['phone'] ?? '-',
-        style: TextStyle(
-          fontSize: 13,
-          color: Colors.grey[600],
-        ),
-      ),
-      const SizedBox(height: 2),
-      Text(
-        userProfile?['email'] ?? '-',
-        style: TextStyle(
-          fontSize: 13,
-          color: Colors.grey[600],
-        ),
-      ),
-      const SizedBox(height: 2),
-      // ✅ Gabungkan Location: "Terminal Blok M - Jakarta"
-      Builder(
-        builder: (context) {
-          final locationName = userProfile?['location']?['name'];
-          final locationCity = userProfile?['location']?['city'];
-          final locationAddress = userProfile?['location']?['address'];
-          
-          String locationText = 'Lokasi tidak tersedia';
-          
-          if (locationName != null) {
-            locationText = locationName;
-            if (locationCity != null) {
-              locationText += ' - $locationCity';
-            }
-          }
-          
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                locationText,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              if (locationAddress != null && locationAddress.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Text(
-                    locationAddress,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey[500],
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            userProfile?['name'] ?? '-',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF212121),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            userProfile?['phone'] ?? '-',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            userProfile?['email'] ?? '-',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          _buildLocationInfo(),
+                        ],
+                      ),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-            ],
-          );
-        },
-      ),
-    ],
-  ),
-),
+                    
                     /// ICON EDIT
                     InkWell(
                       onTap: _showEditNameDialog,
@@ -360,11 +318,12 @@ Expanded(
                         ),
                       );
                       if (res == true) {
-                        // Reload profile and notify user
                         _loadProfile();
                         ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('Foto profil diperbarui')));
+                          const SnackBar(
+                            content: Text('Foto profil diperbarui'),
+                          ),
+                        );
                       }
                     },
                   ),
@@ -372,7 +331,11 @@ Expanded(
                   _buildMenuItem(
                     icon: Icons.card_giftcard_outlined,
                     title: 'Kode Referral',
-                    onTap: () {},
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Fitur akan segera tersedia')),
+                      );
+                    },
                   ),
                   Divider(height: 1, color: Colors.grey[200], indent: 60),
                   _buildMenuItem(
@@ -423,11 +386,72 @@ Expanded(
                 ),
               ),
             ),
-
             const SizedBox(height: 24),
           ],
         ),
       ),
+    );
+  }
+
+  /// 🔥 BUILD DEFAULT AVATAR
+  Widget _buildDefaultAvatar() {
+    return Container(
+      color: const Color(0xFF1E3A8A),
+      child: Center(
+        child: Text(
+          userProfile?['name']?.isNotEmpty == true
+              ? userProfile!['name'][0].toUpperCase()
+              : 'U',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 24,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 🔥 BUILD LOCATION INFO
+  Widget _buildLocationInfo() {
+    final locationName = userProfile?['location']?['name'];
+    final locationCity = userProfile?['location']?['city'];
+    final locationAddress = userProfile?['location']?['address'];
+    
+    String locationText = 'Lokasi tidak tersedia';
+    
+    if (locationName != null) {
+      locationText = locationName;
+      if (locationCity != null) {
+        locationText += ' - $locationCity';
+      }
+    }
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          locationText,
+          style: TextStyle(
+            fontSize: 13,
+            color: Colors.grey[600],
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        if (locationAddress != null && locationAddress.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text(
+              locationAddress,
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey[500],
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+      ],
     );
   }
 
@@ -501,7 +525,8 @@ Expanded(
                       if (newName.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                              content: Text('Nama tidak boleh kosong')),
+                            content: Text('Nama tidak boleh kosong'),
+                          ),
                         );
                         return;
                       }
@@ -516,20 +541,19 @@ Expanded(
                         if (token == null || token.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                                content: Text(
-                                    'Token tidak ditemukan. Silakan login.')),
+                              content: Text('Token tidak ditemukan. Silakan login.'),
+                            ),
                           );
                           Navigator.pop(context);
                           return;
                         }
 
-                        final resp = await ApiService.updateProfile(
-                            token: token, name: newName);
+                        final resp = await PosMitraService.updateProfile(
+                          name: newName,
+                        );
 
-                        // API returns success flag and data.user
                         if (resp['success'] == true) {
-                          final userData =
-                              resp['data']?['user'] as Map<String, dynamic>?;
+                          final userData = resp['data']?['user'] as Map<String, dynamic>?;
                           if (userData != null) {
                             setState(() {
                               userProfile = userData;
@@ -538,11 +562,12 @@ Expanded(
 
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                                content: Text('Nama berhasil diperbarui')),
+                              content: Text('Nama berhasil diperbarui'),
+                            ),
                           );
+                          Navigator.pop(context);
                         } else {
-                          final msg =
-                              resp['message'] ?? 'Gagal memperbarui profil';
+                          final msg = resp['message'] ?? 'Gagal memperbarui profil';
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text(msg)),
                           );
@@ -550,13 +575,13 @@ Expanded(
                       } catch (e) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                              content: Text('Gagal menghubungi server: $e')),
+                            content: Text('Gagal menghubungi server: $e'),
+                          ),
                         );
                       } finally {
                         setStateDialog(() {
                           isSaving = false;
                         });
-                        Navigator.pop(context);
                       }
                     },
               child: isSaving
@@ -593,9 +618,8 @@ Expanded(
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context); // Close dialog first
-
-              // Show loading
+              Navigator.pop(context);
+              
               showDialog(
                 context: context,
                 barrierDismissible: false,
@@ -621,36 +645,28 @@ Expanded(
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('api_token');
 
-      // Call logout API if token exists
       if (token != null && token.isNotEmpty) {
         try {
           await ApiService.logout(token);
-        } catch (_) {
-          // Ignore logout API errors, still clear local data
-        }
+        } catch (_) {}
       }
 
-      // Clear all local data
       await prefs.remove('api_token');
       await prefs.remove('user_role');
       await prefs.remove('user_id');
 
       if (!mounted) return;
 
-      // Close loading dialog
       Navigator.of(context).pop();
 
-      // Navigate to splash screen and clear all routes
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const SplashScreen()),
         (route) => false,
       );
     } catch (e) {
       if (!mounted) return;
-
-      // Close loading dialog
       Navigator.of(context).pop();
-
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Gagal logout: $e'),

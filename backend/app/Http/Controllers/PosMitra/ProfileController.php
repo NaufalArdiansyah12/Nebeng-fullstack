@@ -145,9 +145,9 @@ class ProfileController extends Controller
             'name' => $user->name,
             'email' => $user->email ?? null,
             'phone' => $user->phone ?? null,
-            'profile_photo' => $user->profile_photo
-                ? asset('storage/' . ltrim($user->profile_photo, '/'))
-                : null,
+           'profile_photo' => $user->profile_photo
+    ? asset('storage/' . ltrim(str_replace('/storage/', '', $user->profile_photo), '/'))
+    : null,
             'balance' => (float) ($user->balance ?? 0),
             'location_id' => $user->location_id ?? null,
             'location' => $user->location ? [

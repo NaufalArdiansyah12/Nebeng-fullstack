@@ -13,57 +13,114 @@ class FotoProfilPage extends StatefulWidget {
 }
 
 class _FotoProfilPageState extends State<FotoProfilPage> {
-  int currentStep = 0;
+  // 🔥 SEDERHANAKAN: Hanya 3 step
+  static const int STEP_PILIH_FOTO = 0;
+  static const int STEP_UPLOADING = 1;
+  static const int STEP_SUKSES = 2;
+  
+  int currentStep = STEP_PILIH_FOTO;
   final ImagePicker _picker = ImagePicker();
   XFile? _pickedImage;
-
-  void _nextStep() {
-    if (currentStep < 4) {
-      setState(() {
-        currentStep++;
-      });
-    }
-  }
-
-  void _previousStep() {
-    if (currentStep > 0) {
-      setState(() {
-        currentStep--;
-      });
-    }
-  }
+  bool _isUploading = false;
 
   Future<void> _pickImage(ImageSource source) async {
     try {
       final picked = await _picker.pickImage(
-          source: source, imageQuality: 80, maxWidth: 800);
+        source: source,
+        imageQuality: 80,
+        maxWidth: 800,
+        maxHeight: 800,
+      );
+      
       if (picked != null) {
+        // 🔥 VALIDASI UKURAN FILE (max 2MB)
+        final file = File(picked.path);
+        final fileSize = await file.length();
+        
+        if (fileSize > 2 * 1024 * 1024) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Ukuran foto maksimal 2MB'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          return;
+        }
+        
+        // 🔥 VALIDASI FORMAT FILE
+        final extension = picked.path.split('.').last.toLowerCase();
+        if (!['jpg', 'jpeg', 'png'].contains(extension)) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Format foto harus JPG/PNG'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          return;
+        }
+        
         setState(() {
           _pickedImage = picked;
         });
       }
     } catch (e) {
-      // ignore
+      debugPrint('Error pick image: $e');
     }
   }
 
   void _showImageOptions() {
     showModalBottomSheet(
       context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (c) => SafeArea(
         child: Wrap(
           children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'Pilih Sumber Foto',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[800],
+                ),
+              ),
+            ),
             ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('Pilih dari Galeri'),
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE3F2FD),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.photo_library, color: Color(0xFF1E3A8A)),
+              ),
+              title: const Text(
+                'Pilih dari Galeri',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
               onTap: () {
                 Navigator.pop(c);
                 _pickImage(ImageSource.gallery);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('Ambil Foto'),
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE3F2FD),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.camera_alt, color: Color(0xFF1E3A8A)),
+              ),
+              title: const Text(
+                'Ambil Foto',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
               onTap: () {
                 Navigator.pop(c);
                 _pickImage(ImageSource.camera);
@@ -78,39 +135,64 @@ class _FotoProfilPageState extends State<FotoProfilPage> {
   Future<void> _uploadPhoto() async {
     if (_pickedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Silakan pilih foto terlebih dahulu')),
+        const SnackBar(
+          content: Text('Silakan pilih foto terlebih dahulu'),
+          backgroundColor: Colors.orange,
+        ),
       );
       return;
     }
 
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('api_token');
-      if (token == null) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Token tidak ditemukan. Silakan login.')));
-        return;
-      }
+    setState(() {
+      _isUploading = true;
+      currentStep = STEP_UPLOADING;
+    });
 
+    try {
       final resp = await PosMitraService.updateProfile(
-          photoFilePath: _pickedImage!.path);
+        photoFilePath: _pickedImage!.path,
+      );
+      
+      if (!mounted) return;
+      
       if (resp['success'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Foto profil berhasil diunggah')));
-        setState(() => currentStep = 4);
-        // Auto-close and bubble success after a short delay so parent reloads
-        Future.delayed(const Duration(milliseconds: 900), () {
+        setState(() {
+          _isUploading = false;
+          currentStep = STEP_SUKSES;
+        });
+        
+        // Auto close setelah 1.5 detik
+        Future.delayed(const Duration(milliseconds: 1500), () {
           if (!mounted) return;
           Navigator.pop(context, true);
         });
       } else {
+        setState(() {
+          _isUploading = false;
+          currentStep = STEP_PILIH_FOTO;
+        });
+        
         final msg = resp['message'] ?? 'Gagal mengunggah foto';
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(msg)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(msg),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Error: $e')));
+      setState(() {
+        _isUploading = false;
+        currentStep = STEP_PILIH_FOTO;
+      });
+      
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -124,11 +206,11 @@ class _FotoProfilPageState extends State<FotoProfilPage> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Color(0xFF212121)),
           onPressed: () {
-            if (currentStep > 0) {
-              _previousStep();
-            } else {
-              Navigator.pop(context);
+            if (currentStep == STEP_UPLOADING) {
+              // Jangan izinkan back saat uploading
+              return;
             }
+            Navigator.pop(context, currentStep == STEP_SUKSES);
           },
         ),
         title: const Text(
@@ -139,7 +221,6 @@ class _FotoProfilPageState extends State<FotoProfilPage> {
             fontWeight: FontWeight.w600,
           ),
         ),
-        centerTitle: false,
       ),
       body: Column(
         children: [
@@ -148,41 +229,42 @@ class _FotoProfilPageState extends State<FotoProfilPage> {
               child: _buildStepContent(),
             ),
           ),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
-                  blurRadius: 10,
-                  offset: const Offset(0, -2),
-                ),
-              ],
-            ),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _handleButtonPress,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1E3A8A),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+          if (currentStep != STEP_UPLOADING) // Sembunyikan button saat uploading
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.06),
+                    blurRadius: 10,
+                    offset: const Offset(0, -2),
                   ),
-                  elevation: 0,
-                ),
-                child: Text(
-                  _getButtonText(),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                ],
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _handleButtonPress,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1E3A8A),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    _getButtonText(),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -190,26 +272,23 @@ class _FotoProfilPageState extends State<FotoProfilPage> {
 
   Widget _buildStepContent() {
     switch (currentStep) {
-      case 0:
-        return _buildStep1Info();
-      case 1:
-        return _buildStep2Upload();
-      case 2:
-        return _buildStep3Position();
-      case 3:
-        return _buildStep4Preview();
-      case 4:
-        return _buildStep5Success();
+      case 0: // STEP PILIH FOTO
+        return _buildPilihFotoStep();
+      case 1: // STEP UPLOADING
+        return _buildUploadingStep();
+      case 2: // STEP SUKSES
+        return _buildSuksesStep();
       default:
-        return _buildStep1Info();
+        return _buildPilihFotoStep();
     }
   }
 
-  Widget _buildStep1Info() {
+  Widget _buildPilihFotoStep() {
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
         children: [
+          // Info Card
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -218,306 +297,249 @@ class _FotoProfilPageState extends State<FotoProfilPage> {
             ),
             child: Row(
               children: [
-                const Icon(Icons.info_outline,
-                    color: Color(0xFF1E3A8A), size: 24),
+                const Icon(Icons.info_outline, color: Color(0xFF1E3A8A), size: 24),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Ikuti panduan foto untuk mempermudah Anda dalam mengambil foto',
+                    'Pastikan foto wajah terlihat jelas dengan latar belakang putih',
                     style: TextStyle(
-                        fontSize: 13, color: Colors.grey[700], height: 1.4),
+                      fontSize: 13,
+                      color: Colors.grey[700],
+                      height: 1.4,
+                    ),
                   ),
                 ),
-                const Icon(Icons.chevron_right, color: Color(0xFF9E9E9E)),
               ],
             ),
           ),
+          
           const SizedBox(height: 32),
+          
+          // Preview Foto
           Container(
-            width: 120,
-            height: 120,
+            width: 180,
+            height: 180,
             decoration: BoxDecoration(
               color: const Color(0xFFF5F5F5),
-              borderRadius: BorderRadius.circular(12),
+              shape: BoxShape.circle,
               border: Border.all(color: const Color(0xFFE0E0E0), width: 2),
             ),
             child: _pickedImage != null
                 ? ClipOval(
-                    child: Image.file(File(_pickedImage!.path),
-                        width: 120, height: 120, fit: BoxFit.cover))
+                    child: Image.file(
+                      File(_pickedImage!.path),
+                      width: 180,
+                      height: 180,
+                      fit: BoxFit.cover,
+                    ),
+                  )
                 : Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.person_outline,
-                          size: 48, color: Colors.grey[400]),
+                      Icon(Icons.person_outline, size: 64, color: Colors.grey[400]),
                       const SizedBox(height: 8),
-                      Text('Foto Profil',
-                          style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey[600],
-                              fontWeight: FontWeight.w500)),
+                      Text(
+                        'Belum ada foto',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ],
                   ),
           ),
-          const SizedBox(height: 16),
-          OutlinedButton(
+          
+          const SizedBox(height: 24),
+          
+          // Tombol Pilih Foto
+          OutlinedButton.icon(
             onPressed: _showImageOptions,
             style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              side: const BorderSide(color: Color(0xFF1E3A8A)),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              side: const BorderSide(color: Color(0xFF1E3A8A), width: 1.5),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20)),
+                borderRadius: BorderRadius.circular(30),
+              ),
             ),
-            child: const Text('Ambil foto',
-                style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1E3A8A))),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStep2Upload() {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        children: [
-          const Text('Panduan Upload Dokumen',
+            icon: const Icon(Icons.add_a_photo, color: Color(0xFF1E3A8A)),
+            label: const Text(
+              'Pilih atau Ambil Foto',
               style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF212121))),
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1E3A8A),
+              ),
+            ),
+          ),
+          
           const SizedBox(height: 32),
+          
+          // Panduan Singkat
           Container(
-            width: 160,
-            height: 200,
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: const Color(0xFFF5F5F5),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(Icons.person, size: 80, color: Colors.grey[400]),
-          ),
-          const SizedBox(height: 12),
-          const Text('Tampak Document',
-              style: TextStyle(fontSize: 13, color: Color(0xFF757575))),
-          const SizedBox(height: 32),
-          _buildRequirementBox(
-            color: const Color(0xFFE8F5E9),
-            iconColor: const Color(0xFF4CAF50),
-            icon: Icons.check,
-            title: 'Persyaratan:',
-            items: [
-              'Foto menggunakan latar belakang putih polos',
-              'Tanpa menggunakan aksesori seperti topi / kacamata hitam, dll',
-            ],
-          ),
-          const SizedBox(height: 16),
-          _buildRequirementBox(
-            color: const Color(0xFFFFEBEE),
-            iconColor: const Color(0xFFEF5350),
-            icon: Icons.close,
-            title: 'Yang harus dihindari:',
-            items: ['Akan dapat penolakan ke ketekang dan terpotong'],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRequirementBox({
-    required Color color,
-    required Color iconColor,
-    required IconData icon,
-    required String title,
-    required List<String> items,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration:
-          BoxDecoration(color: color, borderRadius: BorderRadius.circular(12)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration:
-                    BoxDecoration(color: iconColor, shape: BoxShape.circle),
-                child: Icon(icon, size: 16, color: Colors.white),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                  child: Text(title,
-                      style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF212121)))),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ...items.map((item) => Padding(
-                padding: const EdgeInsets.only(left: 28, bottom: 8),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
                     Container(
-                      margin: const EdgeInsets.only(top: 6),
-                      width: 4,
-                      height: 4,
+                      padding: const EdgeInsets.all(4),
                       decoration: const BoxDecoration(
-                          color: Color(0xFF424242), shape: BoxShape.circle),
+                        color: Color(0xFF4CAF50),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.check, size: 12, color: Colors.white),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                        child: Text(item,
-                            style: const TextStyle(
-                                fontSize: 13,
-                                color: Color(0xFF424242),
-                                height: 1.4))),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'Persyaratan Foto:',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF212121),
+                      ),
+                    ),
                   ],
                 ),
-              )),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStep3Position() {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        children: [
-          const Text('Posisikan wajah Anda dalam lingkaran',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF212121))),
-          const SizedBox(height: 8),
-          Text('Posisikan wajahmu terhadap jelas',
-              style: TextStyle(fontSize: 13, color: Colors.grey[600])),
-          const SizedBox(height: 40),
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              Container(
-                width: 280,
-                height: 280,
-                decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border:
-                        Border.all(color: const Color(0xFF1E3A8A), width: 3)),
-              ),
-              Container(
-                width: 260,
-                height: 260,
-                decoration: const BoxDecoration(
-                    color: Color(0xFFE3F2FD), shape: BoxShape.circle),
-                child: Icon(Icons.person, size: 120, color: Colors.grey[400]),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStep4Preview() {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-                color: const Color(0xFFE3F2FD),
-                borderRadius: BorderRadius.circular(12)),
-            child: Row(
-              children: [
-                const Icon(Icons.info_outline,
-                    color: Color(0xFF1E3A8A), size: 24),
-                const SizedBox(width: 12),
-                Expanded(
-                    child: Text(
-                        'Ikuti panduan foto untuk mempermudah Anda dalam mengambil foto',
-                        style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey[700],
-                            height: 1.4))),
-                const Icon(Icons.chevron_right, color: Color(0xFF9E9E9E)),
+                const SizedBox(height: 12),
+                _buildBulletPoint('Latar belakang putih polos'),
+                _buildBulletPoint('Wajah terlihat jelas'),
+                _buildBulletPoint('Tanpa aksesori (topi/kacamata hitam)'),
+                _buildBulletPoint('Format JPG/PNG, maksimal 2MB'),
               ],
             ),
           ),
-          const SizedBox(height: 32),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBulletPoint(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 28, bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Container(
-            width: 140,
-            height: 140,
-            decoration: BoxDecoration(
-                color: const Color(0xFFF5F5F5),
-                borderRadius: BorderRadius.circular(12)),
-            child: _pickedImage != null
-                ? ClipOval(
-                    child: Image.file(File(_pickedImage!.path),
-                        width: 140, height: 140, fit: BoxFit.cover))
-                : Icon(Icons.person, size: 64, color: Colors.grey[400]),
-          ),
-          const SizedBox(height: 16),
-          OutlinedButton(
-            onPressed: _showImageOptions,
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              side: const BorderSide(color: Color(0xFF1E3A8A)),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20)),
+            margin: const EdgeInsets.only(top: 8),
+            width: 4,
+            height: 4,
+            decoration: const BoxDecoration(
+              color: Color(0xFF757575),
+              shape: BoxShape.circle,
             ),
-            child: const Text('Ambil foto',
-                style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1E3A8A))),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontSize: 13,
+                color: Color(0xFF424242),
+                height: 1.4,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStep5Success() {
+  Widget _buildUploadingStep() {
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const SizedBox(height: 60),
-          const Text('Foto Profil Berhasil Disimpan',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF212121))),
-          const SizedBox(height: 40),
           Container(
-            width: 140,
-            height: 140,
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE3F2FD),
+              shape: BoxShape.circle,
+            ),
+            child: const Center(
+              child: CircularProgressIndicator(
+                color: Color(0xFF1E3A8A),
+                strokeWidth: 3,
+              ),
+            ),
+          ),
+          const SizedBox(height: 32),
+          const Text(
+            'Mengunggah Foto...',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF212121),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Mohon tunggu sebentar',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSuksesStep() {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(height: 60),
+          Container(
+            width: 120,
+            height: 120,
             decoration: BoxDecoration(
               color: const Color(0xFF1E3A8A),
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                    color: Color(0xFF1E3A8A).withOpacity(0.3),
-                    blurRadius: 30,
-                    offset: Offset(0, 10))
+                  color: const Color(0xFF1E3A8A).withOpacity(0.3),
+                  blurRadius: 30,
+                  offset: const Offset(0, 10),
+                ),
               ],
             ),
-            child: const Icon(Icons.check, size: 70, color: Colors.white),
+            child: const Icon(
+              Icons.check,
+              size: 60,
+              color: Colors.white,
+            ),
           ),
           const SizedBox(height: 32),
-          Text('Selamat! Anda telah berhasil\nmenambahkan foto profil',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                  fontSize: 14, color: Colors.grey[600], height: 1.5)),
+          const Text(
+            'Foto Profil Berhasil Diperbarui!',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF212121),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Foto profil Anda telah berhasil diunggah',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[600],
+              height: 1.5,
+            ),
+          ),
         ],
       ),
     );
@@ -526,33 +548,25 @@ class _FotoProfilPageState extends State<FotoProfilPage> {
   String _getButtonText() {
     switch (currentStep) {
       case 0:
-        return 'Simpan';
-      case 1:
-        return 'Selanjutnya';
+        return _pickedImage != null ? 'Simpan Foto' : 'Pilih Foto';
       case 2:
-        return 'Ambil foto';
-      case 3:
-        return 'Simpan';
-      case 4:
-        return 'Kembali';
+        return 'Kembali ke Profil';
       default:
         return 'Lanjut';
     }
   }
 
-  void _handleButtonPress() async {
-    if (currentStep == 4) {
-      // Return true to signal parent that a change was made
+  void _handleButtonPress() {
+    if (currentStep == STEP_PILIH_FOTO) {
+      if (_pickedImage != null) {
+        // Langsung upload
+        _uploadPhoto();
+      } else {
+        // Buka pilihan foto
+        _showImageOptions();
+      }
+    } else if (currentStep == STEP_SUKSES) {
       Navigator.pop(context, true);
-      return;
     }
-
-    // If we have a picked image and we are at a step that should save, upload it
-    if ((_pickedImage != null) && (currentStep == 0 || currentStep == 3)) {
-      await _uploadPhoto();
-      return;
-    }
-
-    _nextStep();
   }
 }
