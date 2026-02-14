@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CustomerRating;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class CustomerRatingController extends Controller
@@ -16,7 +17,7 @@ class CustomerRatingController extends Controller
     public function store(Request $request)
     {
         // Log incoming request for debugging
-        \Log::info('Customer Rating Request', $request->all());
+        Log::info('Customer Rating Request', $request->all());
 
         $validator = Validator::make($request->all(), [
             'booking_id' => 'required|integer',
@@ -28,7 +29,7 @@ class CustomerRatingController extends Controller
         ]);
 
         if ($validator->fails()) {
-            \Log::error('Customer Rating Validation Failed', [
+            Log::error('Customer Rating Validation Failed', [
                 'errors' => $validator->errors()->toArray(),
                 'input' => $request->all()
             ]);
@@ -82,14 +83,14 @@ class CustomerRatingController extends Controller
      */
     public function getByBooking($bookingId)
     {
-        \Log::info('CustomerRating: Getting by booking ID', ['booking_id' => $bookingId]);
+        Log::info('CustomerRating: Getting by booking ID', ['booking_id' => $bookingId]);
         
         $rating = CustomerRating::where('booking_id', $bookingId)
             ->with(['mitra', 'customer'])
             ->first();
 
         if (!$rating) {
-            \Log::info('CustomerRating: Not found for booking ID', ['booking_id' => $bookingId]);
+            Log::info('CustomerRating: Not found for booking ID', ['booking_id' => $bookingId]);
             return response()->json([
                 'success' => false,
                 'message' => 'Rating tidak ditemukan',
@@ -107,13 +108,13 @@ class CustomerRatingController extends Controller
      */
     public function getByBookingNumber($bookingNumber)
     {
-        \Log::info('CustomerRating: Getting by booking number', ['booking_number' => $bookingNumber]);
+        Log::info('CustomerRating: Getting by booking number', ['booking_number' => $bookingNumber]);
         
         // Find booking by booking_number first
         $booking = \App\Models\Booking::where('booking_number', $bookingNumber)->first();
         
         if (!$booking) {
-            \Log::info('CustomerRating: Booking not found', ['booking_number' => $bookingNumber]);
+            Log::info('CustomerRating: Booking not found', ['booking_number' => $bookingNumber]);
             return response()->json([
                 'success' => false,
                 'message' => 'Booking tidak ditemukan',
@@ -125,7 +126,7 @@ class CustomerRatingController extends Controller
             ->first();
 
         if (!$rating) {
-            \Log::info('CustomerRating: Rating not found for booking', [
+            Log::info('CustomerRating: Rating not found for booking', [
                 'booking_number' => $bookingNumber,
                 'booking_id' => $booking->id
             ]);
@@ -135,7 +136,7 @@ class CustomerRatingController extends Controller
             ], 404);
         }
 
-        \Log::info('CustomerRating: Found rating', ['rating_id' => $rating->id]);
+        Log::info('CustomerRating: Found rating', ['rating_id' => $rating->id]);
         
         return response()->json([
             'success' => true,

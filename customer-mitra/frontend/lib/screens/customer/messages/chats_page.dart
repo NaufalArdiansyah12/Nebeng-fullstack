@@ -4,8 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../services/shared/chat_service.dart';
 import '../../../services/api_service.dart';
-import '../../../utils/chat_helper.dart';
 import '../../../utils/phone_helper.dart';
+import '../../../utils/update_conversation_photos.dart';
 
 class ChatsPage extends StatefulWidget {
   const ChatsPage({Key? key}) : super(key: key);
@@ -20,11 +20,13 @@ class _ChatsPageState extends State<ChatsPage> {
   int? _userId;
   String _userRole = 'customer';
   String _searchQuery = '';
+  bool _hasFixedUrls = false;
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
+    _fixConversationUrls();
   }
 
   @override
@@ -38,12 +40,26 @@ class _ChatsPageState extends State<ChatsPage> {
     final userId = prefs.getInt('user_id');
     final userRole = prefs.getString('user_role') ?? 'customer';
 
-    print('🔍 ChatsPage - User ID: $userId, Role: $userRole');
-
     if (mounted) {
       setState(() {
         _userId = userId;
         _userRole = userRole;
+      });
+    }
+  }
+
+  Future<void> _fixConversationUrls() async {
+    if (_hasFixedUrls) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final hasFixedBefore =
+        prefs.getBool('has_fixed_conversation_urls') ?? false;
+
+    if (!hasFixedBefore) {
+      await UpdateConversationPhotos.fixLocalhostUrls();
+      await prefs.setBool('has_fixed_conversation_urls', true);
+      setState(() {
+        _hasFixedUrls = true;
       });
     }
   }
@@ -122,13 +138,6 @@ class _ChatsPageState extends State<ChatsPage> {
             child: StreamBuilder<List<Map<String, dynamic>>>(
               stream: _chatService.getConversations(_userId!, _userRole),
               builder: (context, snapshot) {
-                print('🎬 StreamBuilder state: ${snapshot.connectionState}');
-                print('🎬 Has data: ${snapshot.hasData}');
-                print('🎬 Has error: ${snapshot.hasError}');
-                if (snapshot.hasError) {
-                  print('❌ Error: ${snapshot.error}');
-                }
-
                 // Show loading only on first load for max 5 seconds
                 if (snapshot.connectionState == ConnectionState.waiting &&
                     !snapshot.hasData) {
@@ -186,107 +195,6 @@ class _ChatsPageState extends State<ChatsPage> {
                         Text('start_booking'.tr(),
                             style: TextStyle(fontSize: 12, color: Colors.grey)),
                         SizedBox(height: 24),
-                        // Test button untuk development
-                        ElevatedButton.icon(
-                          onPressed: () async {
-                            print(
-                                '🔘 Button clicked - Creating test conversation...');
-
-                            // Show loading
-                            showDialog(
-                              context: context,
-                              barrierDismissible: false,
-                              builder: (context) => Center(
-                                child: Card(
-                                  child: Padding(
-                                    padding: EdgeInsets.all(20),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        CircularProgressIndicator(),
-                                        SizedBox(height: 16),
-                                        Text('Creating conversation...'),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-
-                            try {
-                              final prefs =
-                                  await SharedPreferences.getInstance();
-                              final userId = prefs.getInt('user_id');
-                              final userName = prefs.getString('user_name') ??
-                                  prefs.getString('name') ??
-                                  'User ${prefs.getInt('user_id')}';
-                              final userRole =
-                                  prefs.getString('user_role') ?? 'customer';
-
-                              print(
-                                  '👤 User data - ID: $userId, Name: $userName, Role: $userRole');
-
-                              if (userId != null) {
-                                final result =
-                                    await ChatHelper.createTestConversation(
-                                  currentUserId: userId,
-                                  currentUserName: userName,
-                                  currentUserRole: userRole,
-                                );
-
-                                Navigator.pop(context); // Close loading
-
-                                if (result != null) {
-                                  print('✅ Success! Conversation ID: $result');
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content:
-                                          Text('✅ Test conversation created!'),
-                                      backgroundColor: Colors.green,
-                                    ),
-                                  );
-                                } else {
-                                  print('❌ Failed to create conversation');
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                          '❌ Failed to create conversation'),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
-                                }
-                              } else {
-                                Navigator.pop(context); // Close loading
-                                print(
-                                    '❌ User ID not found in SharedPreferences');
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                        '❌ User ID not found. Please login again.'),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                              }
-                            } catch (e, stackTrace) {
-                              Navigator.pop(context); // Close loading
-                              print('❌ Exception: $e');
-                              print('Stack trace: $stackTrace');
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('❌ Error: $e'),
-                                  backgroundColor: Colors.red,
-                                  duration: Duration(seconds: 5),
-                                ),
-                              );
-                            }
-                          },
-                          icon: Icon(Icons.add),
-                          label: Text('Create Test Chat (Dev Only)'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFF0F4AA3),
-                            foregroundColor: Colors.white,
-                          ),
-                        ),
                       ],
                     ),
                   );
@@ -339,6 +247,16 @@ class _ChatsPageState extends State<ChatsPage> {
                     final unread = isCustomer
                         ? (conv['unreadCustomer'] ?? 0)
                         : (conv['unreadMitra'] ?? 0);
+
+                    // Debug: Print photo data for first conversation
+                    if (index == 0) {
+                      print('🔍 First conversation data:');
+                      print('  - Conversation ID: ${conv['id']}');
+                      print('  - Other name: $otherName');
+                      print('  - mitraPhoto: ${conv['mitraPhoto']}');
+                      print('  - customerPhoto: ${conv['customerPhoto']}');
+                      print('  - Selected photo: $otherPhoto');
+                    }
 
                     return Container(
                       decoration: BoxDecoration(
@@ -450,6 +368,26 @@ class _ChatsPageState extends State<ChatsPage> {
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Memperbarui foto profil...')),
+          );
+          // Try to update missing photos by fetching from backend
+          await UpdateConversationPhotos.updateAllConversations();
+          // Also attempt to fix any localhost URLs as a fallback
+          await UpdateConversationPhotos.fixLocalhostUrls();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                  content: Text('Selesai! Foto akan muncul sebentar lagi.')),
+            );
+          }
+        },
+        child: Icon(Icons.refresh),
+        backgroundColor: Color(0xFF0F4AA3),
+        tooltip: 'Fix Foto Profil',
+      ),
     );
   }
 
@@ -534,9 +472,14 @@ class _ChatPageState extends State<ChatPage> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _userId = prefs.getInt('user_id');
-      _userName = prefs.getString('user_name');
+      // Try multiple keys for user name
+      _userName =
+          prefs.getString('user_name') ?? prefs.getString('name') ?? 'Customer';
       _userRole = prefs.getString('user_role') ?? 'customer';
     });
+
+    print(
+        '🔍 ChatPage - User ID: $_userId, Name: $_userName, Role: $_userRole');
 
     // Mark as read when opening chat
     if (_userId != null) {
@@ -546,41 +489,31 @@ class _ChatPageState extends State<ChatPage> {
 
   Future<void> _loadConversationData() async {
     try {
-      print('🔍 Loading conversation data for: ${widget.conversationId}');
       final conv = await _chatService.getConversation(widget.conversationId);
 
       if (conv == null) {
-        print('❌ Conversation not found');
         return;
       }
-
-      print('📦 Conversation data: ${conv.keys}');
 
       if (mounted) {
         // Customer chat, maka ambil mitraPhone
         String? phone = conv['mitraPhone'] as String?;
-        print('📞 Phone from conversation: $phone');
 
         // Fallback: Jika phone tidak ada di conversation (conversation lama),
         // ambil dari API berdasarkan mitraId
         if (phone == null || phone.isEmpty) {
           final mitraId = conv['mitraId'] as int?;
-          print('👤 MitraId from conversation: $mitraId');
 
           if (mitraId != null) {
             try {
               final prefs = await SharedPreferences.getInstance();
               final token = prefs.getString('api_token');
-              print('🔑 Token exists: ${token != null}');
 
               if (token != null) {
-                print('📞 Fetching mitra phone from API for mitraId: $mitraId');
                 final userData = await ApiService.getUserById(mitraId, token);
-                print('📦 User data keys: ${userData.keys}');
 
                 phone = userData['phone'] as String? ??
                     userData['phone_number'] as String?;
-                print('✅ Phone from API: $phone');
 
                 // Update Firestore conversation with phone number for future use
                 if (phone != null && phone.isNotEmpty) {
@@ -589,32 +522,18 @@ class _ChatPageState extends State<ChatPage> {
                       widget.conversationId,
                       mitraPhone: phone,
                     );
-                    print('✅ Updated conversation with phone number');
-                  } catch (e) {
-                    print('⚠️ Failed to update conversation: $e');
-                  }
+                  } catch (e) {}
                 }
-              } else {
-                print('❌ No token available');
               }
-            } catch (e) {
-              print('⚠️ Error fetching phone from API: $e');
-              print('⚠️ Stack trace: ${StackTrace.current}');
-            }
-          } else {
-            print('❌ No mitraId in conversation');
+            } catch (e) {}
           }
         }
 
         setState(() {
           _otherUserPhone = phone;
         });
-        print('📱 Final phone loaded: $_otherUserPhone');
       }
-    } catch (e) {
-      print('❌ Error loading conversation data: $e');
-      print('❌ Stack trace: ${StackTrace.current}');
-    }
+    } catch (e) {}
   }
 
   Future<void> _sendMessage() async {
@@ -640,11 +559,12 @@ class _ChatPageState extends State<ChatPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         leading: Padding(
-          padding: const EdgeInsets.only(left: 12.0),
+          padding: EdgeInsets.all(8),
           child: InkWell(
             onTap: () => Navigator.pop(context),
             borderRadius: BorderRadius.circular(12),

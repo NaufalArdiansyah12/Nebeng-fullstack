@@ -20,13 +20,13 @@ class AppServiceProvider extends ServiceProvider
                 $serviceAccountPath = config('firebase.credentials');
                 
                 if (empty($serviceAccountPath)) {
-                    Log::error('Firebase credentials path not configured');
-                    throw new \Exception('Firebase credentials not configured');
+                    error_log('Firebase credentials path not configured');
+                    return null;
                 }
                 
                 if (!file_exists($serviceAccountPath)) {
-                    Log::error('Firebase credentials file not found: ' . $serviceAccountPath);
-                    throw new \Exception('Firebase credentials file not found');
+                    error_log('Firebase credentials file not found: ' . $serviceAccountPath);
+                    return null;
                 }
                 
                 $factory = (new Factory)
@@ -35,8 +35,8 @@ class AppServiceProvider extends ServiceProvider
                     
                 return $factory->createFirestore();
             } catch (\Exception $e) {
-                Log::error('Failed to initialize Firestore: ' . $e->getMessage());
-                throw $e;
+                error_log('Failed to initialize Firestore: ' . $e->getMessage());
+                return null;
             }
         });
     }

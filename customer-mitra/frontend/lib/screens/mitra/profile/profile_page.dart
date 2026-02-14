@@ -114,6 +114,15 @@ class _MitraProfilePageState extends State<MitraProfilePage> {
     );
   }
 
+  String? _getPhoneVerificationSubtitle() {
+    final phoneVerified = userData?['phone_verified'] ?? false;
+    if (phoneVerified == true) {
+      return '✓ Terverifikasi';
+    } else {
+      return 'Belum diverifikasi';
+    }
+  }
+
   Widget _buildProfileHeader() {
     final name = userData?['name'] ?? 'User';
     final phone = userData?['phone'] ?? userData?['no_hp'] ?? '';
@@ -318,6 +327,7 @@ class _MitraProfilePageState extends State<MitraProfilePage> {
   Widget _buildMenuItem({
     required IconData icon,
     required String title,
+    String? subtitle,
     required VoidCallback onTap,
   }) {
     return InkWell(
@@ -329,13 +339,31 @@ class _MitraProfilePageState extends State<MitraProfilePage> {
             Icon(icon, size: 24, color: Colors.black87),
             const SizedBox(width: 16),
             Expanded(
-              child: Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 15,
-                  color: Colors.black87,
-                  fontWeight: FontWeight.w500,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      color: Colors.black87,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: subtitle.contains('Terverifikasi')
+                            ? Colors.green
+                            : Colors.orange[700],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
             Icon(

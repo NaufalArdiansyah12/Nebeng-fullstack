@@ -6,6 +6,7 @@ import 'payment_selection_page.dart';
 import '../../../../services/api_service.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import '../../nebeng_barang/widgets/ukuran_picker.dart';
 
 class BookingDetailPage extends StatefulWidget {
   final TripModel trip;
@@ -22,7 +23,7 @@ class BookingDetailPage extends StatefulWidget {
 class _BookingDetailPageState extends State<BookingDetailPage> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _weightController = TextEditingController();
+  String? _selectedWeight;
   final TextEditingController _descriptionController = TextEditingController();
   File? selectedImage;
   final ImagePicker _picker = ImagePicker();
@@ -42,7 +43,6 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
     _phoneController.addListener(() {
       setState(() {});
     });
-    _weightController.addListener(() => setState(() {}));
     _descriptionController.addListener(() => setState(() {}));
   }
 
@@ -74,7 +74,6 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
-    _weightController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }
@@ -551,8 +550,7 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
           passengerName: _nameController.text,
           phoneNumber: _phoneController.text,
           photoFile: selectedImage,
-          weight:
-              _weightController.text.isNotEmpty ? _weightController.text : null,
+          weight: _selectedWeight,
           description: _descriptionController.text.isNotEmpty
               ? _descriptionController.text
               : null,
@@ -611,12 +609,7 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
             ),
           ),
           const SizedBox(height: 16),
-          _buildBarangInput(
-            Icons.scale_outlined,
-            'Berat Barang',
-            _weightController,
-            'Contoh: 2KG',
-          ),
+          _buildWeightPicker(),
           const SizedBox(height: 16),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -762,34 +755,51 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
     );
   }
 
-  Widget _buildBarangInput(IconData icon, String label,
-      TextEditingController controller, String hint) {
+  Widget _buildWeightPicker() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Icon(icon, size: 20, color: Colors.grey[600]),
+            Icon(Icons.scale_outlined, size: 20, color: Colors.grey[600]),
             const SizedBox(width: 12),
-            Text(
-              label,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            const Text(
+              'Berat Barang',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
             ),
           ],
         ),
         const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          style: const TextStyle(fontSize: 14, color: Colors.black87),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: TextStyle(fontSize: 14, color: Colors.grey[400]),
-            border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Colors.grey[300]!)),
-            enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Colors.grey[300]!)),
+        GestureDetector(
+          onTap: () {
+            UkuranPicker.show(context, (selected) {
+              setState(() {
+                _selectedWeight = selected;
+              });
+            });
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey[300]!),
+              borderRadius: BorderRadius.circular(8),
+              color: Colors.white,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  _selectedWeight ?? 'Pilih berat barang',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: _selectedWeight != null
+                        ? Colors.black87
+                        : Colors.grey[400],
+                  ),
+                ),
+                Icon(Icons.arrow_drop_down, color: Colors.grey[600]),
+              ],
+            ),
           ),
         ),
       ],

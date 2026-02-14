@@ -4,6 +4,7 @@ namespace App\Http\Controllers\PosMitra;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\PosMitraUser;
 use App\Models\ApiToken;
 use App\Enums\UserRole;
 use Illuminate\Http\Request;
@@ -105,21 +106,39 @@ class ProfileController extends Controller
             ], 401);
         }
 
-        $user = User::find($apiToken->user_id);
-        if (!$user || $user->role !== UserRole::POSMITRA) {
-            return response()->json([
-                'success' => false,
-                'message' => 'User tidak ditemukan atau bukan posmitra',
-            ], 404);
+        // Check first in PosMitraUser table based on user_type
+        if ($apiToken->user_type === 'posmitra') {
+            if (!$apiToken->posmitra_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Token posmitra tidak valid',
+                ], 401);
+            }
+            
+            $posMitraUser = PosMitraUser::find($apiToken->posmitra_id);
+            if ($posMitraUser) {
+                return $posMitraUser;
+            }
         }
 
-        return $user;
+        // Fallback to User table for backward compatibility (using user_id)
+        if ($apiToken->user_id) {
+            $user = User::find($apiToken->user_id);
+            if ($user && $user->role === UserRole::POSMITRA) {
+                return $user;
+            }
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'User tidak ditemukan atau bukan posmitra',
+        ], 404);
     }
 
     /**
      * Format user response (AMAN untuk data lama & baru)
      */
-    private function formatUser(User $user): array
+    private function formatUser(User|PosMitraUser $user): array
     {
         $photo = null;
 
@@ -139,10 +158,10 @@ class ProfileController extends Controller
             'name' => $user->name,
             'email' => $user->email,
             'phone' => $user->phone,
-            'address' => $user->address,
-            'gender' => $user->gender,
+            'address' => $user->address ?? null,
+            'gender' => $user->gender ?? null,
             'profile_photo' => $photo,
-            'role' => $user->role,
+            'role' => $user instanceof PosMitraUser ? 'posmitra' : $user->role,
         ];
     }
 }

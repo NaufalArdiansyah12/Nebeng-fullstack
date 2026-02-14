@@ -23,6 +23,9 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'status',
+        'blocked_reason',
+        'blocked_at',
         'fcm_token',
         'address',
         'phone',
@@ -43,6 +46,15 @@ class User extends Authenticatable
         'password',
         'remember_token',
         'pin',
+    ];
+
+    /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array
+     */
+    protected $appends = [
+        'photo_url',
     ];
 
     /**
@@ -68,5 +80,30 @@ class User extends Authenticatable
     public function phoneOtps()
     {
         return $this->hasMany(PhoneOtp::class);
+    }
+
+    /**
+     * Get full URL for profile photo
+     */
+    public function getPhotoUrlAttribute(): ?string
+    {
+        if (empty($this->profile_photo)) {
+            return null;
+        }
+
+        // If already full URL, return as is
+        if (str_starts_with($this->profile_photo, 'http://') || str_starts_with($this->profile_photo, 'https://')) {
+            return $this->profile_photo;
+        }
+
+        // Return relative storage path instead of absolute URL so client
+        // can resolve it using its configured API base URL.
+        // Example: '/storage/profile_photos/..jpg'
+        $photo = ltrim($this->profile_photo, '/');
+        // Avoid duplicating 'storage' if the stored path already contains it
+        if (str_starts_with($photo, 'storage/')) {
+            return '/' . $photo;
+        }
+        return '/storage/' . $photo;
     }
 }

@@ -1,84 +1,125 @@
-import { Eye, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import DashboardLayout from "@/components/DashboardLayout";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import api from "@/lib/api";
+import { toast } from "sonner";
+import { PosMitraSearch } from "@/components/ui/posmitra/posmitra-search";
+import { PosMitraTable } from "@/components/ui/posmitra/posmitra-table";
 
-const posMitraData = [
-  {
-    id: "1",
-    nama: "Muhammad Abdul",
-    kode: "sssd23",
-    terminal: "TERMINAL 1",
-    alamat:
-      "Jl. Jend. Sudirman No.296, Pereng, Sokarengga, Kec. Purwokerto Tim., Kabupaten Banyumas, Jawa Tengah 53116",
-  },
-  {
-    id: "2",
-    nama: "Muhammad Abdul",
-    kode: "sssd23",
-    terminal: "TERMINAL 2",
-    alamat:
-      "Jl. Jend. Sudirman No.296, Pereng, Sokarengga, Kec. Purwokerto Tim., Kabupaten Banyumas, Jawa Tengah 53116",
-  },
-];
+interface PosMitra {
+  id: number;
+  nama: string;
+  email: string;
+  phone: string;
+  terminal: string | null;
+  alamat_terminal: string | null;
+  kode_referral: string | null;
+}
 
 const PosMitra = () => {
-  const navigate = useNavigate();
+  const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [posMitraData, setPosMitraData] = useState<PosMitra[]>([]);
+  const [loading, setLoading] = useState(true);
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    fetchPosMitra();
+  }, []);
+
+  const fetchPosMitra = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get("/users/pos-mitra");
+      setPosMitraData(response.data);
+    } catch (error) {
+      console.error("Error fetching pos mitra:", error);
+      toast.error("Gagal mengambil data Pos Mitra");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredData = posMitraData.filter(
+    (p) =>
+      p.nama?.toLowerCase().includes(search.toLowerCase()) ||
+      p.kode_referral?.toLowerCase().includes(search.toLowerCase()) ||
+      p.terminal?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const totalEntries = filteredData.length;
+  const totalPages = Math.ceil(totalEntries / itemsPerPage);
+  
+  // Get paginated data
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedData = filteredData.slice(startIndex, endIndex);
 
   return (
     <DashboardLayout title="Pos Mitra">
-      <div className="bg-background border border-border rounded-xl">
+      <div className="bg-background border border-border rounded-xl overflow-hidden">
         {/* Header */}
         <div className="p-5 border-b border-border flex items-center justify-between">
           <h3 className="font-semibold">Daftar Pos Mitra</h3>
-
-          <div className="relative w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input placeholder="Search" className="pl-9" />
-          </div>
+          <PosMitraSearch value={search} onChange={setSearch} />
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-muted/50">
-              <tr>
-                <th className="px-5 py-3 text-left text-xs text-muted-foreground">NO</th>
-                <th className="px-5 py-3 text-left text-xs text-muted-foreground">NAMA</th>
-                <th className="px-5 py-3 text-left text-xs text-muted-foreground">KODE REFERRAL</th>
-                <th className="px-5 py-3 text-left text-xs text-muted-foreground">TERMINAL</th>
-                <th className="px-5 py-3 text-left text-xs text-muted-foreground">ALAMAT TERMINAL</th>
-                <th className="px-5 py-3 text-left text-xs text-muted-foreground">AKSI</th>
-              </tr>
-            </thead>
-            <tbody>
-              {posMitraData.map((p, i) => (
-                <tr
-                  key={p.id}
-                  className="border-b border-border hover:bg-muted/30"
+        <PosMitraTable data={paginatedData} loading={loading} startIndex={startIndex} />
+
+        {/* Pagination */}
+        {!loading && paginatedData.length > 0 && (
+          <div className="p-4 flex items-center justify-between text-sm text-muted-foreground border-t border-border">
+            <span>
+              {Math.min(startIndex + 1, totalEntries)} - {Math.min(endIndex, totalEntries)} of {totalEntries} entries
+            </span>
+            <div className="flex items-center gap-1">
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              {Array.from({ length: Math.min(3, totalPages) }, (_, i) => i + 1).map((page) => (
+                <Button
+                  key={page}
+                  variant={currentPage === page ? "default" : "ghost"}
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setCurrentPage(page)}
                 >
-                  <td className="px-5 py-4 text-sm">{i + 1}</td>
-                  <td className="px-5 py-4 text-sm font-medium">{p.nama}</td>
-                  <td className="px-5 py-4 text-sm">{p.kode}</td>
-                  <td className="px-5 py-4 text-sm">{p.terminal}</td>
-                  <td className="px-5 py-4 text-sm max-w-md">
-                    {p.alamat}
-                  </td>
-                  <td className="px-5 py-4">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => navigate(`/pos-mitra/${p.id}`)}
-                    >
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                  </td>
-                </tr>
+                  {page}
+                </Button>
               ))}
-            </tbody>
-          </table>
-        </div>
+              {totalPages > 3 && (
+                <>
+                  <span className="px-2">...</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => setCurrentPage(totalPages)}
+                  >
+                    {totalPages}
+                  </Button>
+                </>
+              )}
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );

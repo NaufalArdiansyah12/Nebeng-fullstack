@@ -1004,6 +1004,7 @@ class _MitraHomePageState extends State<MitraHomePage> {
                                       badgeText = const Color(0xFFFF8C00);
                                       break;
                                     case 'completed':
+                                    case 'selesai':
                                       statusLabel = 'Selesai';
                                       badgeBg = const Color(0xFFE8F5E9);
                                       badgeText = const Color(0xFF2E7D32);
@@ -1017,6 +1018,46 @@ class _MitraHomePageState extends State<MitraHomePage> {
                                       statusLabel = 'Penuh';
                                       badgeBg = const Color(0xFFFFE6E6);
                                       badgeText = const Color(0xFFD32F2F);
+                                      break;
+                                    case 'pending':
+                                      statusLabel = 'Menunggu';
+                                      badgeBg = const Color(0xFFFFF4EA);
+                                      badgeText = const Color(0xFFFF8C00);
+                                      break;
+                                    case 'paid':
+                                      statusLabel = 'Terbayar';
+                                      badgeBg = const Color(0xFFE3F2FD);
+                                      badgeText = const Color(0xFF1976D2);
+                                      break;
+                                    case 'confirmed':
+                                      statusLabel = 'Dikonfirmasi';
+                                      badgeBg = const Color(0xFFE3F2FD);
+                                      badgeText = const Color(0xFF1976D2);
+                                      break;
+                                    case 'scheduled':
+                                      statusLabel = 'Terjadwal';
+                                      badgeBg = const Color(0xFFE3F2FD);
+                                      badgeText = const Color(0xFF1976D2);
+                                      break;
+                                    case 'menuju_penjemputan':
+                                      statusLabel = 'Menuju Penjemputan';
+                                      badgeBg = const Color(0xFFE1F5FE);
+                                      badgeText = const Color(0xFF0277BD);
+                                      break;
+                                    case 'sudah_di_penjemputan':
+                                      statusLabel = 'Sudah di Penjemputan';
+                                      badgeBg = const Color(0xFFE8F5E9);
+                                      badgeText = const Color(0xFF388E3C);
+                                      break;
+                                    case 'menuju_tujuan':
+                                      statusLabel = 'Menuju Tujuan';
+                                      badgeBg = const Color(0xFFE1F5FE);
+                                      badgeText = const Color(0xFF0277BD);
+                                      break;
+                                    case 'sudah_sampai_tujuan':
+                                      statusLabel = 'Sudah Sampai Tujuan';
+                                      badgeBg = const Color(0xFFE8F5E9);
+                                      badgeText = const Color(0xFF388E3C);
                                       break;
                                     default:
                                       // Fallback: if status empty, show availability; otherwise capitalize raw status
@@ -1142,10 +1183,16 @@ class _MitraHomePageState extends State<MitraHomePage> {
                                                                   .start,
                                                           children: [
                                                             Text(
-                                                              service,
+                                                              service.isNotEmpty
+                                                                  ? service[0]
+                                                                          .toUpperCase() +
+                                                                      service
+                                                                          .substring(
+                                                                              1)
+                                                                  : service,
                                                               style:
                                                                   const TextStyle(
-                                                                fontSize: 14,
+                                                                fontSize: 16,
                                                                 fontWeight:
                                                                     FontWeight
                                                                         .w600,

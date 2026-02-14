@@ -2,6 +2,17 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'api_config.dart';
 
+/// Custom exception for blocked users
+class UserBlockedException implements Exception {
+  final String reason;
+  final DateTime? blockedAt;
+
+  UserBlockedException({required this.reason, this.blockedAt});
+
+  @override
+  String toString() => 'UserBlockedException: $reason';
+}
+
 /// Authentication Service - handles login, logout, PIN management
 class AuthService {
   /// Login with email and password
@@ -21,6 +32,26 @@ class AuthService {
         return Map<String, dynamic>.from(body['data']);
       }
       throw Exception('Unexpected login response');
+    } else if (resp.statusCode == 403) {
+      // User is blocked
+      try {
+        final body = json.decode(resp.body);
+        final reason = body['blocked_reason'] ?? 'Akun Anda telah diblokir';
+        final blockedAtStr = body['blocked_at'];
+        DateTime? blockedAt;
+        if (blockedAtStr != null) {
+          try {
+            blockedAt = DateTime.parse(blockedAtStr);
+          } catch (_) {}
+        }
+        throw UserBlockedException(reason: reason, blockedAt: blockedAt);
+      } catch (e) {
+        if (e is UserBlockedException) rethrow;
+        throw UserBlockedException(
+          reason:
+              'Akun Anda telah diblokir. Hubungi customer support untuk informasi lebih lanjut.',
+        );
+      }
     } else {
       final preview =
           resp.body.length > 300 ? resp.body.substring(0, 300) : resp.body;

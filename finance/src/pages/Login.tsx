@@ -16,48 +16,48 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  if (!email || !password) {
-    toast.error("Email dan password wajib diisi");
-    return;
-  }
-
-  setIsLoading(true);
-
-  try {
-    const response = await api.post(
-      "/users/login",
-      { email, password }
-    );
-
-    toast.success(response.data.message);
-
-    // simpan user admin
-    localStorage.setItem(
-      "user",
-      JSON.stringify(response.data.user)
-    );
-
-    // redirect ke admin dashboard
-    navigate("/dashboard");
-
-  } catch (error) {
-    const status = error.response?.status;
-    const message = error.response?.data?.message;
-
-    if (status === 401) {
-      toast.error(message || "Email atau password salah");
-    } else if (status === 403) {
-      toast.error("Akses ditolak. Hanya admin yang dapat login");
-    } else {
-      toast.error("Terjadi kesalahan pada server");
+    if (!email || !password) {
+      toast.error("Email dan password wajib diisi");
+      return;
     }
-  } finally {
-    setIsLoading(false);
-  }
-};
+
+    setIsLoading(true);
+
+    try {
+      const response = await api.post(
+        "/users/login",
+        { email, password }
+      );
+
+      toast.success(response.data.message);
+
+      // simpan user admin
+      localStorage.setItem(
+        "user",
+        JSON.stringify(response.data.user)
+      );
+
+      // redirect ke admin dashboard
+      navigate("/dashboard");
+
+    } catch (error) {
+      const status = error.response?.status;
+      const message = error.response?.data?.message;
+
+      if (status === 401) {
+        toast.error(message || "Email atau password salah");
+      } else if (status === 403) {
+        toast.error("Akses ditolak. Hanya finance yang dapat login");
+      } else {
+        toast.error("Terjadi kesalahan pada server");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
 
 
@@ -88,7 +88,7 @@ const handleSubmit = async (e) => {
             Selamat Datang
           </h1>
           <p className="text-login-sidebar-foreground/70 text-sm max-w-md leading-relaxed">
-            Lorem ipsum is simply dummy text of the printing and typesetting industry. 
+            Lorem ipsum is simply dummy text of the printing and typesetting industry.
             Lorem ipsum has been the industry's standard dummy text ever since the 1500s.
           </p>
         </div>
@@ -113,16 +113,6 @@ const handleSubmit = async (e) => {
               <span className="text-2xl font-bold text-primary">Nebeng</span>
               <span className="text-yellow-500 text-2xl">.</span>
             </div>
-          </div>
-
-          {/* Form Header */}
-          <div className="mb-8">
-            <p className="text-foreground/70 text-sm">
-              <span className="text-primary font-medium underline cursor-pointer hover:text-primary/80">
-                Login
-              </span>{" "}
-              untuk melanjutkan ke Dashboard Nebeng
-            </p>
           </div>
 
           {/* Login Form */}

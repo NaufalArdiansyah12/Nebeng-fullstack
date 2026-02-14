@@ -26,7 +26,7 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
 
   Future<void> _loadPhoneStatus() async {
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('auth_token');
+    final token = prefs.getString('api_token');
 
     if (token != null) {
       final result =
@@ -50,7 +50,7 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
+      final token = prefs.getString('api_token');
 
       if (token == null) {
         _showErrorDialog('Sesi Anda telah berakhir. Silakan login kembali.');

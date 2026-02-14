@@ -191,6 +191,28 @@ class ApiService {
         mitraId: mitraId,
       );
 
+  static Future<Map<String, dynamic>> cancelRide({
+    required int rideId,
+    required String rideType,
+    required String cancellationReason,
+    required String token,
+  }) =>
+      RideService.cancelRide(
+        rideId: rideId,
+        rideType: rideType,
+        cancellationReason: cancellationReason,
+        token: token,
+      );
+
+  static Future<Map<String, dynamic>> getMitraCancellationCount({
+    required int mitraId,
+    required String token,
+  }) =>
+      RideService.getMitraCancellationCount(
+        mitraId: mitraId,
+        token: token,
+      );
+
   // ========== Booking Service Methods ==========
   static Future<Map<String, dynamic>> createBooking({
     required int rideId,

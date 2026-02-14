@@ -320,7 +320,13 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
   }
 
   Widget _buildTotalPayment() {
-    final totalPrice = widget.trip.price * widget.totalPassengers;
+    // For barang service type, totalPassengers will be 1 but we should use trip price directly
+    // For regular service, multiply by totalPassengers only if > 1
+    final isBarangService = widget.trip.serviceType == 'barang' ||
+        widget.trip.serviceType == 'both';
+    final totalPrice = (isBarangService || widget.totalPassengers == 1)
+        ? widget.trip.price
+        : widget.trip.price * widget.totalPassengers;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -490,9 +496,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
       padding: const EdgeInsets.all(20),
       child: SafeArea(
         child: LoadingButton(
-          onPressed: () async {
-            _handlePayment();
-          },
+          onPressed: _processBookingAndPayment,
           style: ElevatedButton.styleFrom(
             backgroundColor: NebengMobilTheme.primaryBlue,
             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -512,10 +516,6 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
         ),
       ),
     );
-  }
-
-  void _handlePayment() {
-    _processBookingAndPayment();
   }
 
   Future<void> _processBookingAndPayment() async {

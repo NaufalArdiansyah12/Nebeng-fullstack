@@ -10,6 +10,8 @@ use App\Models\Ride;
 use App\Models\CarRide;
 use App\Enums\UserRole;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class BerandaController extends Controller
 {
@@ -38,10 +40,24 @@ class BerandaController extends Controller
      */
     public function upcomingRides(Request $request)
     {
+        Log::info('PosMitra upcomingRides called', [
+            'bearer_token_exists' => $request->bearerToken() ? 'yes' : 'no',
+            'authorization_header' => $request->header('Authorization') ? 'exists' : 'missing',
+        ]);
+
         $user = $this->getAuthenticatedUser($request);
         if ($user instanceof \Illuminate\Http\JsonResponse) {
+            Log::error('PosMitra upcomingRides auth failed', [
+                'response' => $user->getData(),
+            ]);
             return $user;
         }
+
+        Log::info('PosMitra upcomingRides authenticated', [
+            'user_id' => $user->id,
+            'user_type' => get_class($user),
+            'location_id' => $user->location_id,
+        ]);
 
         // Cek apakah pos mitra memiliki assigned location
         if (!$user->location_id) {
@@ -196,7 +212,7 @@ class BerandaController extends Controller
             ->count();
 
         // Count Titip Barang (from tebengan_titip_barang table)
-        $titipBarang = \DB::table('tebengan_titip_barang')
+        $titipBarang = DB::table('tebengan_titip_barang')
             ->where('destination_location_id', $user->location_id)
             ->where('status', 'completed')
             ->count();
@@ -238,21 +254,49 @@ class BerandaController extends Controller
             ], 401);
         }
 
-        // Check first in PosMitraUser table
-        $posMitraUser = PosMitraUser::find($apiToken->user_id);
-        if ($posMitraUser) {
-            return $posMitraUser;
+        Log::info('PosMitra auth - ApiToken found', [
+            'user_id' => $apiToken->user_id,
+            'posmitra_id' => $apiToken->posmitra_id,
+            'user_type' => $apiToken->user_type,
+            'expires_at' => $apiToken->expires_at,
+        ]);
+
+        // Check first in PosMitraUser table based on user_type
+        if ($apiToken->user_type === 'posmitra') {
+            if (!$apiToken->posmitra_id) {
+                Log::error('PosMitra auth - Token is posmitra type but posmitra_id is null');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Token posmitra tidak valid',
+                ], 401);
+            }
+            
+            $posMitraUser = PosMitraUser::find($apiToken->posmitra_id);
+            if ($posMitraUser) {
+                Log::info('PosMitra auth - Found in PosMitraUser table', ['posmitra_id' => $posMitraUser->id]);
+                return $posMitraUser;
+            }
+            Log::warning('PosMitra auth - Token is posmitra type but user not found in PosMitraUser table', [
+                'posmitra_id' => $apiToken->posmitra_id,
+            ]);
         }
 
-        // Fallback to User table for backward compatibility
-        $user = User::find($apiToken->user_id);
-        if (!$user || $user->role !== UserRole::POSMITRA) {
-            return response()->json([
-                'success' => false,
-                'message' => 'User tidak ditemukan atau bukan posmitra',
-            ], 404);
+        // Fallback to User table for backward compatibility (using user_id)
+        if ($apiToken->user_id) {
+            $user = User::find($apiToken->user_id);
+            if ($user && $user->role === UserRole::POSMITRA) {
+                Log::info('PosMitra auth - Found in User table (backward compatibility)', ['user_id' => $user->id]);
+                return $user;
+            }
         }
 
-        return $user;
+        Log::error('PosMitra auth - User not found in both tables', [
+            'user_id' => $apiToken->user_id,
+            'posmitra_id' => $apiToken->posmitra_id,
+        ]);
+        return response()->json([
+            'success' => false,
+            'message' => 'User tidak ditemukan atau bukan posmitra',
+        ], 404);
     }
 }
