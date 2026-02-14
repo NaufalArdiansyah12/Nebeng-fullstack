@@ -1,4 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'api_config.dart';
 
 class ChatService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -9,41 +12,41 @@ class ChatService {
   /// Mendukung format lama (customerId/mitraId) dan format baru (participants)
   Stream<List<Map<String, dynamic>>> getConversations(
       int userId, String userRole) {
-    print('🔍 Getting conversations for userId: $userId, role: $userRole');
     return _firestore.collection('conversations').snapshots().map((snapshot) {
-      print('📦 Received ${snapshot.docs.length} conversations from Firestore');
-      final List<Map<String, dynamic>> allConversations = [];
+      // Use document id as key to avoid deduplicating different bookings
+      // Each conversation is unique per booking, even if they share the same rideId
+      final List<Map<String, dynamic>> conversations = [];
 
       for (var doc in snapshot.docs) {
         final data = doc.data();
-        print('🔎 Checking doc ${doc.id}: ${data.keys}');
 
         // Format lama: customer-mitra conversation
         if (data.containsKey('customerId') || data.containsKey('mitraId')) {
           String userField = userRole == 'customer' ? 'customerId' : 'mitraId';
-          print(
-              '   Format lama: checking $userField == $userId (actual: ${data[userField]})');
           if (data[userField] == userId) {
-            print('   ✅ Match! Adding to list');
-            allConversations.add({
+            conversations.add({
               'id': doc.id,
               ...data,
-              '_type': 'old_format', // marker for debugging
+              '_type': 'old_format',
             });
-          } else {
-            print('   ❌ No match');
           }
         }
 
-        // Format baru: pos mitra conversation (dengan participants)
+        // Format baru: participants-based conversation
         else if (data.containsKey('participants')) {
           final participants = data['participants'] as Map<String, dynamic>?;
           if (participants != null &&
               participants.containsKey(userId.toString())) {
+            final conversationType = data['conversation_type'] as String?;
+            if (userRole == 'customer' &&
+                conversationType == 'mitra_posmitra') {
+              continue;
+            }
             // Ambil data participant lainnya
             String otherUserName = 'User';
             String? otherUserPhoto;
             String? otherUserRole;
+            int? otherUserId;
 
             for (var entry in participants.entries) {
               if (entry.key != userId.toString()) {
@@ -51,33 +54,38 @@ class ChatService {
                 otherUserName = participantData['name'] as String? ?? 'User';
                 otherUserPhoto = participantData['photo'] as String?;
                 otherUserRole = participantData['role'] as String?;
+                otherUserId = participantData['user_id'] as int?;
                 break;
               }
             }
 
-            // Format ke struktur yang sama dengan format lama untuk compatibility
+            if (userRole == 'customer' && otherUserRole == 'posmitra') {
+              continue;
+            }
+
             final context = data['context'] as String? ?? '';
             final tebenganType = data['tebengan_type'] as String? ?? '';
+            final rideKey = (data['rideId'] ?? data['ride_id'])?.toString();
 
-            allConversations.add({
+            conversations.add({
               'id': doc.id,
-              'customerName': otherUserName, // gunakan field yang sama
+              'customerName': otherUserName,
               'customerPhoto': otherUserPhoto,
               'lastMessage': data['lastMessage'] ?? data['last_message'] ?? '',
               'lastMessageAt': data['lastMessageAt'] ?? data['last_message_at'],
-              'unreadMitra':
-                  0, // TODO: hitung unread dari messages subcollection
+              'unreadMitra': 0,
               'bookingType': tebenganType,
               'context': context,
               'otherUserRole': otherUserRole,
-              '_type': 'new_format', // marker for debugging
+              '_type': 'new_format',
+              'rideId': rideKey,
             });
-          }
+          } else {}
         }
       }
 
       // Sort by last message time
-      allConversations.sort((a, b) {
+      conversations.sort((a, b) {
         final aTime = a['lastMessageAt'];
         final bTime = b['lastMessageAt'];
         if (aTime == null && bTime == null) return 0;
@@ -86,8 +94,7 @@ class ChatService {
         return (bTime as Timestamp).compareTo(aTime as Timestamp);
       });
 
-      print('📋 Returning ${allConversations.length} conversations');
-      return allConversations;
+      return conversations;
     });
   }
 
@@ -121,7 +128,6 @@ class ChatService {
       final doc = querySnapshot.docs.first;
       return {'id': doc.id, ...doc.data()};
     } catch (e) {
-      print('Error getting conversation by ride and users: $e');
       return null;
     }
   }
@@ -249,18 +255,79 @@ class ChatService {
       'lastMessageAt': FieldValue.serverTimestamp(),
     };
 
-    // Increment unread count untuk penerima
+    // Determine recipient ID for notification
+    int? recipientId;
     if (convData != null) {
       if (senderId == convData['customerId']) {
         updateData['unreadMitra'] = FieldValue.increment(1);
+        recipientId = convData['mitraId'] as int?;
       } else {
         updateData['unreadCustomer'] = FieldValue.increment(1);
+        recipientId = convData['customerId'] as int?;
       }
     }
 
     batch.update(convRef, updateData);
 
     await batch.commit();
+
+    // Send notification to recipient
+    if (recipientId != null) {
+      await _sendMessageNotification(
+        senderId: senderId,
+        recipientId: recipientId,
+        senderName: senderName,
+        messageText: text,
+        conversationId: conversationId,
+      );
+    }
+  }
+
+  /// Send notification to backend for new message
+  Future<void> _sendMessageNotification({
+    required int senderId,
+    required int recipientId,
+    required String senderName,
+    required String messageText,
+    required String conversationId,
+  }) async {
+    try {
+      print('📤 Sending chat notification to backend...');
+      print('   Sender: $senderId ($senderName)');
+      print('   Recipient: $recipientId');
+      print(
+          '   Message: ${messageText.substring(0, messageText.length > 50 ? 50 : messageText.length)}...');
+
+      final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/chat/notify');
+      print('   URL: $uri');
+
+      final response = await http.post(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: json.encode({
+          'sender_id': senderId,
+          'recipient_id': recipientId,
+          'sender_name': senderName,
+          'message_text': messageText,
+          'conversation_id': conversationId,
+        }),
+      );
+
+      print('   Response status: ${response.statusCode}');
+      print('   Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        print('✅ Chat notification sent successfully');
+      } else {
+        print('⚠️ Failed to send chat notification: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ Error sending chat notification: $e');
+      // Don't throw error - notification failure shouldn't block message sending
+    }
   }
 
   /// Mark messages as read
@@ -334,8 +401,6 @@ class ChatService {
   /// Returns conversations where pos mitra is a participant
   /// Filtering dilakukan di client side untuk menghindari composite index requirement
   Stream<QuerySnapshot> getConversationsForPosMitra(int userId) {
-    print('🔥 Getting conversations for pos mitra user: $userId');
-
     // Query semua conversations, filter di client side
     return _firestore
         .collection('conversations')
@@ -380,10 +445,7 @@ class ChatService {
         'lastMessage': text,
         'lastMessageAt': FieldValue.serverTimestamp(),
       });
-
-      print('✅ Message sent successfully');
     } catch (e) {
-      print('❌ Error sending message: $e');
       rethrow;
     }
   }
@@ -407,11 +469,7 @@ class ChatService {
         batch.update(doc.reference, {'is_read': true});
       }
       await batch.commit();
-
-      print('✅ Marked ${messagesSnapshot.docs.length} messages as read');
-    } catch (e) {
-      print('❌ Error marking messages as read: $e');
-    }
+    } catch (e) {}
   }
 
   /// Mark booking as completed - triggers auto-delete after 24 hours
@@ -421,9 +479,7 @@ class ChatService {
         'booking_completed_at': FieldValue.serverTimestamp(),
         'booking_status': 'completed',
       });
-      print('✅ Booking marked as completed for conversation: $conversationId');
     } catch (e) {
-      print('❌ Error marking booking as completed: $e');
       rethrow;
     }
   }
@@ -447,8 +503,6 @@ class ChatService {
         final conversationId = querySnapshot.docs.first.id;
         await markBookingCompleted(conversationId);
       }
-    } catch (e) {
-      print('❌ Error marking booking as completed by ride: $e');
-    }
+    } catch (e) {}
   }
 }

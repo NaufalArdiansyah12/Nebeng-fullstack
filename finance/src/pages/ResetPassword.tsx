@@ -3,7 +3,7 @@ import { ArrowLeft, Lock, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import api from "@/lib/api";
 
@@ -14,16 +14,16 @@ const ResetPassword = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false);
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const token = searchParams.get("token");
-  const email = searchParams.get("email");
+  const location = useLocation();
+  const email = location.state?.email;
+  const otp = location.state?.otp;
 
   useEffect(() => {
-    if (!token || !email) {
-      toast.error("Link reset password tidak valid");
+    if (!email || !otp) {
+      toast.error("Data tidak valid");
       navigate("/forgot-password");
     }
-  }, [token, email, navigate]);
+  }, [email, otp, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,22 +43,24 @@ const ResetPassword = () => {
       return;
     }
 
-    if (!token || !email) {
-      toast.error("Token atau email tidak valid");
+    if (!email || !otp) {
+      toast.error("Data tidak valid");
       return;
     }
 
     setIsLoading(true);
     
     try {
-      const response = await api.post("/reset-password", {
-        token,
+      const response = await api.post("/users/reset-password", {
         email,
+        otp,
         password,
         password_confirmation: passwordConfirmation,
       });
       toast.success("Password berhasil direset. Silakan login dengan password baru Anda.");
-      navigate("/login-finance");
+      setTimeout(() => {
+        navigate("/login");
+      }, 1500);
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || "Terjadi kesalahan saat mereset password";
       toast.error(errorMessage);
@@ -67,7 +69,7 @@ const ResetPassword = () => {
     }
   };
 
-  if (!token || !email) {
+  if (!email || !otp) {
     return null;
   }
 

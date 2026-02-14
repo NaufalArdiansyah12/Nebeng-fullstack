@@ -1,11 +1,82 @@
 import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import DashboardLayout from "@/components/DashboardLayout";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import api from "@/lib/api";
+import { toast } from "sonner";
+import { ProfileHeader } from "@/components/ui/posmitra-detail/profile-header";
+import { PersonalInfoSection } from "@/components/ui/posmitra-detail/personal-info-section";
+import { AddressSection } from "@/components/ui/posmitra-detail/address-section";
+import { KtpInfoSection } from "@/components/ui/posmitra-detail/ktp-info-section";
+
+interface PosMitraDetail {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  profile_photo: string | null;
+  balance: number;
+  location: {
+    id: number | null;
+    terminal: string | null;
+    address: string | null;
+    code: string | null;
+  };
+  ktp: {
+    nama_lengkap: string;
+    nik: string;
+    tanggal_lahir: string;
+    jenis_kelamin: string | null;
+    photo_ktp: string | null;
+  } | null;
+}
 
 const DetailPosMitra = () => {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const [posMitra, setPosMitra] = useState<PosMitraDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (id) {
+      fetchPosMitraDetail();
+    }
+  }, [id]);
+
+  const fetchPosMitraDetail = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get(`/users/pos-mitra/${id}`);
+      setPosMitra(response.data);
+    } catch (error) {
+      console.error("Error fetching pos mitra detail:", error);
+      toast.error("Gagal mengambil detail Pos Mitra");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <DashboardLayout title="Detail Pos Mitra">
+        <div className="flex items-center justify-center py-12">
+          <p className="text-muted-foreground">Memuat data...</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!posMitra) {
+    return (
+      <DashboardLayout title="Detail Pos Mitra">
+        <div className="flex items-center justify-center py-12">
+          <p className="text-muted-foreground">Data tidak ditemukan</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout title="Detail Pos Mitra">
       {/* Header */}
@@ -18,66 +89,27 @@ const DetailPosMitra = () => {
 
       <div className="bg-background border border-border rounded-xl p-6">
         {/* Profile */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <img
-              src="https://i.pravatar.cc/100?img=12"
-              className="w-14 h-14 rounded-full"
-            />
-            <div>
-              <p className="font-semibold">Muhammad Abdul</p>
-              <p className="text-sm text-muted-foreground">Nebeng Motor</p>
-            </div>
-          </div>
-
-          <div className="text-right">
-            <p className="text-xs text-muted-foreground">KODE REFERRAL</p>
-            <p className="font-semibold text-primary">sssd23</p>
-          </div>
-        </div>
+        <ProfileHeader
+          name={posMitra.name}
+          profilePhoto={posMitra.profile_photo}
+          referralCode={posMitra.location.code}
+        />
 
         {/* Informasi Pribadi */}
-        <section className="mb-6">
-          <h4 className="font-semibold mb-4">Informasi Pribadi</h4>
-          <div className="grid grid-cols-3 gap-4">
-            <Input disabled value="Muhammad Abdul Kadir" />
-            <Input disabled value="posmitra@gmail.com" />
-            <Input disabled value="Laki - Laki" />
-            <Input disabled value="Terminal 1" />
-            <Input disabled value="089563245757" />
-            <Input disabled value="01-02-1999" />
-          </div>
-        </section>
+        <PersonalInfoSection
+          name={posMitra.ktp?.nama_lengkap || posMitra.name}
+          email={posMitra.email}
+          phone={posMitra.phone}
+          terminal={posMitra.location.terminal}
+          gender={posMitra.ktp?.jenis_kelamin}
+          birthDate={posMitra.ktp?.tanggal_lahir}
+        />
 
         {/* Alamat Terminal */}
-        <section className="mb-6">
-          <h4 className="font-semibold mb-3">Alamat Terminal</h4>
-          <textarea
-            disabled
-            className="w-full h-28 rounded-md border border-input bg-muted p-3 text-sm"
-            value="Jl. Jend. Sudirman No.296, Pereng, Sokarengga, Kec. Purwokerto Tim., Kabupaten Banyumas, Jawa Tengah 53116"
-          />
-        </section>
+        <AddressSection address={posMitra.location.address} />
 
         {/* Informasi KTP */}
-        <section>
-          <h4 className="font-semibold mb-4">Informasi KTP</h4>
-          <div className="grid grid-cols-3 gap-6 items-center">
-            <div className="space-y-3">
-              <Input disabled value="Muhammad Abdul Kadir" />
-              <Input disabled value="10009836400719" />
-              <Input disabled value="Laki - Laki" />
-              <Input disabled value="01-02-1999" />
-            </div>
-
-            <div className="col-span-2 flex justify-end">
-              <img
-                src="https://dummyimage.com/160x220/ddd/000.png&text=KTP"
-                className="rounded-lg border"
-              />
-            </div>
-          </div>
-        </section>
+        <KtpInfoSection data={posMitra.ktp} />
       </div>
     </DashboardLayout>
   );

@@ -1,8 +1,24 @@
 import '../services/shared/chat_service.dart';
+import '../services/api_service.dart';
 
 /// Helper untuk create conversation (untuk testing atau dipanggil dari booking flow)
 class ChatHelper {
   static final ChatService _chatService = ChatService();
+
+  /// Ensure photo URL is absolute
+  static String? _getFullPhotoUrl(String? photo) {
+    if (photo == null || photo.isEmpty) return null;
+
+    // If already full URL, return as is
+    if (photo.startsWith('http://') || photo.startsWith('https://')) {
+      return photo;
+    }
+
+    // Build full URL
+    final baseUrl = ApiService.baseUrl;
+    final cleanPhoto = photo.startsWith('/') ? photo : '/$photo';
+    return '$baseUrl$cleanPhoto';
+  }
 
   /// Create conversation antara customer dan mitra setelah booking
   /// Dipanggil dari BookingController atau setelah booking sukses
@@ -18,11 +34,11 @@ class ChatHelper {
         bookingType: bookingType,
         customerId: customerData['id'],
         customerName: customerData['name'] ?? 'Customer',
-        customerPhoto: customerData['photo'],
+        customerPhoto: _getFullPhotoUrl(customerData['photo']),
         customerPhone: customerData['phone'],
         mitraId: mitraData['id'],
         mitraName: mitraData['name'] ?? 'Mitra',
-        mitraPhoto: mitraData['photo'],
+        mitraPhoto: _getFullPhotoUrl(mitraData['photo']),
         mitraPhone: mitraData['phone'],
       );
 

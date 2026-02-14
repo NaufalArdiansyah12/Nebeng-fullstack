@@ -110,14 +110,38 @@ class AuthController extends Controller
             ], 401);
         }
 
+        // Check if user is blocked (only for regular users, not posmitra)
+        if ($userType === 'user' && isset($user->status) && $user->status === 'blocked') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akun Anda telah diblokir',
+                'blocked' => true,
+                'data' => [
+                    'status' => 'blocked',
+                    'reason' => $user->blocked_reason ?? 'Tidak ada alasan yang diberikan',
+                    'blocked_at' => $user->blocked_at,
+                ]
+            ], 403);
+        }
+
         // create simple token entry with user_type
         $token = Str::random(60);
-        $apiToken = ApiToken::create([
-            'user_id' => $user->id,
+        $tokenData = [
             'user_type' => $userType,
             'token' => hash('sha256', $token),
             'expires_at' => now()->addDays(30),
-        ]);
+        ];
+        
+        // Set user_id or posmitra_id based on user_type
+        if ($userType === 'posmitra') {
+            $tokenData['posmitra_id'] = $user->id;
+            $tokenData['user_id'] = null;
+        } else {
+            $tokenData['user_id'] = $user->id;
+            $tokenData['posmitra_id'] = null;
+        }
+        
+        $apiToken = ApiToken::create($tokenData);
 
         // Format response berdasarkan user type
         $userData = [
@@ -182,7 +206,8 @@ class AuthController extends Controller
         // create token entry for posmitra
         $token = Str::random(60);
         $apiToken = ApiToken::create([
-            'user_id' => $user->id,
+            'posmitra_id' => $user->id,
+            'user_id' => null,
             'user_type' => 'posmitra',
             'token' => hash('sha256', $token),
             'expires_at' => now()->addDays(30),

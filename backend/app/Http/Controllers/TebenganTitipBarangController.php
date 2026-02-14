@@ -148,19 +148,11 @@ class TebenganTitipBarangController extends Controller
                 'departure_date' => $request->departure_date,
                 'departure_time' => $request->departure_time,
                 'transportation_type' => $request->transportation_type,
+                'bagasi_capacity' => $request->bagasi_capacity,
                 'price' => $request->price,
                 'status' => 'active',
+                'jumlah_bagasi' => $request->jumlah_bagasi ?? 0, // Always set default value
             ];
-
-            $bagasi = $request->jumlah_bagasi ?? $request->bagasi_capacity ?? null;
-            if ($bagasi !== null) {
-                if (Schema::hasColumn('tebengan_titip_barang', 'jumlah_bagasi')) {
-                    $data['jumlah_bagasi'] = $bagasi;
-                }
-                if (Schema::hasColumn('tebengan_titip_barang', 'bagasi_capacity')) {
-                    $data['bagasi_capacity'] = $bagasi;
-                }
-            }
 
             $tebengan = TebenganTitipBarang::create($data);
 
@@ -208,6 +200,7 @@ class TebenganTitipBarangController extends Controller
                 'departure_time' => 'sometimes',
                 'transportation_type' => 'sometimes|in:kereta,pesawat,bus',
                 'bagasi_capacity' => 'sometimes|integer|in:5,10,20',
+                'jumlah_bagasi' => 'nullable|integer|min:0',
                 'jumlah_bagasi' => 'sometimes|integer|min:0',
                 'price' => 'sometimes|numeric|min:0',
                 'status' => 'sometimes|in:active,inactive,completed',
@@ -228,20 +221,10 @@ class TebenganTitipBarangController extends Controller
                 'departure_time',
                 'transportation_type',
                 'bagasi_capacity',
+                'jumlah_bagasi',
                 'price',
                 'status',
             ]);
-
-            // handle jumlah_bagasi if provided
-            if ($request->has('jumlah_bagasi')) {
-                $bag = $request->jumlah_bagasi;
-                if (Schema::hasColumn('tebengan_titip_barang', 'jumlah_bagasi')) {
-                    $update['jumlah_bagasi'] = $bag;
-                }
-                if (Schema::hasColumn('tebengan_titip_barang', 'bagasi_capacity')) {
-                    $update['bagasi_capacity'] = $bag;
-                }
-            }
 
             $tebengan->update($update);
 

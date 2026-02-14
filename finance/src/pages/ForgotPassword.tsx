@@ -23,10 +23,18 @@ const ForgotPassword = () => {
     setIsLoading(true);
     
     try {
-      const response = await api.post("/forgot-password", { email });
-      toast.success("Link reset password telah dikirim ke email Anda");
+      const response = await api.post("/users/forgot-password", { email });
+      toast.success(response.data.message || "OTP telah dikirim ke email Anda");
+      
+      // Navigate to verify OTP page
+      navigate("/verify-otp", { 
+        state: { 
+          email,
+          otp: response.data.otp // Only available in debug mode
+        } 
+      });
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || "Terjadi kesalahan saat mengirim link reset password";
+      const errorMessage = error.response?.data?.message || "Terjadi kesalahan saat mengirim OTP";
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -47,7 +55,7 @@ const ForgotPassword = () => {
             <div className="flex items-start justify-between mb-6">
               {/* Back Button */}
               <button
-                onClick={() => navigate("/login")}
+                onClick={() => navigate("/login-finance")}
                 className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-primary-foreground hover:bg-primary/90 transition-colors"
               >
                 <ArrowLeft className="h-5 w-5" />

@@ -6,6 +6,7 @@ import '../models/trip_model.dart';
 import '../utils/theme.dart';
 import 'payment_selection_page.dart';
 import '../../../../services/api_service.dart';
+import '../../nebeng_barang/widgets/ukuran_picker.dart';
 
 class BookingDetailPage extends StatefulWidget {
   final TripModel trip;
@@ -49,7 +50,7 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
   final TextEditingController _searchController = TextEditingController();
   String _userName = '';
   String _userPhone = '';
-  final TextEditingController _weightController = TextEditingController();
+  String? _selectedWeight;
   final TextEditingController _descriptionController = TextEditingController();
   File? selectedImage;
   final ImagePicker _picker = ImagePicker();
@@ -63,7 +64,6 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
     super.initState();
     _generateBookingNumber();
     _loadUserData();
-    _weightController.addListener(() => setState(() {}));
     _descriptionController.addListener(() => setState(() {}));
   }
 
@@ -181,12 +181,19 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
   @override
   void dispose() {
     _searchController.dispose();
-    _weightController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }
 
   bool get _allFieldsFilled {
+    // For barang/titip_barang service type, check weight and description instead of passengers
+    if (widget.trip.serviceType == 'barang' ||
+        widget.trip.serviceType == 'both') {
+      return _agreedToTerms &&
+          _selectedWeight != null &&
+          _descriptionController.text.isNotEmpty;
+    }
+    // For regular passenger service
     return _agreedToTerms && passengers.isNotEmpty;
   }
 
@@ -564,7 +571,12 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
   }
 
   Widget _buildTotalPayment() {
-    final totalPrice = widget.trip.price * passengers.length;
+    // For barang service type, use trip price directly (no passenger multiplier)
+    // For regular service, multiply by number of passengers
+    final totalPrice = (widget.trip.serviceType == 'barang' ||
+            widget.trip.serviceType == 'both')
+        ? widget.trip.price
+        : widget.trip.price * passengers.length;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -672,8 +684,15 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
   }
 
   void _handlePayment() {
-    // Collect all passenger names
-    final passengerNames = passengers.map((p) => p.name).join(', ');
+    // For barang service type, use user's name and phone
+    // For regular service, collect all passenger names
+    final isBarangService = widget.trip.serviceType == 'barang' ||
+        widget.trip.serviceType == 'both';
+    final passengerNames =
+        isBarangService ? _userName : passengers.map((p) => p.name).join(', ');
+    final phoneNumber = isBarangService
+        ? _userPhone
+        : (passengers.isNotEmpty ? passengers[0].phone : '');
 
     // Navigate to payment selection page
     Navigator.push(
@@ -683,14 +702,15 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
           trip: widget.trip,
           bookingNumber: bookingNumber,
           passengerName: passengerNames,
-          phoneNumber: passengers.isNotEmpty ? passengers[0].phone : '',
-          totalPassengers: passengers.length,
-          penumpang: passengers
-              .map((p) => {'nama': p.name, 'no_telepon': p.phone})
-              .toList(),
+          phoneNumber: phoneNumber,
+          totalPassengers: isBarangService ? 1 : passengers.length,
+          penumpang: (widget.trip.serviceType == 'barang' || passengers.isEmpty)
+              ? null
+              : passengers
+                  .map((p) => {'nama': p.name, 'no_telepon': p.phone})
+                  .toList(),
           photoFile: selectedImage,
-          weight:
-              _weightController.text.isNotEmpty ? _weightController.text : null,
+          weight: _selectedWeight,
           description: _descriptionController.text.isNotEmpty
               ? _descriptionController.text
               : null,
@@ -742,12 +762,7 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
             ),
           ),
           const SizedBox(height: 16),
-          _buildBarangInput(
-            Icons.scale_outlined,
-            'Berat Barang',
-            _weightController,
-            'Contoh: 2KG',
-          ),
+          _buildWeightPicker(),
           const SizedBox(height: 16),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -890,6 +905,57 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildWeightPicker() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.scale_outlined, size: 20, color: Colors.grey[600]),
+            const SizedBox(width: 12),
+            const Text(
+              'Berat Barang',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: () {
+            UkuranPicker.show(context, (selected) {
+              setState(() {
+                _selectedWeight = selected;
+              });
+            });
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey[300]!),
+              borderRadius: BorderRadius.circular(8),
+              color: Colors.white,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  _selectedWeight ?? 'Pilih berat barang',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: _selectedWeight != null
+                        ? Colors.black87
+                        : Colors.grey[400],
+                  ),
+                ),
+                Icon(Icons.arrow_drop_down, color: Colors.grey[600]),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 

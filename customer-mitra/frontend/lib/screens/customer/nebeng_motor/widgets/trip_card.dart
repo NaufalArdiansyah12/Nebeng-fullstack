@@ -128,7 +128,7 @@ class TripCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'Maks. ${trip.bagasiCapacity} Bagasi',
+                      'Maks. ${trip.bagasiCapacity} kg',
                       style: TextStyle(
                         fontSize: 13,
                         color: Colors.grey[800],

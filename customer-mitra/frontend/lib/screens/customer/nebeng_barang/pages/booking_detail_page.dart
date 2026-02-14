@@ -6,6 +6,7 @@ import '../models/trip_model.dart';
 import '../../nebeng_motor/utils/theme.dart';
 import 'payment_selection_page.dart';
 import '../../../../services/api_service.dart';
+import '../widgets/ukuran_picker.dart';
 
 class BookingDetailPage extends StatefulWidget {
   final TripModel trip;
@@ -28,7 +29,7 @@ class BookingDetailPage extends StatefulWidget {
 class _BookingDetailPageState extends State<BookingDetailPage> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _weightController = TextEditingController();
+  String? _selectedWeight;
   final TextEditingController _descriptionController = TextEditingController();
   bool _agreedToTerms = false;
   String bookingNumber = '';
@@ -45,7 +46,7 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
 
     // Set initial values from passed data
     if (widget.weight != null) {
-      _weightController.text = widget.weight!;
+      _selectedWeight = widget.weight;
     }
     if (widget.description != null) {
       _descriptionController.text = widget.description!;
@@ -106,7 +107,6 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
-    _weightController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }
@@ -717,7 +717,7 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
           passengerName: _nameController.text,
           phoneNumber: _phoneController.text,
           photoFile: selectedImage,
-          weight: _weightController.text,
+          weight: _selectedWeight ?? '',
           description: _descriptionController.text,
         ),
       ),
@@ -751,12 +751,7 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
             ),
           ),
           const SizedBox(height: 16),
-          _buildBarangInput(
-            Icons.scale_outlined,
-            'Berat Barang',
-            _weightController,
-            'Contoh: 2KG',
-          ),
+          _buildWeightPicker(),
           const SizedBox(height: 16),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -920,6 +915,57 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildWeightPicker() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.scale_outlined, size: 20, color: Colors.grey[600]),
+            const SizedBox(width: 12),
+            const Text(
+              'Berat Barang',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: () {
+            UkuranPicker.show(context, (selected) {
+              setState(() {
+                _selectedWeight = selected;
+              });
+            });
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey[300]!),
+              borderRadius: BorderRadius.circular(8),
+              color: Colors.white,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  _selectedWeight ?? 'Pilih berat barang',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: _selectedWeight != null
+                        ? Colors.black87
+                        : Colors.grey[400],
+                  ),
+                ),
+                Icon(Icons.arrow_drop_down, color: Colors.grey[600]),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../services/shared/chat_service.dart';
+import '../../../utils/update_conversation_photos.dart';
 
 import 'chat_detail_page.dart';
 
@@ -12,19 +13,22 @@ class MitraChatsPage extends StatefulWidget {
   State<MitraChatsPage> createState() => _MitraChatsPageState();
 }
 
-class _MitraChatsPageState extends State<MitraChatsPage> with SingleTickerProviderStateMixin {
+class _MitraChatsPageState extends State<MitraChatsPage>
+    with SingleTickerProviderStateMixin {
   final ChatService _chatService = ChatService();
   final TextEditingController _searchController = TextEditingController();
   TabController? _tabController;
   int? _userId;
   String _userRole = 'mitra';
   String _searchQuery = '';
+  bool _hasFixedUrls = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _loadUserData();
+    _fixConversationUrls();
     _searchController.addListener(() {
       setState(() {
         _searchQuery = _searchController.text.toLowerCase();
@@ -48,6 +52,22 @@ class _MitraChatsPageState extends State<MitraChatsPage> with SingleTickerProvid
       setState(() {
         _userId = userId;
         _userRole = userRole;
+      });
+    }
+  }
+
+  Future<void> _fixConversationUrls() async {
+    if (_hasFixedUrls) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final hasFixedBefore =
+        prefs.getBool('has_fixed_conversation_urls_mitra') ?? false;
+
+    if (!hasFixedBefore) {
+      await UpdateConversationPhotos.fixLocalhostUrls();
+      await prefs.setBool('has_fixed_conversation_urls_mitra', true);
+      setState(() {
+        _hasFixedUrls = true;
       });
     }
   }
@@ -121,6 +141,26 @@ class _MitraChatsPageState extends State<MitraChatsPage> with SingleTickerProvid
           _buildChatList(filterRole: 'posmitra'),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Memperbarui foto profil...')),
+          );
+          // Try to update missing photos by fetching from backend
+          await UpdateConversationPhotos.updateAllConversations();
+          // Also attempt to fix any localhost URLs as a fallback
+          await UpdateConversationPhotos.fixLocalhostUrls();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                  content: Text('Selesai! Foto akan muncul sebentar lagi.')),
+            );
+          }
+        },
+        child: Icon(Icons.refresh),
+        backgroundColor: Color(0xFF0F4AA3),
+        tooltip: 'Fix Foto Profil',
+      ),
     );
   }
 
@@ -166,394 +206,383 @@ class _MitraChatsPageState extends State<MitraChatsPage> with SingleTickerProvid
 
   Widget _buildConversationList({required String filterRole}) {
     return StreamBuilder<List<Map<String, dynamic>>>(
-              stream: _chatService.getConversations(_userId!, _userRole),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting &&
-                    !snapshot.hasData) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        CircularProgressIndicator(),
-                        SizedBox(height: 16),
-                        Text('Loading conversations...',
-                            style: TextStyle(color: Colors.grey)),
-                      ],
+      stream: _chatService.getConversations(_userId!, _userRole),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Loading conversations...',
+                    style: TextStyle(color: Colors.grey)),
+              ],
+            ),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error_outline, size: 80, color: Colors.red),
+                SizedBox(height: 16),
+                Text('Error: ${snapshot.error}',
+                    style: TextStyle(fontSize: 14, color: Colors.red)),
+                SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {}); // Trigger rebuild
+                  },
+                  child: Text('Retry'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                    filterRole == 'posmitra'
+                        ? Icons.store_outlined
+                        : Icons.message_outlined,
+                    size: 80,
+                    color: Colors.grey),
+                SizedBox(height: 16),
+                Text('Belum ada percakapan',
+                    style: TextStyle(fontSize: 16, color: Colors.grey)),
+                SizedBox(height: 8),
+                Text(
+                  filterRole == 'posmitra'
+                      ? 'Chat dengan Pos Mitra akan muncul setelah Anda membuat tebengan'
+                      : 'Chat akan muncul setelah ada customer yang booking',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        }
+
+        // Filter conversations based on role and search query
+        final allConversations = snapshot.data!.where((conv) {
+          // Filter by role first
+          final otherUserRole = conv['otherUserRole'] as String?;
+          final isOldFormat = conv['_type'] == 'old_format';
+
+          // For old format (customer-mitra), consider it as customer conversation
+          bool matchesRole;
+          if (filterRole == 'customer') {
+            matchesRole = isOldFormat || otherUserRole == 'customer';
+          } else {
+            matchesRole = !isOldFormat && otherUserRole == 'posmitra';
+          }
+
+          if (!matchesRole) return false;
+
+          // Then filter by search query
+          if (_searchQuery.isEmpty) return true;
+          final customerName =
+              (conv['customerName'] as String? ?? '').toLowerCase();
+          final lastMessage =
+              (conv['lastMessage'] as String? ?? '').toLowerCase();
+          return customerName.contains(_searchQuery) ||
+              lastMessage.contains(_searchQuery);
+        }).toList();
+
+        if (allConversations.isEmpty) {
+          if (_searchQuery.isNotEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.search_off, size: 80, color: Colors.grey),
+                  SizedBox(height: 16),
+                  Text('No chats found',
+                      style: TextStyle(fontSize: 16, color: Colors.grey)),
+                ],
+              ),
+            );
+          }
+
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                    filterRole == 'posmitra'
+                        ? Icons.store_outlined
+                        : Icons.message_outlined,
+                    size: 80,
+                    color: Colors.grey),
+                SizedBox(height: 16),
+                Text('Belum ada percakapan',
+                    style: TextStyle(fontSize: 16, color: Colors.grey)),
+                SizedBox(height: 8),
+                Text(
+                  filterRole == 'posmitra'
+                      ? 'Chat dengan Pos Mitra akan muncul setelah Anda membuat tebengan'
+                      : 'Chat akan muncul setelah ada customer yang booking',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        }
+
+        final conversations = allConversations;
+
+        return ListView.builder(
+          itemCount: conversations.length,
+          itemBuilder: (context, index) {
+            final conv = conversations[index];
+            final conversationId = conv['id'] as String;
+            final customerName = conv['customerName'] as String? ?? 'Customer';
+            final customerPhoto = conv['customerPhoto'] as String?;
+            final lastMessage = conv['lastMessage'] as String? ?? '';
+            final unreadCount = conv['unreadMitra'] as int? ?? 0;
+            final lastMessageAt = conv['lastMessageAt'] as Timestamp?;
+            final bookingType = conv['bookingType'] as String? ?? 'motor';
+            final conversationContext = conv['context'] as String?;
+            final otherUserRole = conv['otherUserRole'] as String?;
+
+            // Debug: Print photo data for first conversation
+            if (index == 0) {
+              print('🔍 [MITRA] First conversation data:');
+              print('  - Conversation ID: $conversationId');
+              print('  - Customer name: $customerName');
+              print('  - Customer photo: $customerPhoto');
+              print('  - Full conv data: ${conv.keys}');
+            }
+
+            // Determine if this is pos mitra conversation
+            final isPosMitra = otherUserRole == 'posmitra';
+
+            // Create display name with context
+            String displayName = customerName;
+            if (isPosMitra && conversationContext != null) {
+              displayName = '$customerName ($conversationContext)';
+            }
+
+            String timeText = '';
+            if (lastMessageAt != null) {
+              final lastTime = lastMessageAt.toDate();
+              final now = DateTime.now();
+              final diff = now.difference(lastTime);
+              final today = DateTime(now.year, now.month, now.day);
+              final yesterday = today.subtract(Duration(days: 1));
+              final lastDate =
+                  DateTime(lastTime.year, lastTime.month, lastTime.day);
+
+              if (diff.inSeconds < 60) {
+                timeText = 'now';
+              } else if (diff.inMinutes < 60) {
+                timeText = '${diff.inMinutes}mins';
+              } else if (lastDate == today) {
+                // Today - show time
+                final hour = lastTime.hour > 12
+                    ? lastTime.hour - 12
+                    : (lastTime.hour == 0 ? 12 : lastTime.hour);
+                final minute = lastTime.minute.toString().padLeft(2, '0');
+                final period = lastTime.hour >= 12 ? 'PM' : 'AM';
+                timeText = '$hour:$minute$period';
+              } else if (lastDate == yesterday) {
+                timeText = 'Yesterday';
+              } else if (diff.inDays < 7) {
+                // This week - show day name
+                const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                timeText = days[lastTime.weekday - 1];
+              } else {
+                // Older - show date
+                timeText = '${lastTime.day}/${lastTime.month}';
+              }
+            }
+
+            return InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => MitraChatDetailPage(
+                      conversationId: conversationId,
+                      otherUserName: customerName,
+                      otherUserPhoto: customerPhoto,
+                      bookingType: bookingType,
+                      isPosMitra: isPosMitra,
                     ),
-                  );
-                }
-
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                  ),
+                );
+              },
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(color: Colors.grey[300]!, width: 0.5),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    // Avatar
+                    Stack(
                       children: [
-                        Icon(Icons.error_outline, size: 80, color: Colors.red),
-                        SizedBox(height: 16),
-                        Text('Error: ${snapshot.error}',
-                            style: TextStyle(fontSize: 14, color: Colors.red)),
-                        SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () {
-                            setState(() {}); // Trigger rebuild
-                          },
-                          child: Text('Retry'),
+                        CircleAvatar(
+                          radius: 28,
+                          backgroundColor: isPosMitra
+                              ? Color(0xFFEC4899)
+                              : Color(0xFF0F4AA3),
+                          backgroundImage:
+                              customerPhoto != null && customerPhoto.isNotEmpty
+                                  ? NetworkImage(customerPhoto)
+                                  : null,
+                          child: customerPhoto == null || customerPhoto.isEmpty
+                              ? Icon(
+                                  isPosMitra ? Icons.store : Icons.person,
+                                  color: Colors.white,
+                                  size: 24,
+                                )
+                              : null,
                         ),
-                      ],
-                    ),
-                  );
-                }
-
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          filterRole == 'posmitra' 
-                            ? Icons.store_outlined 
-                            : Icons.message_outlined,
-                          size: 80, 
-                          color: Colors.grey
-                        ),
-                        SizedBox(height: 16),
-                        Text('Belum ada percakapan',
-                            style: TextStyle(fontSize: 16, color: Colors.grey)),
-                        SizedBox(height: 8),
-                        Text(
-                            filterRole == 'posmitra'
-                              ? 'Chat dengan Pos Mitra akan muncul setelah Anda membuat tebengan'
-                              : 'Chat akan muncul setelah ada customer yang booking',
-                            style: TextStyle(fontSize: 12, color: Colors.grey),
-                            textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                // Filter conversations based on role and search query
-                final allConversations = snapshot.data!.where((conv) {
-                  // Filter by role first
-                  final otherUserRole = conv['otherUserRole'] as String?;
-                  final isOldFormat = conv['_type'] == 'old_format';
-                  
-                  // For old format (customer-mitra), consider it as customer conversation
-                  bool matchesRole;
-                  if (filterRole == 'customer') {
-                    matchesRole = isOldFormat || otherUserRole == 'customer';
-                  } else {
-                    matchesRole = !isOldFormat && otherUserRole == 'posmitra';
-                  }
-                  
-                  if (!matchesRole) return false;
-                  
-                  // Then filter by search query
-                  if (_searchQuery.isEmpty) return true;
-                  final customerName =
-                      (conv['customerName'] as String? ?? '').toLowerCase();
-                  final lastMessage =
-                      (conv['lastMessage'] as String? ?? '').toLowerCase();
-                  return customerName.contains(_searchQuery) ||
-                      lastMessage.contains(_searchQuery);
-                }).toList();
-
-                if (allConversations.isEmpty) {
-                  if (_searchQuery.isNotEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.search_off, size: 80, color: Colors.grey),
-                          SizedBox(height: 16),
-                          Text('No chats found',
-                              style: TextStyle(fontSize: 16, color: Colors.grey)),
-                        ],
-                      ),
-                    );
-                  }
-                  
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          filterRole == 'posmitra' 
-                            ? Icons.store_outlined 
-                            : Icons.message_outlined,
-                          size: 80, 
-                          color: Colors.grey
-                        ),
-                        SizedBox(height: 16),
-                        Text('Belum ada percakapan',
-                            style: TextStyle(fontSize: 16, color: Colors.grey)),
-                        SizedBox(height: 8),
-                        Text(
-                            filterRole == 'posmitra'
-                              ? 'Chat dengan Pos Mitra akan muncul setelah Anda membuat tebengan'
-                              : 'Chat akan muncul setelah ada customer yang booking',
-                            style: TextStyle(fontSize: 12, color: Colors.grey),
-                            textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                final conversations = allConversations;
-
-                return ListView.builder(
-                  itemCount: conversations.length,
-                  itemBuilder: (context, index) {
-                    final conv = conversations[index];
-                    final conversationId = conv['id'] as String;
-                    final customerName =
-                        conv['customerName'] as String? ?? 'Customer';
-                    final customerPhoto = conv['customerPhoto'] as String?;
-                    final lastMessage = conv['lastMessage'] as String? ?? '';
-                    final unreadCount = conv['unreadMitra'] as int? ?? 0;
-                    final lastMessageAt = conv['lastMessageAt'] as Timestamp?;
-                    final bookingType =
-                        conv['bookingType'] as String? ?? 'motor';
-                    final conversationContext = conv['context'] as String?;
-                    final otherUserRole = conv['otherUserRole'] as String?;
-
-                    // Determine if this is pos mitra conversation
-                    final isPosMitra = otherUserRole == 'posmitra';
-
-                    // Create display name with context
-                    String displayName = customerName;
-                    if (isPosMitra && conversationContext != null) {
-                      displayName = '$customerName ($conversationContext)';
-                    }
-
-                    String timeText = '';
-                    if (lastMessageAt != null) {
-                      final lastTime = lastMessageAt.toDate();
-                      final now = DateTime.now();
-                      final diff = now.difference(lastTime);
-                      final today = DateTime(now.year, now.month, now.day);
-                      final yesterday = today.subtract(Duration(days: 1));
-                      final lastDate =
-                          DateTime(lastTime.year, lastTime.month, lastTime.day);
-
-                      if (diff.inSeconds < 60) {
-                        timeText = 'now';
-                      } else if (diff.inMinutes < 60) {
-                        timeText = '${diff.inMinutes}mins';
-                      } else if (lastDate == today) {
-                        // Today - show time
-                        final hour = lastTime.hour > 12
-                            ? lastTime.hour - 12
-                            : (lastTime.hour == 0 ? 12 : lastTime.hour);
-                        final minute =
-                            lastTime.minute.toString().padLeft(2, '0');
-                        final period = lastTime.hour >= 12 ? 'PM' : 'AM';
-                        timeText = '$hour:$minute$period';
-                      } else if (lastDate == yesterday) {
-                        timeText = 'Yesterday';
-                      } else if (diff.inDays < 7) {
-                        // This week - show day name
-                        const days = [
-                          'Mon',
-                          'Tue',
-                          'Wed',
-                          'Thu',
-                          'Fri',
-                          'Sat',
-                          'Sun'
-                        ];
-                        timeText = days[lastTime.weekday - 1];
-                      } else {
-                        // Older - show date
-                        timeText = '${lastTime.day}/${lastTime.month}';
-                      }
-                    }
-
-                    return InkWell(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => MitraChatDetailPage(
-                              conversationId: conversationId,
-                              otherUserName: customerName,
-                              otherUserPhoto: customerPhoto,
-                              bookingType: bookingType,
-                              isPosMitra: isPosMitra,
+                        if (isPosMitra)
+                          Positioned(
+                            right: 0,
+                            bottom: 0,
+                            child: Container(
+                              width: 18,
+                              height: 18,
+                              decoration: BoxDecoration(
+                                color: Color(0xFFEC4899),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2,
+                                ),
+                              ),
+                              child: Icon(
+                                Icons.location_on,
+                                size: 10,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
-                        );
-                      },
-                      child: Container(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          border: Border(
-                            bottom: BorderSide(
-                                color: Colors.grey[300]!, width: 0.5),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            // Avatar
-                            Stack(
-                              children: [
-                                CircleAvatar(
-                                  radius: 28,
-                                  backgroundColor: isPosMitra
-                                      ? Color(0xFFEC4899)
-                                      : Color(0xFF0F4AA3),
-                                  backgroundImage: customerPhoto != null &&
-                                          customerPhoto.isNotEmpty
-                                      ? NetworkImage(customerPhoto)
-                                      : null,
-                                  child: customerPhoto == null ||
-                                          customerPhoto.isEmpty
-                                      ? Icon(
-                                          isPosMitra
-                                              ? Icons.store
-                                              : Icons.person,
-                                          color: Colors.white,
-                                          size: 24,
-                                        )
-                                      : null,
-                                ),
-                                if (isPosMitra)
-                                  Positioned(
-                                    right: 0,
-                                    bottom: 0,
-                                    child: Container(
-                                      width: 18,
-                                      height: 18,
-                                      decoration: BoxDecoration(
-                                        color: Color(0xFFEC4899),
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: Colors.white,
-                                          width: 2,
+                      ],
+                    ),
+                    SizedBox(width: 12),
+
+                    // Content
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      displayName,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: unreadCount > 0
+                                            ? FontWeight.w600
+                                            : FontWeight.w500,
+                                        color: Colors.black87,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    if (isPosMitra)
+                                      Text(
+                                        'Pos Mitra',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: Color(0xFFEC4899),
+                                          fontWeight: FontWeight.w500,
                                         ),
                                       ),
-                                      child: Icon(
-                                        Icons.location_on,
-                                        size: 10,
+                                  ],
+                                ),
+                              ),
+                              if (timeText.isNotEmpty)
+                                Text(
+                                  timeText,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: unreadCount > 0
+                                        ? Color(0xFF0F4AA3)
+                                        : Colors.grey,
+                                    fontWeight: unreadCount > 0
+                                        ? FontWeight.w600
+                                        : FontWeight.normal,
+                                  ),
+                                ),
+                            ],
+                          ),
+                          SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  lastMessage.isEmpty
+                                      ? 'Belum ada pesan'
+                                      : lastMessage,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: lastMessage.isEmpty
+                                        ? Colors.grey[400]
+                                        : Colors.grey[600],
+                                    fontWeight: unreadCount > 0
+                                        ? FontWeight.w500
+                                        : FontWeight.normal,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (unreadCount > 0) ...[
+                                SizedBox(width: 8),
+                                Container(
+                                  width: 20,
+                                  height: 20,
+                                  decoration: BoxDecoration(
+                                    color: Color(0xFFEC4899),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      unreadCount > 9
+                                          ? '9+'
+                                          : unreadCount.toString(),
+                                      style: TextStyle(
                                         color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                   ),
+                                ),
                               ],
-                            ),
-                            SizedBox(width: 12),
-
-                            // Content
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              displayName,
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: unreadCount > 0
-                                                    ? FontWeight.w600
-                                                    : FontWeight.w500,
-                                                color: Colors.black87,
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            if (isPosMitra)
-                                              Text(
-                                                'Pos Mitra',
-                                                style: TextStyle(
-                                                  fontSize: 11,
-                                                  color: Color(0xFFEC4899),
-                                                  fontWeight: FontWeight.w500,
-                                                ),
-                                              ),
-                                          ],
-                                        ),
-                                      ),
-                                      if (timeText.isNotEmpty)
-                                        Text(
-                                          timeText,
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: unreadCount > 0
-                                                ? Color(0xFF0F4AA3)
-                                                : Colors.grey,
-                                            fontWeight: unreadCount > 0
-                                                ? FontWeight.w600
-                                                : FontWeight.normal,
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                  SizedBox(height: 4),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          lastMessage.isEmpty
-                                              ? 'Belum ada pesan'
-                                              : lastMessage,
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: lastMessage.isEmpty
-                                                ? Colors.grey[400]
-                                                : Colors.grey[600],
-                                            fontWeight: unreadCount > 0
-                                                ? FontWeight.w500
-                                                : FontWeight.normal,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                      if (unreadCount > 0) ...[
-                                        SizedBox(width: 8),
-                                        Container(
-                                          width: 20,
-                                          height: 20,
-                                          decoration: BoxDecoration(
-                                            color: Color(0xFFEC4899),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Center(
-                                            child: Text(
-                                              unreadCount > 9
-                                                  ? '9+'
-                                                  : unreadCount.toString(),
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
+                        ],
                       ),
-                    );
-                  },
-                );
-              },
+                    ),
+                  ],
+                ),
+              ),
             );
+          },
+        );
+      },
+    );
   }
 }

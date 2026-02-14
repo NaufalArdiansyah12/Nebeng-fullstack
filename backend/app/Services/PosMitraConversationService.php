@@ -4,16 +4,23 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Models\PosMitraUser;
-use Illuminate\Support\Facades\Log;
 use Kreait\Firebase\Contract\Firestore;
 
 class PosMitraConversationService
 {
     protected $firestore;
 
-    public function __construct(Firestore $firestore)
+    public function __construct(?Firestore $firestore = null)
     {
         $this->firestore = $firestore;
+    }
+
+    /**
+     * Check if Firebase is available
+     */
+    protected function isFirebaseAvailable(): bool
+    {
+        return $this->firestore !== null;
     }
 
     /**
@@ -31,6 +38,14 @@ class PosMitraConversationService
         int $destinationLocationId,
         string $tebenganType = 'motor'
     ): array {
+        // Check if Firebase is available
+        if (!$this->isFirebaseAvailable()) {
+            error_log('Firebase not available, skipping conversation creation');
+            return [
+                'origin_conversation_id' => null,
+                'destination_conversation_id' => null,
+            ];
+        }
         $result = [
             'origin_conversation_id' => null,
             'destination_conversation_id' => null
@@ -56,7 +71,7 @@ class PosMitraConversationService
                     $tebenganType
                 );
             } else {
-                Log::warning("No pos mitra found for origin location: $originLocationId");
+                error_log("No pos mitra found for origin location: $originLocationId");
             }
 
             // Create conversation with destination pos mitra
@@ -70,12 +85,12 @@ class PosMitraConversationService
                     $tebenganType
                 );
             } else {
-                Log::warning("No pos mitra found for destination location: $destinationLocationId");
+                error_log("No pos mitra found for destination location: $destinationLocationId");
             }
 
             return $result;
         } catch (\Exception $e) {
-            Log::error("Error creating pos mitra conversations: " . $e->getMessage());
+            error_log("Error creating pos mitra conversations: " . $e->getMessage());
             return $result;
         }
     }
@@ -122,11 +137,13 @@ class PosMitraConversationService
             }
 
             if (!$user1 || !$user2) {
-                Log::error("User not found: user1=$user1Id, user2=$user2Id");
+                error_log("User not found: user1=$user1Id, user2=$user2Id");
                 return null;
             }
 
             // Create conversation document in Firebase
+            $currentTimestamp = \Carbon\Carbon::now()->toIso8601String();
+            
             $conversationData = [
                 'participants' => [
                     (string)$user1Id => [
@@ -135,7 +152,7 @@ class PosMitraConversationService
                         'role' => $user1Role,
                         'phone' => $user1->phone ?? '',
                         'unread_count' => 0,
-                        'last_read_at' => now()->toIso8601String(),
+                        'last_read_at' => $currentTimestamp,
                     ],
                     (string)$user2Id => [
                         'user_id' => $user2Id,
@@ -143,16 +160,16 @@ class PosMitraConversationService
                         'role' => $user2Role,
                         'phone' => $user2->phone ?? '',
                         'unread_count' => 0,
-                        'last_read_at' => now()->toIso8601String(),
+                        'last_read_at' => $currentTimestamp,
                     ],
                 ],
                 'last_message' => '',
-                'last_message_at' => now(),
+                'last_message_at' => $currentTimestamp,
                 'context' => $context,
                 'tebengan_type' => $tebenganType,
                 'conversation_type' => 'mitra_posmitra',
-                'created_at' => now(),
-                'updated_at' => now(),
+                'created_at' => $currentTimestamp,
+                'updated_at' => $currentTimestamp,
             ];
 
             // Save to Firestore
@@ -162,11 +179,11 @@ class PosMitraConversationService
                 ->document($conversationId)
                 ->set($conversationData);
 
-            Log::info("Created conversation: $conversationId between mitra $user1Id and posmitra $user2Id ($tebenganType - $context)");
+            error_log("Created conversation: $conversationId between mitra $user1Id and posmitra $user2Id ($tebenganType - $context)");
 
             return $conversationId;
         } catch (\Exception $e) {
-            Log::error("Error creating conversation: " . $e->getMessage());
+            error_log("Error creating conversation: " . $e->getMessage());
             return null;
         }
     }

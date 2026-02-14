@@ -4,10 +4,12 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
 import '../../services/api_service.dart';
+import '../../services/shared/auth_service.dart';
 import '../../models/user_role.dart';
 import '../customer/main_page.dart';
 import '../mitra/main_page.dart';
 import '../posmitra/main_page.dart';
+import 'blocked_user_page.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -104,6 +106,12 @@ class _LoginScreenState extends State<LoginScreen> {
           print('User ID saved: ${prefs.getInt('user_id')}');
         }
 
+        // Store user name for notifications and chat
+        if (user != null && user['name'] != null) {
+          await prefs.setString('user_name', user['name'] as String);
+          print('User name saved: ${user['name']}');
+        }
+
         // Kirim FCM token ke backend setelah login berhasil
         _sendFcmTokenToBackend(token);
       }
@@ -187,6 +195,23 @@ class _LoginScreenState extends State<LoginScreen> {
               );
             }
           },
+        );
+      }
+    } on UserBlockedException catch (e) {
+      // Handle blocked user
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => BlockedUserPage(
+              reason: e.reason,
+              blockedAt: e.blockedAt,
+            ),
+          ),
         );
       }
     } catch (e) {

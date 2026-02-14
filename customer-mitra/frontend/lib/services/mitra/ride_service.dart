@@ -331,4 +331,60 @@ class RideService {
     }
     throw Exception('Failed to complete trip: ${resp.statusCode}');
   }
+
+  /// Cancel ride by mitra
+  static Future<Map<String, dynamic>> cancelRide({
+    required int rideId,
+    required String rideType,
+    required String cancellationReason,
+    required String token,
+  }) async {
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/rides/$rideId/cancel');
+    final resp = await http.post(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: json.encode({
+        'ride_type': rideType,
+        'cancellation_reason': cancellationReason,
+      }),
+    );
+
+    if (resp.statusCode == 200) {
+      final body = json.decode(resp.body);
+      if (body is Map && body['success'] == true) {
+        return Map<String, dynamic>.from(body['data'] ?? {});
+      }
+      throw Exception(body['message'] ?? 'Failed to cancel ride');
+    }
+    throw Exception('Failed to cancel ride: ${resp.statusCode}');
+  }
+
+  /// Get mitra cancellation count for current month
+  static Future<Map<String, dynamic>> getMitraCancellationCount({
+    required int mitraId,
+    required String token,
+  }) async {
+    final uri = Uri.parse(
+        '${ApiConfig.baseUrl}/api/v1/mitra/$mitraId/cancellation-count');
+    final resp = await http.get(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (resp.statusCode == 200) {
+      final body = json.decode(resp.body);
+      if (body is Map && body['success'] == true) {
+        return Map<String, dynamic>.from(body['data'] ?? {'count': 0});
+      }
+      return {'count': 0};
+    }
+    return {'count': 0};
+  }
 }

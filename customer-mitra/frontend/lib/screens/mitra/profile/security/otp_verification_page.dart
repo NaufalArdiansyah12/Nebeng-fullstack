@@ -61,7 +61,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
+      final token = prefs.getString('api_token');
 
       if (token == null) {
         _showErrorDialog('Sesi Anda telah berakhir. Silakan login kembali.');
@@ -100,7 +100,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
+      final token = prefs.getString('api_token');
 
       if (token == null) {
         _showErrorDialog('Sesi Anda telah berakhir. Silakan login kembali.');

@@ -8,6 +8,7 @@ import '../../../services/api_service.dart';
 import '../../../services/shared/chat_service.dart';
 import '../../../utils/chat_helper.dart';
 import '../messages/chats_page.dart';
+import '../refund/refund_landing_page.dart';
 
 // Import extracted components
 import 'booking_detail/widgets/booking_header.dart';
@@ -15,12 +16,15 @@ import 'booking_detail/widgets/countdown_section.dart';
 import 'booking_detail/widgets/driver_info_card.dart';
 import 'booking_detail/widgets/route_card.dart';
 import 'booking_detail/widgets/passenger_card.dart';
+import 'booking_detail/widgets/barang_card.dart';
+import 'booking_detail/widgets/service_type_badge.dart';
 import 'booking_detail/widgets/price_card.dart';
 import 'booking_detail/widgets/in_progress_layout.dart';
 import 'booking_detail/widgets/waiting_at_pickup_layout.dart';
 import 'booking_detail/widgets/arrived_at_destination_layout.dart';
 import 'booking_detail/widgets/rating_card.dart';
 import 'booking_detail/widgets/rating_dialog.dart';
+import 'booking_detail/widgets/cancellation_info_card.dart';
 import 'booking_detail/utils/booking_formatters.dart';
 import 'booking_detail/utils/countdown_helper.dart';
 
@@ -138,7 +142,7 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
   Future<void> _fetchTrackingData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
+      final token = prefs.getString('api_token');
 
       if (token == null) return;
 
@@ -288,7 +292,7 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
 
       // Fetch user data by ID
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
+      final token = prefs.getString('api_token');
 
       if (token == null) {
         print(
@@ -754,6 +758,51 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
               currentStatus: currentStatus,
             ),
 
+            // Cancellation Info (show when cancelled by mitra)
+            if (currentStatus == 'cancelled' || currentStatus == 'dibatalkan')
+              () {
+                final cancellationReason =
+                    widget.booking['cancellation_reason']?.toString();
+                final cancelledAt = widget.booking['cancelled_at']?.toString();
+
+                // Check if cancellation was by mitra (reason contains "mitra")
+                if (cancellationReason != null &&
+                    cancellationReason.toLowerCase().contains('mitra')) {
+                  // Extract the actual reason after "mitra: "
+                  String displayReason = cancellationReason;
+                  if (cancellationReason.contains(':')) {
+                    final parts = cancellationReason.split(':');
+                    if (parts.length > 1) {
+                      displayReason = parts.sublist(1).join(':').trim();
+                    }
+                  }
+
+                  return Column(
+                    children: [
+                      const SizedBox(height: 16),
+                      CancellationInfoCard(
+                        cancellationReason: displayReason,
+                        cancelledAt: cancelledAt,
+                        accentColor: accentColor,
+                        onRefundPressed: () {
+                          // Navigate to refund page
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const RefundLandingPage(
+                                initialTab: 0,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  );
+                }
+                return const SizedBox.shrink();
+              }(),
+
             // Countdown Section (only for waiting status)
             if (currentStatus == 'paid' || currentStatus == 'confirmed')
               CountdownSection(
@@ -789,12 +838,236 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
 
             const SizedBox(height: 16),
 
-            // Passenger Section
-            if (bookingType == 'motor' || bookingType == 'mobil') ...[
+            // Service Type Badge for Motor
+            if (bookingType == 'motor') ...[
+              ServiceTypeBadge(
+                serviceType: ride['service_type']?.toString(),
+                accentColor: accentColor,
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // Passenger Section - Show conditionally based on booking type and data
+            if (bookingType == 'motor') ...[
+              // For motor: check service_type to determine what to show
+              () {
+                final serviceType =
+                    ride['service_type']?.toString().toLowerCase();
+                final hasBarangData = _hasBarangData(widget.booking);
+
+                // If service_type is 'both', show both passenger and barang info
+                if (serviceType == 'both') {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Passenger Info
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          'passenger_info_title'.tr(),
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: Colors.grey[700],
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildPassengerSection(bookingType, user, accentColor),
+                      const SizedBox(height: 16),
+
+                      // Barang Info
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          'Informasi Barang',
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: Colors.grey[700],
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      BarangCard(
+                        photoUrl: widget.booking['photo']?.toString(),
+                        weight: widget.booking['weight']?.toString(),
+                        description: widget.booking['description']?.toString(),
+                        accentColor: accentColor,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  );
+                }
+                // If service_type is 'barang' or has barang data, show only barang
+                else if (serviceType == 'barang' || hasBarangData) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          'Informasi Barang',
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: Colors.grey[700],
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      BarangCard(
+                        photoUrl: widget.booking['photo']?.toString(),
+                        weight: widget.booking['weight']?.toString(),
+                        description: widget.booking['description']?.toString(),
+                        accentColor: accentColor,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  );
+                }
+                // Default: show passenger info
+                else {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          'passenger_info_title'.tr(),
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: Colors.grey[700],
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildPassengerSection(bookingType, user, accentColor),
+                      const SizedBox(height: 16),
+                    ],
+                  );
+                }
+              }(),
+            ] else if (bookingType == 'mobil') ...[
+              // Service Type Badge for Mobil
+              () {
+                final ride = widget.booking['ride'] as Map<String, dynamic>?;
+                final serviceType = ride?['service_type']?.toString();
+                return ServiceTypeBadge(
+                  serviceType: serviceType,
+                  accentColor: accentColor,
+                );
+              }(),
+              const SizedBox(height: 16),
+
+              // For mobil, check service_type and barang data similar to motor
+              () {
+                final ride = widget.booking['ride'] as Map<String, dynamic>?;
+                final serviceType = ride?['service_type']?.toString();
+                final hasBarangData = _hasBarangData(widget.booking);
+
+                // If service_type is 'both' or has both passenger and barang data
+                if (serviceType == 'both' ||
+                    (serviceType == null &&
+                        allPassengers.isNotEmpty &&
+                        hasBarangData)) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          'passenger_info_title'.tr(),
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: Colors.grey[700],
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildPassengerSection(bookingType, user, accentColor),
+                      const SizedBox(height: 16),
+
+                      // Barang Info
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          'Informasi Barang',
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: Colors.grey[700],
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      BarangCard(
+                        photoUrl: widget.booking['photo']?.toString(),
+                        weight: widget.booking['weight']?.toString(),
+                        description: widget.booking['description']?.toString(),
+                        accentColor: accentColor,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  );
+                }
+                // If service_type is 'barang' or has only barang data
+                else if (serviceType == 'barang' || hasBarangData) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          'Informasi Barang',
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: Colors.grey[700],
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      BarangCard(
+                        photoUrl: widget.booking['photo']?.toString(),
+                        weight: widget.booking['weight']?.toString(),
+                        description: widget.booking['description']?.toString(),
+                        accentColor: accentColor,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  );
+                }
+                // Default: show passenger info (service_type 'penumpang' or no service_type with passengers)
+                else {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          'passenger_info_title'.tr(),
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: Colors.grey[700],
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildPassengerSection(bookingType, user, accentColor),
+                      const SizedBox(height: 16),
+                    ],
+                  );
+                }
+              }(),
+            ] else if (bookingType == 'barang' || bookingType == 'titip') ...[
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
-                  'passenger_info_title'.tr(),
+                  'Informasi Barang',
                   style: TextStyle(
                     fontSize: 15,
                     color: Colors.grey[700],
@@ -803,7 +1076,12 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
                 ),
               ),
               const SizedBox(height: 12),
-              _buildPassengerSection(bookingType, user, accentColor),
+              BarangCard(
+                photoUrl: widget.booking['photo']?.toString(),
+                weight: widget.booking['weight']?.toString(),
+                description: widget.booking['description']?.toString(),
+                accentColor: accentColor,
+              ),
               const SizedBox(height: 16),
             ],
 
@@ -946,6 +1224,15 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
       name: user['name'] ?? 'Customer',
       accentColor: accentColor,
     );
+  }
+
+  /// Check if booking has barang (item/package) data
+  bool _hasBarangData(Map<String, dynamic> booking) {
+    final photo = booking['photo']?.toString() ?? '';
+    final weight = booking['weight']?.toString() ?? '';
+    final description = booking['description']?.toString() ?? '';
+
+    return photo.isNotEmpty || weight.isNotEmpty || description.isNotEmpty;
   }
 }
 

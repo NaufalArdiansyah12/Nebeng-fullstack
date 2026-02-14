@@ -672,7 +672,7 @@ class _TripListBarangUmumPageState extends State<TripListBarangUmumPage> {
                     Icon(Icons.card_travel, color: Colors.grey[700], size: 18),
                     const SizedBox(width: 6),
                     Text(
-                      'Maks. ${bagasiCapacity} Bagasi',
+                      'Maks. ${bagasiCapacity} kg',
                       style: TextStyle(
                         fontSize: 13,
                         color: Colors.grey[800],

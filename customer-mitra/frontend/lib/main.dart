@@ -107,17 +107,70 @@ Future<void> main() async {
 
       // Foreground message handler
       FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
+        print('📨 FCM message received in foreground');
+        print('   Data: ${message.data}');
+
         final n = message.notification;
         final msgId = message.messageId ??
             message.data['message_id'] ??
             message.data['id'];
+
+        // Check if this is a chat message notification
+        final notificationType = message.data['type'];
+
         if (n != null) {
+          print('   Title: ${n.title}');
+          print('   Body: ${n.body}');
+
+          // Use 'chat' channel for chat messages, default for others
+          final channelType =
+              notificationType == 'chat_message' ? 'chat' : null;
+
           await NotificationService.showIfNotDuplicate(
-              messageId: (msgId is String && msgId.isNotEmpty) ? msgId : null,
-              title: n.title ?? 'Nebeng',
-              body: n.body ?? '');
+            messageId: (msgId is String && msgId.isNotEmpty) ? msgId : null,
+            title: n.title ?? 'Nebeng',
+            body: n.body ?? '',
+            channelType: channelType,
+          );
+        } else {
+          print('   No notification payload, data only');
+        }
+
+        // Log for debugging
+        if (notificationType == 'chat_message') {
+          print('   Type: Chat Message');
+          print('   Sender: ${message.data['sender_name']}');
+          print('   Conversation: ${message.data['conversation_id']}');
         }
       });
+
+      // Background message handler (when app is in background but not terminated)
+      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+        print('📬 Notification opened from background');
+        final notificationType = message.data['type'];
+
+        if (notificationType == 'chat_message') {
+          final conversationId = message.data['conversation_id'];
+          final senderName = message.data['sender_name'];
+          print('   Opening chat: $conversationId with $senderName');
+          // TODO: Navigate to chat page when app opens
+          // This will be handled in the app's navigation logic
+        }
+      });
+
+      // Handle notification that opened the app from terminated state
+      final initialMessage =
+          await FirebaseMessaging.instance.getInitialMessage();
+      if (initialMessage != null) {
+        print('📭 App opened from notification (terminated state)');
+        final notificationType = initialMessage.data['type'];
+
+        if (notificationType == 'chat_message') {
+          final conversationId = initialMessage.data['conversation_id'];
+          print('   Should open chat: $conversationId');
+          // TODO: Store this to navigate after app initializes
+        }
+      }
     } catch (e, st) {
       print('Firebase messaging init error: $e\n$st');
     }
