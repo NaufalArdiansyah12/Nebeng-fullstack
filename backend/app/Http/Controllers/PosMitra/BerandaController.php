@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ApiToken;
 use App\Models\PosMitraUser;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 
 class BerandaController extends Controller
@@ -36,9 +37,27 @@ class BerandaController extends Controller
      */
     public function upcomingRides(Request $request)
     {
+        Log::info('PosMitra upcomingRides called', [
+            'bearer_token_exists' => $request->bearerToken() ? 'yes' : 'no',
+            'authorization_header' => $request->header('Authorization') ? 'exists' : 'missing',
+        ]);
+
         $user = $this->getAuthenticatedUser($request);
         if ($user instanceof \Illuminate\Http\JsonResponse) return $user;
+        if ($user instanceof \Illuminate\Http\JsonResponse) {
+            Log::error('PosMitra upcomingRides auth failed', [
+                'response' => $user->getData(),
+            ]);
+            return $user;
+        }
 
+        Log::info('PosMitra upcomingRides authenticated', [
+            'user_id' => $user->id,
+            'user_type' => get_class($user),
+            'location_id' => $user->location_id,
+        ]);
+
+        // Cek apakah pos mitra memiliki assigned location
         if (!$user->location_id) {
             return response()->json([
                 'success' => true,
@@ -243,7 +262,9 @@ class BerandaController extends Controller
             ->where('status', 'completed')
             ->count();
 
+
         // Titip Barang
+        // Count Titip Barang (from tebengan_titip_barang table)
         $titipBarang = DB::table('tebengan_titip_barang')
             ->where('destination_location_id', $user->location_id)
             ->where('status', 'completed')
@@ -263,34 +284,55 @@ class BerandaController extends Controller
     /**
      * Custom token auth
      */
-    private function getAuthenticatedUser(Request $request)
-    {
-        $bearer = $request->bearerToken();
-        if (!$bearer) {
-            return response()->json(['success' => false, 'message' => 'Token tidak ditemukan'], 401);
-        }
+private function getAuthenticatedUser(Request $request)
+{
+    $bearer = $request->bearerToken();
+    if (!$bearer) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Token tidak ditemukan'
+        ], 401);
+    }
 
-        $hashed = hash('sha256', $bearer);
+    $hashed = hash('sha256', $bearer);
 
-        $apiToken = ApiToken::where('token', $hashed)
-            ->where('expires_at', '>', now())
-            ->first();
+    $apiToken = ApiToken::where('token', $hashed)
+        ->where('expires_at', '>', now())
+        ->first();
 
-        if (!$apiToken) {
-            return response()->json(['success' => false, 'message' => 'Token tidak valid atau sudah kadaluarsa'], 401);
-        }
+    if (!$apiToken) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Token tidak valid atau sudah kadaluarsa'
+        ], 401);
+    }
 
+    Log::info('PosMitra auth - ApiToken found', [
+        'user_id' => $apiToken->user_id,
+        'posmitra_id' => $apiToken->posmitra_id,
+        'user_type' => $apiToken->user_type,
+        'expires_at' => $apiToken->expires_at,
+    ]);
+
+    if ($apiToken->user_type === 'posmitra') {
         $posMitraUser = PosMitraUser::find($apiToken->posmitra_id);
-        
+
         if ($posMitraUser) {
             return $posMitraUser;
         }
-        
+
         return response()->json([
-            'success' => false, 
+            'success' => false,
             'message' => 'User pos mitra tidak ditemukan'
         ], 404);
     }
+
+    return response()->json([
+        'success' => false,
+        'message' => 'User tidak valid'
+    ], 401);
+}
+
 
     /**
  * Get completed rides (tebengan selesai)

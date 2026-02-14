@@ -82,7 +82,6 @@ class AuthController extends Controller
                 'message' => 'Email atau password salah',
             ], 401);
         }
-
         $token = Str::random(60);
 ApiToken::create([
     'user_id'     => $userType === 'user' ? $user->id : null,
@@ -91,6 +90,38 @@ ApiToken::create([
     'token'       => hash('sha256', $token),
     'expires_at'  => now()->addDays(30),
 ]);
+        // Check if user is blocked (only for regular users, not posmitra)
+        if ($userType === 'user' && isset($user->status) && $user->status === 'blocked') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akun Anda telah diblokir',
+                'blocked' => true,
+                'data' => [
+                    'status' => 'blocked',
+                    'reason' => $user->blocked_reason ?? 'Tidak ada alasan yang diberikan',
+                    'blocked_at' => $user->blocked_at,
+                ]
+            ], 403);
+        }
+
+        // create simple token entry with user_type
+        $token = Str::random(60);
+        $tokenData = [
+            'user_type' => $userType,
+            'token' => hash('sha256', $token),
+            'expires_at' => now()->addDays(30),
+        ];
+        
+        // Set user_id or posmitra_id based on user_type
+        if ($userType === 'posmitra') {
+            $tokenData['posmitra_id'] = $user->id;
+            $tokenData['user_id'] = null;
+        } else {
+            $tokenData['user_id'] = $user->id;
+            $tokenData['posmitra_id'] = null;
+        }
+        
+        $apiToken = ApiToken::create($tokenData);
 
 
         $userData = $this->formatUserData($user, $userType);
@@ -123,9 +154,7 @@ public function loginPosMitra(Request $request)
         'password' => 'required|string',
     ]);
 
-    $userType = 'posmitra'; // ✅ WAJIB ADA
-
-    $user = $this->getUserByType($request->email, $userType);
+    $user = PosMitraUser::where('email', $request->email)->first();
 
     if (!$user || !Hash::check($request->password, $user->password)) {
         return response()->json([
@@ -138,7 +167,7 @@ public function loginPosMitra(Request $request)
 
     ApiToken::create([
         'user_id'     => null,
-        'posmitra_id' => $user->id, // ✅ FIX
+        'posmitra_id' => $user->id,
         'user_type'   => 'posmitra',
         'token'       => hash('sha256', $token),
         'expires_at'  => now()->addDays(30),
@@ -152,6 +181,7 @@ public function loginPosMitra(Request $request)
         ],
     ]);
 }
+
 
 
     // =================== CHANGE PASSWORD ===================

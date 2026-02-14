@@ -19,6 +19,9 @@ class BookingMobil extends Model
         'status',
         'cancellation_reason',
         'meta',
+        'photo',
+        'weight',
+        'description',
     ];
 
     protected $casts = [

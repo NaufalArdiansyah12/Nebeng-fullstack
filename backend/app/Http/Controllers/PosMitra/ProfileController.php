@@ -95,70 +95,69 @@ class ProfileController extends Controller
     /**
      * Get authenticated user from bearer token
      */
-    private function getAuthenticatedUser(Request $request)
-    {
-        $bearer = $request->bearerToken();
-        if (!$bearer) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Token tidak ditemukan',
-            ], 401);
-        }
+private function getAuthenticatedUser(Request $request)
+{
+    $bearer = $request->bearerToken();
 
-        $hashed = hash('sha256', $bearer);
-
-        $apiToken = ApiToken::where('token', $hashed)
-            ->where('expires_at', '>', now())
-            ->first();
-
-        if (!$apiToken) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Token tidak valid atau kadaluarsa',
-            ], 401);
-        }
-
-        // Ambil user sesuai tipe token
-        if ($apiToken->user_type === 'posmitra') {
-            $user = PosMitraUser::find($apiToken->posmitra_id);
-        } else {
-            $user = User::find($apiToken->user_id);
-        }
-
-        if (!$user) {
-            return response()->json([
-                'success' => false,
-                'message' => 'User tidak ditemukan',
-            ], 404);
-        }
-
-        return $user;
+    if (!$bearer) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Token tidak ditemukan',
+        ], 401);
     }
+
+    $hashed = hash('sha256', $bearer);
+
+    $apiToken = ApiToken::where('token', $hashed)
+        ->where('expires_at', '>', now())
+        ->first();
+
+    if (!$apiToken || $apiToken->user_type !== 'posmitra') {
+        return response()->json([
+            'success' => false,
+            'message' => 'Token tidak valid atau bukan posmitra',
+        ], 401);
+    }
+
+    $user = PosMitraUser::find($apiToken->posmitra_id);
+
+    if (!$user) {
+        return response()->json([
+            'success' => false,
+            'message' => 'User posmitra tidak ditemukan',
+        ], 404);
+    }
+
+    return $user;
+}
+
 
     /**
      * Mapping user data agar konsisten
      */
-    private function mapUser($user)
-    {
-        return [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email ?? null,
-            'phone' => $user->phone ?? null,
-           'profile_photo' => $user->profile_photo
-    ? asset('storage/' . ltrim(str_replace('/storage/', '', $user->profile_photo), '/'))
-    : null,
-            'balance' => (float) ($user->balance ?? 0),
-            'location_id' => $user->location_id ?? null,
-            'location' => $user->location ? [
-                'id' => $user->location->id,
-                'name' => $user->location->name,
-                'city' => $user->location->city ?? null,
-                'address' => $user->location->address ?? null,
-                'latitude' => $user->location->latitude ?? null,
-                'longitude' => $user->location->longitude ?? null,
-            ] : null,
-            'role' => 'posmitra',
-        ];
-    }
+
+private function mapUser($user): array
+{
+    return [
+        'id' => $user->id,
+        'name' => $user->name,
+        'email' => $user->email ?? null,
+        'phone' => $user->phone ?? null,
+        'profile_photo' => $user->profile_photo
+            ? asset('storage/' . ltrim(str_replace('/storage/', '', $user->profile_photo), '/'))
+            : null,
+        'balance' => (float) ($user->balance ?? 0),
+        'location_id' => $user->location_id ?? null,
+        'location' => $user->location ? [
+            'id' => $user->location->id,
+            'name' => $user->location->name,
+            'city' => $user->location->city ?? null,
+            'address' => $user->location->address ?? null,
+            'latitude' => $user->location->latitude ?? null,
+            'longitude' => $user->location->longitude ?? null,
+        ] : null,
+        'role' => 'posmitra',
+    ];
+}
+
 }

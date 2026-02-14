@@ -5,6 +5,7 @@ import 'beranda_page.dart';
 import 'profile/profile_page.dart';
 import 'messages/chats_page.dart';
 import 'riwayat/riwayat_page.dart';
+import '../../services/shared/user_status_checker.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({Key? key}) : super(key: key);
@@ -13,8 +14,32 @@ class MainPage extends StatefulWidget {
   State<MainPage> createState() => _MainPageState();
 }
 
-class _MainPageState extends State<MainPage> {
+class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
   int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // Check status when page opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      UserStatusChecker.checkAndHandleBlockedStatus(context);
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Check status when app resumes
+    if (state == AppLifecycleState.resumed) {
+      UserStatusChecker.checkAndHandleBlockedStatus(context);
+    }
+  }
 
   final List<Widget> _pages = [
     const BerandaPage(showBottomNav: false),

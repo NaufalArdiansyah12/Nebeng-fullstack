@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/api_service.dart';
-import 'package:nebeng/screens/mitra/detail_tebengan_page.dart';
+import 'package:nebeng/screens/mitra/detail_tebengan/detail_tebengan_page.dart';
 
 class MitraRiwayatPage extends StatefulWidget {
   const MitraRiwayatPage({Key? key}) : super(key: key);
@@ -390,31 +390,27 @@ class _MitraRiwayatPageState extends State<MitraRiwayatPage> {
     Color statusBgColor = const Color(0xFFDDD6FE);
     Color statusTextColor = const Color(0xFF7C3AED);
 
+    // Simplify status to only 3 categories: Proses, Selesai, Dibatalkan
     if (status == 'completed' ||
         status == 'selesai' ||
-        status.contains('completed')) {
+        status.contains('completed') ||
+        status == 'sudah_sampai_tujuan') {
       statusLabel = 'Selesai';
       statusBgColor = const Color(0xFFD1FAE5);
       statusTextColor = const Color(0xFF059669);
-    } else if (status == 'active' ||
-        status.contains('active') ||
-        status == 'menuju_penjemputan' ||
-        status == 'sudah_di_penjemputan' ||
-        status == 'menuju_tujuan' ||
-        status == 'sudah_sampai_tujuan') {
-      statusLabel = 'Proses';
-      statusBgColor = const Color(0xFFDDD6FE);
-      statusTextColor = const Color(0xFF7C3AED);
     } else if (status == 'cancelled' ||
         status == 'dibatalkan' ||
         status.contains('cancel')) {
       statusLabel = 'Dibatalkan';
       statusBgColor = const Color(0xFFFEE2E2);
       statusTextColor = const Color(0xFFDC2626);
-    } else if (status == 'full' || status.contains('full')) {
-      statusLabel = 'Kosong';
-      statusBgColor = const Color(0xFFFEF3C7);
-      statusTextColor = const Color(0xFFD97706);
+    } else {
+      // All other statuses (paid, active, pending, confirmed, scheduled,
+      // menuju_penjemputan, sudah_di_penjemputan, menuju_tujuan, etc.)
+      // are considered as "Proses"
+      statusLabel = 'Proses';
+      statusBgColor = const Color(0xFFDDD6FE);
+      statusTextColor = const Color(0xFF7C3AED);
     }
 
     final origin =

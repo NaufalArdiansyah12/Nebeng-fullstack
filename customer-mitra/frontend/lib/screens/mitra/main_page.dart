@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/api_service.dart';
+import '../../services/shared/user_status_checker.dart';
 import 'home_page.dart';
 import 'riwayat_page.dart';
 import 'profile/profile_page.dart';
@@ -26,6 +27,11 @@ class _MitraMainPageState extends State<MitraMainPage>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
+    // Check user status when page opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      UserStatusChecker.checkAndHandleBlockedStatus(context);
+    });
 
     // initialize pages first for faster UI display
     _pages.addAll([
@@ -58,6 +64,8 @@ class _MitraMainPageState extends State<MitraMainPage>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      // Check user status when app resumes
+      UserStatusChecker.checkAndHandleBlockedStatus(context);
       _reportCurrentLocation();
       _startLocationTimer();
     }

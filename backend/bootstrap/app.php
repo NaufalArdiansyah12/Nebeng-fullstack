@@ -15,6 +15,15 @@ return Application::configure(basePath: dirname(__DIR__))
         // Exclude API routes from CSRF verification so mobile/JS clients
         // can POST to /api/* without needing a CSRF token.
         \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::except(['api/*']);
+        
+        // Add CORS middleware globally for API
+        $middleware->append(\App\Http\Middleware\CorsMiddleware::class);
+        
+        // Add middleware aliases
+        $middleware->alias([
+            'check.user.status' => \App\Http\Middleware\CheckUserStatus::class,
+            'admin.auth' => \App\Http\Middleware\AdminAuthMiddleware::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
