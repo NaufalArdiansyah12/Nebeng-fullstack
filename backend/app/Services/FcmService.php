@@ -8,16 +8,68 @@ use Illuminate\Support\Facades\Cache;
 
 class FcmService
 {
+    /** Default service account filename (project nebeng1) */
+    const SERVICE_ACCOUNT_FILENAME = 'nebeng1-firebase-adminsdk-fbsvc-3c2b314daf.json';
+
+    /**
+     * HTTP client with SSL options for Google APIs (fixes cURL 60 on Windows/local).
+     * Set FCM_SSL_VERIFY=false for local dev only, or FCM_CA_BUNDLE=path/to/cacert.pem
+     */
+    protected static function httpClient()
+    {
+        $verify = env('FCM_SSL_VERIFY', true);
+        if (is_string($verify)) {
+            $verify = filter_var($verify, FILTER_VALIDATE_BOOLEAN);
+        }
+        $caBundle = env('FCM_CA_BUNDLE');
+        if ($caBundle && file_exists($caBundle)) {
+            return Http::withOptions(['verify' => $caBundle]);
+        }
+        if ($verify === false) {
+            Log::warning('[FCM] SSL verification disabled (FCM_SSL_VERIFY=false). Use only for local development.');
+            return Http::withOptions(['verify' => false]);
+        }
+        return Http::withOptions([]);
+    }
+
+    /**
+     * Resolve path to Firebase/FCM service account JSON.
+     * Order: FCM_SERVICE_ACCOUNT env -> config(firebase.credentials) -> storage/app/nebeng1-firebase-adminsdk-*.json -> storage/app/firebase-credentials.json
+     */
+    protected static function getServiceAccountPath(): ?string
+    {
+        $path = env('FCM_SERVICE_ACCOUNT') ?: config('firebase.credentials');
+        if ($path && file_exists($path)) {
+            return $path;
+        }
+        $nebeng1Path = storage_path('app/' . self::SERVICE_ACCOUNT_FILENAME);
+        if (file_exists($nebeng1Path)) {
+            return $nebeng1Path;
+        }
+        $defaultPath = storage_path('app/firebase-credentials.json');
+        if (file_exists($defaultPath)) {
+            return $defaultPath;
+        }
+        return null;
+    }
+
     /**
      * Send a notification to a device token using FCM HTTP v1 API.
-     * Requires `FCM_SERVICE_ACCOUNT` env pointing to service account JSON file.
+     * Requires service account JSON: set FCM_SERVICE_ACCOUNT in .env or put file at storage/app/firebase-credentials.json
      */
     public static function sendToToken(string $token, string $title, string $body, array $data = []): bool
     {
-        $serviceAccountPath = env('FCM_SERVICE_ACCOUNT');
+        Log::info('[FCM] sendToToken', [
+            'title' => $title,
+            'token_preview' => substr($token, 0, 30) . '...',
+            'data_type' => $data['type'] ?? null,
+        ]);
 
-        if (empty($serviceAccountPath) || !file_exists($serviceAccountPath)) {
-            Log::warning('FCM service account not configured or file not found: ' . ($serviceAccountPath ?? 'null'));
+        $serviceAccountPath = self::getServiceAccountPath();
+
+        if (!$serviceAccountPath) {
+            $expectedPath = storage_path('app/' . self::SERVICE_ACCOUNT_FILENAME);
+            Log::warning('[FCM] Service account not configured. Set FCM_SERVICE_ACCOUNT in .env or add file: ' . self::SERVICE_ACCOUNT_FILENAME . ' in storage/app/ (full path: ' . $expectedPath . ')');
             return false;
         }
 
@@ -53,23 +105,24 @@ class FcmService
                 ],
             ];
 
-            Log::info('FCM v1 request', ['url' => $url, 'message' => $message]);
+            Log::info('[FCM] v1 request', ['url' => $url, 'title' => $title]);
 
-            $resp = Http::withToken($accessToken)
+            $resp = self::httpClient()
+                ->withToken($accessToken)
                 ->withHeaders(['Content-Type' => 'application/json'])
                 ->post($url, $message);
 
-            Log::info('FCM v1 response', ['status' => $resp->status(), 'body' => $resp->body()]);
+            Log::info('[FCM] v1 response', ['status' => $resp->status(), 'body' => $resp->body()]);
 
             if ($resp->successful()) {
-                Log::info('FCM v1 sent', ['to' => $token]);
+                Log::info('[FCM] v1 sent OK');
                 return true;
             }
 
-            Log::error('FCM v1 error', ['status' => $resp->status(), 'body' => $resp->body()]);
+            Log::error('[FCM] v1 error', ['status' => $resp->status(), 'body' => $resp->body()]);
             return false;
         } catch (\Exception $e) {
-            Log::error('FCM v1 Exception: ' . $e->getMessage(), ['exception' => $e]);
+            Log::error('[FCM] Exception: ' . $e->getMessage());
             return false;
         }
     }
@@ -102,7 +155,7 @@ class FcmService
             return null;
         }
 
-        $response = Http::asForm()->post('https://oauth2.googleapis.com/token', [
+        $response = self::httpClient()->asForm()->post('https://oauth2.googleapis.com/token', [
             'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
             'assertion' => $jwt,
         ]);

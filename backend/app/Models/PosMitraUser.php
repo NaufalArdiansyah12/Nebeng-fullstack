@@ -34,6 +34,9 @@ class PosMitraUser extends Authenticatable
         'pin',
         'fcm_token',
         'location_id',
+        'bank_name',
+        'bank_account_number',
+        'bank_account_name',
     ];
 
     /**

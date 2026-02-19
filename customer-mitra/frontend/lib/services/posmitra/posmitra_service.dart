@@ -588,6 +588,7 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../api_service.dart';
@@ -596,6 +597,42 @@ class PosMitraService {
   static String get baseUrl => ApiService.baseUrl;
 
   // ==================== AUTHENTICATION ====================
+
+  /// Kirim FCM token ke backend agar PosMitra bisa terima push notification.
+  /// Dipanggil saat Beranda dibuka (fallback selain saat login/app start).
+  static Future<void> registerFcmToken() async {
+    try {
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token == null || token.isEmpty) {
+        print('[FCM PosMitra] registerFcmToken: no FCM token');
+        return;
+      }
+      final prefs = await SharedPreferences.getInstance();
+      final apiToken = prefs.getString('api_token');
+      if (apiToken == null || apiToken.isEmpty) {
+        print('[FCM PosMitra] registerFcmToken: no api_token');
+        return;
+      }
+      final uri = Uri.parse('$baseUrl/api/v1/posmitra/fcm-token');
+      print('[FCM PosMitra] registerFcmToken: POST $uri');
+      final response = await http.post(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $apiToken',
+        },
+        body: json.encode({'fcm_token': token}),
+      );
+      print('[FCM PosMitra] registerFcmToken: status=${response.statusCode}, body=${response.body}');
+      if (response.statusCode == 200) {
+        print('[FCM PosMitra] registerFcmToken: token terdaftar');
+      }
+    } catch (e, st) {
+      print('[FCM PosMitra] registerFcmToken error: $e');
+      print('[FCM PosMitra] $st');
+    }
+  }
 
   /// Get authorization header with bearer token
   static Future<Map<String, String>> _getHeaders() async {
@@ -848,45 +885,57 @@ static Future<List<Map<String, dynamic>>> getAllRides() async {
 }
   /// Withdraw Balance
   static Future<Map<String, dynamic>> withdrawBalance({
-    required String token,
-    required double amount,
-    required String bankName,
-    required String accountNumber,
-    required String pin,
-  }) async {
-    try {
-      print('🔄 [withdrawBalance] Processing withdrawal...');
-      
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/v1/posmitra/withdraw'),
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: json.encode({
-          'amount': amount,
-          'bank_name': bankName,
-          'account_number': accountNumber,
-          'pin': pin,
-        }),
-      );
+  required String token,
+  required double amount,
+  required String bankName,
+  required String accountNumber,
+  required String accountName, // ← Tambahkan parameter
+  required String pin,
+}) async {
+  try {
+    print('🔄 [withdrawBalance] Processing withdrawal...');
+    print('💰 Amount: $amount');
+    print('🏦 Bank: $bankName');
+    print('🔢 Account Number: $accountNumber');
+    print('👤 Account Name: $accountName');
+    
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/v1/posmitra/withdraw'),
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: json.encode({
+        'amount': amount,
+        'bank_name': bankName,
+        'account_number': accountNumber,// ← Sesuaikan dengan backend
+        'bank_account_name': accountName,     // ← Tambahkan field ini
+        'pin': pin,
+      }),
+    );
 
-      print('📡 [withdrawBalance] Status: ${response.statusCode}');
-      print('📡 [withdrawBalance] Response: ${response.body}');
+    print('📡 [withdrawBalance] Status: ${response.statusCode}');
+    print('📡 [withdrawBalance] Response: ${response.body}');
 
-      if (response.statusCode == 200) {
-        return json.decode(response.body);
-      } else {
-        final error = json.decode(response.body);
-        throw Exception(error['message'] ?? 'Failed to withdraw');
-      }
-    } catch (e) {
-      print('❌ [withdrawBalance] Error: $e');
-      rethrow;
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return data;
+    } else {
+      final error = json.decode(response.body);
+      return {
+        'success': false,
+        'message': error['message'] ?? 'Gagal melakukan penarikan'
+      };
     }
+  } catch (e) {
+    print('❌ [withdrawBalance] Error: $e');
+    return {
+      'success': false,
+      'message': 'Error: $e'
+    };
   }
-
+}
   /// Get withdrawal history
 static Future<List<Map<String, dynamic>>> getWithdrawalHistory({
   int page = 1,
@@ -1035,67 +1084,216 @@ static Future<List<Map<String, dynamic>>> getWithdrawalHistory({
     }
   }
 
-    /// Update pos mitra profile
-  static Future<Map<String, dynamic>> updateProfile({
-    String? email,
-    String? photoFilePath,
-    String? name,
-    String? phone,
+  /// Get withdrawal notifications - Transform withdrawal history into notification format
+  /// Returns list of notifications from withdrawal transactions (tarik saldo)
+  static Future<List<Map<String, dynamic>>> getWithdrawalNotifications({
+    int page = 1,
+    int limit = 10,
   }) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('api_token');
-
-      if (token == null || token.isEmpty) {
-        throw Exception('Token tidak ditemukan');
-      }
-
-      var request = http.MultipartRequest(
-        'POST',
-       Uri.parse('$baseUrl/api/v1/auth/update-profile'),
-      );
-
-      request.headers['Authorization'] = 'Bearer $token';
-      request.headers['Accept'] = 'application/json';
-
-      if (email != null && email.isNotEmpty) {
-        request.fields['email'] = email;
-      }
-
-      if (name != null && name.isNotEmpty) {
-        request.fields['name'] = name;
-      }
-
-      if (phone != null && phone.isNotEmpty) {
-        request.fields['phone'] = phone;
-      } 
+      print('🔄 [getWithdrawalNotifications] Fetching withdrawal notifications...');
       
-      if (photoFilePath != null) {
-        request.files.add(
-          await http.MultipartFile.fromPath(
-            'profile_photo',
-            photoFilePath,
-          ),
-        );
-      }
-
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['success'] == true) {
-          return data;
+      // Fetch withdrawal history
+      final withdrawals = await getWithdrawalHistory(page: page, limit: limit);
+      
+      print('📦 [getWithdrawalNotifications] Found ${withdrawals.length} withdrawals');
+      
+      // Transform withdrawal data into notification format
+      final notifications = <Map<String, dynamic>>[];
+      
+      for (final withdrawal in withdrawals) {
+        // Parse amount
+        final amount = double.tryParse(withdrawal['amount']?.toString() ?? '0') ?? 0;
+        final adminFee = double.tryParse(withdrawal['admin_fee']?.toString() ?? '0') ?? 0;
+        final totalAmount = double.tryParse(withdrawal['total_amount']?.toString() ?? '0') ?? 0;
+        
+        // Get bank info
+        final bankName = withdrawal['bank_name']?.toString() ?? '';
+        final accountNumber = withdrawal['bank_account_number']?.toString() ?? '';
+        final status = withdrawal['status']?.toString() ?? '';
+        
+        // Get dates
+        final submittedAt = withdrawal['submitted_at']?.toString() ?? '';
+        final completedAt = withdrawal['completed_at']?.toString() ?? '';
+        
+        // Format the date for display
+        String formattedDate = submittedAt;
+        if (completedAt.isNotEmpty) {
+          formattedDate = completedAt;
         }
-        throw Exception(data['message'] ?? 'Gagal memperbarui profil');
+        
+        // Format the date to dd-MM-yyyy HH:mm format
+        String displayDate = formattedDate;
+        if (formattedDate.isNotEmpty) {
+          try {
+            final dateTime = DateTime.parse(formattedDate);
+            final day = dateTime.day.toString().padLeft(2, '0');
+            final month = dateTime.month.toString().padLeft(2, '0');
+            final year = dateTime.year;
+            final hour = dateTime.hour.toString().padLeft(2, '0');
+            final minute = dateTime.minute.toString().padLeft(2, '0');
+            displayDate = '$day-$month-$year  $hour:$minute';
+          } catch (e) {
+            // Keep original format if parsing fails
+            displayDate = formattedDate;
+          }
+        }
+        
+        // Create status label
+        String statusLabel = 'Menunggu';
+        switch (status) {
+          case 'completed':
+            statusLabel = 'Berhasil';
+            break;
+          case 'processing':
+            statusLabel = 'Diproses';
+            break;
+          case 'rejected':
+            statusLabel = 'Ditolak';
+            break;
+          case 'pending':
+            statusLabel = 'Menunggu';
+            break;
+        }
+        
+        // Create notification message based on status
+        String message = '';
+        if (status == 'completed') {
+          message = 'Saldo sebesar Rp ${_formatCurrency(totalAmount)} telah berhasil dicairkan ke $bankName $accountNumber';
+        } else if (status == 'processing') {
+          message = 'Penarikan saldo sebesar Rp ${_formatCurrency(amount)} ke $bankName $accountNumber sedang diproses';
+        } else if (status == 'rejected') {
+          message = 'Penarikan saldo sebesar Rp ${_formatCurrency(amount)} ke $bankName $accountNumber ditolak';
+        } else {
+          message = 'Permintaan penarikan saldo sebesar Rp ${_formatCurrency(amount)} ke $bankName $accountNumber';
+        }
+        
+        // Create notification object
+        final notification = {
+          'title': 'Tarik Saldo',
+          'message': message,
+          'time': displayDate,
+          'type': 'withdrawal',
+          'status': statusLabel,
+          'amount': amount,
+          'adminFee': adminFee,
+          'totalAmount': totalAmount,
+          'bankName': bankName,
+          'accountNumber': accountNumber,
+          'withdrawalId': withdrawal['id'],
+          'transactionId': withdrawal['transaction_id'] ?? '',
+        };
+        
+        notifications.add(notification);
+        print('✅ [getWithdrawalNotifications] Added notification: $statusLabel - ${withdrawal['id']}');
       }
-      throw Exception('Gagal memperbarui profil: ${response.statusCode}');
+      
+      return notifications;
     } catch (e) {
-      throw Exception('Error saat memperbarui profil: $e');
+      print('❌ [getWithdrawalNotifications] Error: $e');
+      return [];
     }
   }
 
+  /// Helper function to format currency
+  static String _formatCurrency(double amount) {
+    final formatted = amount.toStringAsFixed(0);
+    final regex = RegExp(r'\B(?=(\d{3})+(?!\d))');
+    return formatted.replaceAllMapped(regex, (match) => '.');
+  }
 
+    /// Update pos mitra profile
+static Future<Map<String, dynamic>> updateProfile({
+  String? email,
+  String? photoFilePath,
+  String? name,
+  String? phone,
+  String? bankName,
+  String? bankAccountNumber,
+  String? bankAccountName,
+}) async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('api_token');
+
+    if (token == null || token.isEmpty) {
+      return {
+        'success': false,
+        'message': 'Token tidak ditemukan'
+      };
+    }
+
+    var request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl/api/v1/pos-mitra/profile'),  // ← Pastikan endpoint ini
+    );
+
+    request.headers['Authorization'] = 'Bearer $token';
+    request.headers['Accept'] = 'application/json';
+
+    if (email != null && email.isNotEmpty) {
+      request.fields['email'] = email;
+    }
+
+    if (name != null && name.isNotEmpty) {
+      request.fields['name'] = name;
+    }
+
+    if (phone != null && phone.isNotEmpty) {
+      request.fields['phone'] = phone;
+    }
+
+    if (bankName != null && bankName.isNotEmpty) {
+      request.fields['bank_name'] = bankName;
+    }
+
+    if (bankAccountNumber != null && bankAccountNumber.isNotEmpty) {
+      request.fields['bank_account_number'] = bankAccountNumber;
+    }
+
+    if (bankAccountName != null && bankAccountName.isNotEmpty) {
+      request.fields['bank_account_name'] = bankAccountName;
+    }
+
+    if (photoFilePath != null && photoFilePath.isNotEmpty) {
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'profile_photo',
+          photoFilePath,
+        ),
+      );
+    }
+
+    print('=== Update Profile Request ===');
+    print('URL: ${request.url}');
+    print('Fields: ${request.fields}');
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    print('=== Response ===');
+    print('Status: ${response.statusCode}');
+    print('Body: ${response.body}');
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return data;
+    } else {
+      final data = json.decode(response.body);
+      return {
+        'success': false,
+        'message': data['message'] ?? 'Gagal memperbarui profil: ${response.statusCode}'
+      };
+    }
+  } catch (e) {
+    print('=== Error ===');
+    print('$e');
+    return {
+      'success': false,
+      'message': 'Error saat memperbarui profil: $e'
+    };
+  }
+}
   //   // ==================== QR CODE SCANNING ====================
 
   /// Verify QR code and complete ride

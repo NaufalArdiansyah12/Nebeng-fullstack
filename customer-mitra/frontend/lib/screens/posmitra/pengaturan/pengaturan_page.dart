@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'foto_profil_page.dart';
 import 'ubah_email_page.dart';
 import 'ubah_nomor_page.dart';
+import 'ubah_rekening_page.dart'; // Tambahkan import ini
 
 
 class PengaturanPage extends StatelessWidget {
@@ -49,39 +50,37 @@ class PengaturanPage extends StatelessWidget {
                     ),
                   ),
                 ),
-               _buildMenuItem(
-  context,
-  icon: Icons.person_outline,
-  title: 'Foto Profil',
-  subtitle: 'Ubah informasi akun Anda',
-  onTap: () async {
-    final res = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const FotoProfilPage(),
-      ),
-    );
-    if (res == true) {
-      // Bubble the success up to caller (ProfilPage)
-      Navigator.pop(context, true);
-    }
-  },
-),
-
+                _buildMenuItem(
+                  context,
+                  icon: Icons.person_outline,
+                  title: 'Foto Profil',
+                  subtitle: 'Ubah informasi akun Anda',
+                  onTap: () async {
+                    final res = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const FotoProfilPage(),
+                      ),
+                    );
+                    if (res == true) {
+                      // Bubble the success up to caller (ProfilPage)
+                      Navigator.pop(context, true);
+                    }
+                  },
+                ),
                 _buildMenuItem(
                   context,
                   icon: Icons.phone_outlined,
                   title: 'Nomor Telepon',
                   subtitle: 'Ubah nomor telepon Anda',
-onTap: () {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => const UbahNomorPage(),
-    ),
-  );
-},
-
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const UbahNomorPage(),
+                      ),
+                    );
+                  },
                 ),
                 _buildMenuItem(
                   context,
@@ -93,6 +92,20 @@ onTap: () {
                       context,
                       MaterialPageRoute(
                         builder: (context) => const UbahEmailPage(),
+                      ),
+                    );
+                  },
+                ),
+                _buildMenuItem(
+                  context,
+                  icon: Icons.account_balance_outlined,
+                  title: 'Rekening Bank',
+                  subtitle: 'Kelola informasi rekening bank Anda',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const UbahRekeningPage(),
                       ),
                     );
                   },

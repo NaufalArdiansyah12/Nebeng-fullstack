@@ -13,17 +13,22 @@ import 'screens/customer/main_page.dart';
 import 'screens/mitra/main_page.dart';
 import 'screens/posmitra/main_page.dart';
 import 'package:http/http.dart' as http;
+import 'services/shared/api_config.dart';
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
+  print('[FCM] Background handler: messageId=${message.messageId}, data=${message.data}');
   final n = message.notification;
   final msgId =
       message.messageId ?? message.data['message_id'] ?? message.data['id'];
   if (n != null) {
+    print('[FCM] Background: showing notification "${n.title}" / "${n.body}"');
     await NotificationService.showIfNotDuplicate(
         messageId: (msgId is String && msgId.isNotEmpty) ? msgId : null,
         title: n.title ?? 'Nebeng',
         body: n.body ?? '');
+  } else {
+    print('[FCM] Background: no notification payload');
   }
 }
 
@@ -61,27 +66,51 @@ Future<void> main() async {
       final messaging = FirebaseMessaging.instance;
 
       // Request permission (iOS)
-      await messaging.requestPermission(alert: true, badge: true, sound: true);
+      final permission = await messaging.requestPermission(alert: true, badge: true, sound: true);
+      print('[FCM] Permission status: ${permission.authorizationStatus}');
 
       // Get token and (optionally) send to backend
       final token = await messaging.getToken();
-      print('FCM token: $token');
+      print('[FCM] Token: ${token != null ? "${token.length} chars" : "null"}');
       try {
         final prefs = await SharedPreferences.getInstance();
         final apiToken = prefs.getString('api_token');
+        final userRole = prefs.getString('user_role') ?? 'customer';
+        print('[FCM] user_role=$userRole, has_api_token=${apiToken != null && apiToken.isNotEmpty}');
+
         if (token != null && apiToken != null && apiToken.isNotEmpty) {
-          // Replace BASE_URL with your backend base URL if needed
-          final uri = Uri.parse(
-              '${const String.fromEnvironment('API_BASE_URL', defaultValue: 'http://10.0.2.2:8000')}/api/v1/user/fcm-token');
-          await http.post(uri,
+          // Determine the correct endpoint based on user role (pos_mitra = posmitra)
+          final isPosMitra = userRole == 'posmitra' || userRole == 'pos_mitra';
+          String endpoint;
+          if (isPosMitra) {
+            endpoint = '/api/v1/posmitra/fcm-token';
+            print('[FCM] PosMitra -> sending token to posmitra endpoint');
+          } else {
+            endpoint = '/api/v1/user/fcm-token';
+            print('[FCM] User -> sending token to user endpoint');
+          }
+
+          final baseUrl = ApiConfig.baseUrl;
+          final uri = Uri.parse('$baseUrl$endpoint');
+          print('[FCM] POST $uri');
+
+          final response = await http.post(uri,
               headers: {
                 'Authorization': 'Bearer $apiToken',
                 'Content-Type': 'application/json'
               },
               body: '{"fcm_token":"$token"}');
+          print('[FCM] POST fcm-token response: status=${response.statusCode}, body=${response.body}');
+        } else {
+          if (token == null) {
+            print('[FCM] Skip sending token: FCM token is null');
+          } else {
+            print('[FCM] Skip sending token: no api_token or empty (user not logged in?)');
+          }
         }
-      } catch (e) {
-        // ignore errors
+      } catch (e, st) {
+        print('[FCM] Error sending token to backend: $e');
+        print('[FCM] $st');
       }
 
       // Listen for token refreshes and update backend when it happens
@@ -90,9 +119,20 @@ Future<void> main() async {
           print('FCM token refreshed: $newToken');
           final prefs = await SharedPreferences.getInstance();
           final apiToken = prefs.getString('api_token');
+          final userRole = prefs.getString('user_role') ?? 'customer';
+          
           if (newToken != null && apiToken != null && apiToken.isNotEmpty) {
-            final uri = Uri.parse(
-                '${const String.fromEnvironment('API_BASE_URL', defaultValue: 'http://10.0.2.2:8000')}/api/v1/user/fcm-token');
+            final isPosMitra = userRole == 'posmitra' || userRole == 'pos_mitra';
+            String endpoint;
+            if (isPosMitra) {
+              endpoint = '/api/v1/posmitra/fcm-token';
+              print('[FCM] PosMitra -> sending refreshed token to posmitra endpoint');
+            } else {
+              endpoint = '/api/v1/user/fcm-token';
+            }
+            final baseUrl = ApiConfig.baseUrl;
+            final uri = Uri.parse('$baseUrl$endpoint');
+            
             await http.post(uri,
                 headers: {
                   'Authorization': 'Bearer $apiToken',
@@ -107,8 +147,9 @@ Future<void> main() async {
 
       // Foreground message handler
       FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
-        print('📨 FCM message received in foreground');
-        print('   Data: ${message.data}');
+        print('[FCM] 📨 Message received (foreground)');
+        print('[FCM]    messageId: ${message.messageId}');
+        print('[FCM]    data: ${message.data}');
 
         final n = message.notification;
         final msgId = message.messageId ??
@@ -119,8 +160,9 @@ Future<void> main() async {
         final notificationType = message.data['type'];
 
         if (n != null) {
-          print('   Title: ${n.title}');
-          print('   Body: ${n.body}');
+          print('[FCM]    notification title: ${n.title}');
+          print('[FCM]    notification body: ${n.body}');
+          print('[FCM]    calling NotificationService.showIfNotDuplicate');
 
           // Use 'chat' channel for chat messages, default for others
           final channelType =
@@ -132,29 +174,27 @@ Future<void> main() async {
             body: n.body ?? '',
             channelType: channelType,
           );
+          print('[FCM]    showIfNotDuplicate done');
         } else {
-          print('   No notification payload, data only');
+          print('[FCM]    No notification payload (data-only message) - type: $notificationType');
         }
 
-        // Log for debugging
         if (notificationType == 'chat_message') {
-          print('   Type: Chat Message');
-          print('   Sender: ${message.data['sender_name']}');
-          print('   Conversation: ${message.data['conversation_id']}');
+          print('[FCM]    Type: Chat Message');
+          print('[FCM]    Sender: ${message.data['sender_name']}');
+          print('[FCM]    Conversation: ${message.data['conversation_id']}');
         }
       });
 
       // Background message handler (when app is in background but not terminated)
       FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-        print('📬 Notification opened from background');
+        print('[FCM] 📬 Notification opened from background');
+        print('[FCM]    data: ${message.data}');
         final notificationType = message.data['type'];
-
         if (notificationType == 'chat_message') {
           final conversationId = message.data['conversation_id'];
           final senderName = message.data['sender_name'];
-          print('   Opening chat: $conversationId with $senderName');
-          // TODO: Navigate to chat page when app opens
-          // This will be handled in the app's navigation logic
+          print('[FCM]    Opening chat: $conversationId with $senderName');
         }
       });
 
@@ -162,17 +202,20 @@ Future<void> main() async {
       final initialMessage =
           await FirebaseMessaging.instance.getInitialMessage();
       if (initialMessage != null) {
-        print('📭 App opened from notification (terminated state)');
+        print('[FCM] 📭 App opened from notification (terminated state)');
+        print('[FCM]    data: ${initialMessage.data}');
         final notificationType = initialMessage.data['type'];
-
         if (notificationType == 'chat_message') {
           final conversationId = initialMessage.data['conversation_id'];
-          print('   Should open chat: $conversationId');
-          // TODO: Store this to navigate after app initializes
+          print('[FCM]    Should open chat: $conversationId');
         }
+      } else {
+        print('[FCM] No initial message (app opened normally)');
       }
+      print('[FCM] Firebase messaging init done');
     } catch (e, st) {
-      print('Firebase messaging init error: $e\n$st');
+      print('[FCM] Firebase messaging init error: $e');
+      print('[FCM] $st');
     }
   }
 

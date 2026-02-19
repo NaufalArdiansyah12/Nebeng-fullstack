@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Finance;
 
 use App\Http\Controllers\Controller;
+use App\Models\PosMitraUser;
 use App\Services\NotificationService;
+use App\Services\PosMitraNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -249,9 +251,31 @@ class WithdrawalController extends Controller
                 'updated_at' => now()
             ]);
 
-            // Create notification for withdrawal approval
-            $updatedWithdrawal = DB::table($table)->where('id', $id)->first();
-            NotificationService::createWithdrawalNotification($updatedWithdrawal);
+            // Ambil data lengkap dengan JOIN untuk notifikasi
+            if ($type === 'posmitra') {
+                $updatedWithdrawal = DB::table('withdrawal_posmitra as wp')
+                    ->join('posmitra_users as pm', 'wp.posmitra_id', '=', 'pm.id')
+                    ->where('wp.id', $id)
+                    ->select('wp.*', 'pm.name as user_name', 'pm.email as user_email', 'pm.phone as user_phone')
+                    ->first();
+            } else {
+                $updatedWithdrawal = DB::table('withdrawals as w')
+                    ->join('users as u', 'w.user_id', '=', 'u.id')
+                    ->where('w.id', $id)
+                    ->select('w.*', 'u.name as user_name', 'u.email as user_email', 'u.phone as user_phone')
+                    ->first();
+            }
+
+            NotificationService::createWithdrawalNotification($updatedWithdrawal, $type);
+
+            // FCM push ke PosMitra saat penarikan disetujui
+            if ($type === 'posmitra') {
+                $posmitra = PosMitraUser::find($updatedWithdrawal->posmitra_id);
+                Log::info('[Withdrawal] PosMitra approved: sending FCM', ['posmitra_id' => $updatedWithdrawal->posmitra_id, 'found' => (bool) $posmitra]);
+                if ($posmitra) {
+                    PosMitraNotificationService::sendWithdrawalApprovedNotification($updatedWithdrawal, $posmitra);
+                }
+            }
 
             return response()->json([
                 'success' => true,
@@ -270,57 +294,84 @@ class WithdrawalController extends Controller
     /**
      * Reject withdrawal
      */
-    public function reject(Request $request, $id)
-    {
-        try {
-            $request->validate([
-                'type' => 'required|in:mitra,posmitra',
-                'rejection_reason' => 'required|string'
-            ]);
+public function reject(Request $request, $id)
+{
+    try {
+        $request->validate([
+            'type' => 'required|in:mitra,posmitra',
+            'rejection_reason' => 'required|string'
+        ]);
 
-            $type = $request->type;
-            $table = $type === 'posmitra' ? 'withdrawal_posmitra' : 'withdrawals';
+        $type = $request->type;
+        $table = $type === 'posmitra' ? 'withdrawal_posmitra' : 'withdrawals';
 
-            $withdrawal = DB::table($table)->where('id', $id)->first();
+        $withdrawal = DB::table($table)->where('id', $id)->first();
 
-            if (!$withdrawal) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Withdrawal not found'
-                ], 404);
-            }
-
-            if (!in_array($withdrawal->status, ['pending', 'verifying', 'approved'])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Withdrawal cannot be rejected in current status'
-                ], 400);
-            }
-
-            DB::table($table)->where('id', $id)->update([
-                'status' => 'rejected',
-                'rejection_reason' => $request->rejection_reason,
-                'rejected_at' => now(),
-                'updated_at' => now()
-            ]);
-
-            // Create notification for withdrawal rejection
-            $updatedWithdrawal = DB::table($table)->where('id', $id)->first();
-            NotificationService::createWithdrawalNotification($updatedWithdrawal);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Withdrawal rejected successfully'
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Error rejecting withdrawal: ' . $e->getMessage());
+        if (!$withdrawal) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to reject withdrawal'
-            ], 500);
+                'message' => 'Withdrawal not found'
+            ], 404);
         }
+
+        if (!in_array($withdrawal->status, ['pending', 'verifying', 'approved'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Withdrawal cannot be rejected in current status'
+            ], 400);
+        }
+
+        // Update status (TIDAK PERLU KEMBALIKAN SALDO karena belum dikurangi)
+        DB::table($table)->where('id', $id)->update([
+            'status' => 'rejected',
+            'rejection_reason' => $request->rejection_reason,
+            'rejected_at' => now(),
+            'updated_at' => now()
+        ]);
+
+        // Ambil data lengkap dengan JOIN untuk notifikasi
+        if ($type === 'posmitra') {
+            $updatedWithdrawal = DB::table('withdrawal_posmitra as wp')
+                ->join('posmitra_users as pm', 'wp.posmitra_id', '=', 'pm.id')
+                ->where('wp.id', $id)
+                ->select('wp.*', 'pm.name as user_name', 'pm.email as user_email', 'pm.phone as user_phone')
+                ->first();
+        } else {
+            $updatedWithdrawal = DB::table('withdrawals as w')
+                ->join('users as u', 'w.user_id', '=', 'u.id')
+                ->where('w.id', $id)
+                ->select('w.*', 'u.name as user_name', 'u.email as user_email', 'u.phone as user_phone')
+                ->first();
+        }
+
+        NotificationService::createWithdrawalNotification($updatedWithdrawal, $type);
+
+        // FCM push ke PosMitra saat penarikan ditolak
+        if ($type === 'posmitra') {
+            $posmitra = PosMitraUser::find($updatedWithdrawal->posmitra_id);
+            Log::info('[Withdrawal] PosMitra rejected: sending FCM', ['posmitra_id' => $updatedWithdrawal->posmitra_id, 'found' => (bool) $posmitra]);
+            if ($posmitra) {
+                PosMitraNotificationService::sendWithdrawalRejectedNotification(
+                    $updatedWithdrawal,
+                    $posmitra,
+                    $request->rejection_reason ?? ''
+                );
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Withdrawal rejected successfully'
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Error rejecting withdrawal: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to reject withdrawal'
+        ], 500);
     }
+}
 
     /**
      * Process withdrawal (start transfer)
@@ -357,9 +408,31 @@ class WithdrawalController extends Controller
                 'updated_at' => now()
             ]);
 
-            // Create notification for withdrawal processing
-            $updatedWithdrawal = DB::table($table)->where('id', $id)->first();
-            NotificationService::createWithdrawalNotification($updatedWithdrawal);
+            // Ambil data lengkap dengan JOIN untuk notifikasi
+            if ($type === 'posmitra') {
+                $updatedWithdrawal = DB::table('withdrawal_posmitra as wp')
+                    ->join('posmitra_users as pm', 'wp.posmitra_id', '=', 'pm.id')
+                    ->where('wp.id', $id)
+                    ->select('wp.*', 'pm.name as user_name', 'pm.email as user_email', 'pm.phone as user_phone')
+                    ->first();
+            } else {
+                $updatedWithdrawal = DB::table('withdrawals as w')
+                    ->join('users as u', 'w.user_id', '=', 'u.id')
+                    ->where('w.id', $id)
+                    ->select('w.*', 'u.name as user_name', 'u.email as user_email', 'u.phone as user_phone')
+                    ->first();
+            }
+
+            NotificationService::createWithdrawalNotification($updatedWithdrawal, $type);
+
+            // FCM push ke PosMitra saat penarikan diproses
+            if ($type === 'posmitra') {
+                $posmitra = PosMitraUser::find($updatedWithdrawal->posmitra_id);
+                Log::info('[Withdrawal] PosMitra processing: sending FCM', ['posmitra_id' => $updatedWithdrawal->posmitra_id, 'found' => (bool) $posmitra]);
+                if ($posmitra) {
+                    PosMitraNotificationService::sendWithdrawalProcessingNotification($updatedWithdrawal, $posmitra);
+                }
+            }
 
             return response()->json([
                 'success' => true,
@@ -378,55 +451,97 @@ class WithdrawalController extends Controller
     /**
      * Complete withdrawal (mark as transferred)
      */
-    public function complete(Request $request, $id)
-    {
+public function complete(Request $request, $id)
+{
+    try {
+        $request->validate([
+            'type' => 'required|in:mitra,posmitra'
+        ]);
+
+        $type = $request->type;
+        $table = $type === 'posmitra' ? 'withdrawal_posmitra' : 'withdrawals';
+
+        $withdrawal = DB::table($table)->where('id', $id)->first();
+
+        if (!$withdrawal) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Withdrawal not found'
+            ], 404);
+        }
+
+        if (!in_array($withdrawal->status, ['processing', 'transferring'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Withdrawal must be in processing or transferring status'
+            ], 400);
+        }
+
+        DB::beginTransaction();
         try {
-            $request->validate([
-                'type' => 'required|in:mitra,posmitra'
-            ]);
-
-            $type = $request->type;
-            $table = $type === 'posmitra' ? 'withdrawal_posmitra' : 'withdrawals';
-
-            $withdrawal = DB::table($table)->where('id', $id)->first();
-
-            if (!$withdrawal) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Withdrawal not found'
-                ], 404);
-            }
-
-            if (!in_array($withdrawal->status, ['processing', 'transferring'])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Withdrawal must be in processing or transferring status'
-                ], 400);
-            }
-
+            // Update status
             DB::table($table)->where('id', $id)->update([
                 'status' => 'completed',
                 'completed_at' => now(),
                 'updated_at' => now()
             ]);
 
-            // Create notification for withdrawal completion
-            $updatedWithdrawal = DB::table($table)->where('id', $id)->first();
-            NotificationService::createWithdrawalNotification($updatedWithdrawal);
+            // KURANGI SALDO saat completed (PENTING!)
+            if ($type === 'posmitra') {
+                DB::table('posmitra_users')
+                    ->where('id', $withdrawal->posmitra_id)
+                    ->decrement('balance', $withdrawal->total_amount);
+            } else {
+                DB::table('users')
+                    ->where('id', $withdrawal->user_id)
+                    ->decrement('balance', $withdrawal->total_amount);
+            }
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Withdrawal completed successfully'
-            ]);
-
+            DB::commit();
         } catch (\Exception $e) {
-            Log::error('Error completing withdrawal: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to complete withdrawal'
-            ], 500);
+            DB::rollBack();
+            throw $e;
         }
+
+        // Ambil data lengkap dengan JOIN untuk notifikasi
+        if ($type === 'posmitra') {
+            $updatedWithdrawal = DB::table('withdrawal_posmitra as wp')
+                ->join('posmitra_users as pm', 'wp.posmitra_id', '=', 'pm.id')
+                ->where('wp.id', $id)
+                ->select('wp.*', 'pm.name as user_name', 'pm.email as user_email', 'pm.phone as user_phone')
+                ->first();
+        } else {
+            $updatedWithdrawal = DB::table('withdrawals as w')
+                ->join('users as u', 'w.user_id', '=', 'u.id')
+                ->where('w.id', $id)
+                ->select('w.*', 'u.name as user_name', 'u.email as user_email', 'u.phone as user_phone')
+                ->first();
+        }
+
+        NotificationService::createWithdrawalNotification($updatedWithdrawal, $type);
+
+        // FCM push ke PosMitra saat penarikan selesai
+        if ($type === 'posmitra') {
+            $posmitra = PosMitraUser::find($updatedWithdrawal->posmitra_id);
+            Log::info('[Withdrawal] PosMitra completed: sending FCM', ['posmitra_id' => $updatedWithdrawal->posmitra_id, 'found' => (bool) $posmitra]);
+            if ($posmitra) {
+                PosMitraNotificationService::sendWithdrawalCompletedNotification($updatedWithdrawal, $posmitra);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Withdrawal completed successfully'
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Error completing withdrawal: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to complete withdrawal'
+        ], 500);
     }
+}
 
     /**
      * Generate progress timeline based on withdrawal status

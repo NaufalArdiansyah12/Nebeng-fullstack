@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../services/posmitra/posmitra_service.dart';
+import 'aktivitas/detail_tebengan_page.dart';
 
 class AktivitasPage extends StatefulWidget {
   const AktivitasPage({Key? key}) : super(key: key);
@@ -131,6 +132,65 @@ class _AktivitasPageState extends State<AktivitasPage> {
     }
   }
 
+  /// Konversi data ride dari API ke format activity untuk DetailTebenganPage
+  Map<String, dynamic> _rideToActivity(Map<String, dynamic> ride) {
+    final origin = ride['origin'] is Map
+        ? Map<String, dynamic>.from(ride['origin'])
+        : {'name': 'Tidak tersedia', 'detail': ''};
+    final destination = ride['destination'] is Map
+        ? Map<String, dynamic>.from(ride['destination'])
+        : {'name': 'Tidak tersedia', 'detail': ''};
+    final vehicle = ride['vehicle'] is Map
+        ? Map<String, dynamic>.from(ride['vehicle'])
+        : {'brand': '', 'type': '', 'plate': '', 'color': ''};
+    final driver = ride['driver'] is Map
+        ? Map<String, dynamic>.from(ride['driver'])
+        : {'name': 'Unknown Driver'};
+
+    final status = ride['status']?.toString() ?? 'active';
+    final statusLabel = _getStatusLabel(status);
+    final statusColor = _getStatusColor(status);
+
+    final date = ride['date']?.toString() ?? '';
+    final time = ride['time']?.toString() ?? '';
+    final formattedDateTime = _formatDateTime(date, time);
+
+    final rideType = ride['ride_type']?.toString() ?? 'motor';
+    final serviceType = ride['service_type']?.toString() ?? 'tebengan';
+    final rideTypeLabel = _getRideTypeLabel(rideType, serviceType);
+
+    final price = ride['price'] ?? 0;
+    final formattedPrice = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    ).format(price);
+
+    final passengers = (ride['passengers'] as List? ?? [])
+        .map((e) => Map<String, dynamic>.from(e is Map ? e : {}))
+        .toList();
+
+    return {
+      'id': ride['id'],
+      'date': formattedDateTime,
+      'status': statusLabel,
+      'statusColor': statusColor,
+      'slot': rideTypeLabel,
+      'locations': [
+        {'name': origin['name'] ?? 'Tidak tersedia', 'detail': origin['detail'] ?? '', 'isPrimary': true},
+        {'name': destination['name'] ?? 'Tidak tersedia', 'detail': destination['detail'] ?? '', 'isPrimary': false},
+      ],
+      'price': formattedPrice,
+      'driverName': driver['name'] ?? 'Unknown Driver',
+      'vehicleType': vehicle['type'] ?? rideType,
+      'plateNumber': vehicle['plate'] ?? '-',
+      'vehicleModel': '${vehicle['brand'] ?? ''} ${vehicle['type'] ?? ''}'.trim().isEmpty ? rideTypeLabel : '${vehicle['brand'] ?? ''} ${vehicle['type'] ?? ''}'.trim(),
+      'vehicleColor': vehicle['color'] ?? '-',
+      'seats': ride['available_seats'] ?? ride['seats'] ?? '-',
+      'passengers': passengers,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final filteredActivities = getFilteredActivities();
@@ -194,7 +254,13 @@ class _AktivitasPageState extends State<AktivitasPage> {
                                   padding: const EdgeInsets.only(bottom: 12),
                                   child: InkWell(
                                     onTap: () {
-                                      debugPrint('Tap ride: ${ride['id']}');
+                                      final activity = _rideToActivity(ride);
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => DetailTebenganPage(activity: activity),
+                                        ),
+                                      );
                                     },
                                     borderRadius: BorderRadius.circular(12),
                                     child: _buildActivityCard(ride),

@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class WithdrawController extends Controller
 {
@@ -38,14 +39,13 @@ class WithdrawController extends Controller
             ], 422);
         }
 
-    // 3. Cek PIN (PLAIN TEXT, bukan Hash)
-    if ($request->pin !== $user->pin) {
-        return response()->json([
-            'success' => false,
-            'message' => 'PIN salah',
-        ], 401);
-    }
-
+        // 3. Cek PIN (PLAIN TEXT, bukan Hash)
+        if ($request->pin !== $user->pin) {
+            return response()->json([
+                'success' => false,
+                'message' => 'PIN salah',
+            ], 401);
+        }
 
         // 4. Cek saldo cukup
         if ($user->balance < $request->amount) {
@@ -59,13 +59,17 @@ class WithdrawController extends Controller
         try {
             // 5. Hitung admin fee dan total amount
             $amount = $request->amount;
-            $adminFee = 2500; // Biaya admin Rp 2.500 (bisa disesuaikan)
+            $adminFee = 0; // Biaya admin (bisa disesuaikan)
             $totalAmount = $amount - $adminFee;
 
             // 6. Generate transaction ID
             $transactionId = WithdrawalPosmitra::generateTransactionId();
 
-            // 7. Simpan withdrawal ke database
+            // 7. KURANGI SALDO SAAT SUBMIT (PENTING!)
+            // $user->balance = (float) $user->balance - (float) $amount;
+            // $user->save();
+
+            // 8. Simpan withdrawal ke database
             $withdrawal = WithdrawalPosmitra::create([
                 'posmitra_id' => $user->id,
                 'transaction_id' => $transactionId,
@@ -100,6 +104,7 @@ class WithdrawController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Error submitting withdrawal: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
@@ -185,9 +190,9 @@ class WithdrawController extends Controller
     }
 
     /**
-     * Complete withdrawal (for testing - ubah status ke completed dan kurangi saldo)
+     * Cancel withdrawal (user dapat cancel jika masih pending)
      */
-    public function complete(Request $request, $id)
+    public function cancel(Request $request, $id)
     {
         $user = $this->getAuthenticatedUser($request);
         if ($user instanceof \Illuminate\Http\JsonResponse) return $user;
@@ -203,39 +208,43 @@ class WithdrawController extends Controller
             ], 404);
         }
 
+        // Hanya bisa cancel jika masih pending
         if ($withdrawal->status !== 'pending') {
             return response()->json([
                 'success' => false,
-                'message' => 'Withdrawal sudah diproses',
+                'message' => 'Withdrawal tidak dapat dibatalkan karena sudah diproses',
             ], 400);
         }
 
         DB::beginTransaction();
         try {
-            // Kurangi saldo user saat completed
-            $user->balance = (float) $user->balance - (float) $withdrawal->amount;
+            // Kembalikan saldo user
+            $user->balance = (float) $user->balance + (float) $withdrawal->amount;
             $user->save();
 
             // Update status
             $withdrawal->update([
-                'status' => 'completed',
-                'completed_at' => now(),
+                'status' => 'cancelled',
+                'rejected_at' => now(),
+                'rejection_reason' => 'Dibatalkan oleh user',
             ]);
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Withdrawal completed',
+                'message' => 'Withdrawal berhasil dibatalkan',
                 'data' => [
                     'withdrawal_id' => $withdrawal->id,
                     'status' => $withdrawal->status,
+                    'refunded_amount' => (float) $withdrawal->amount,
                     'remaining_balance' => (float) $user->balance,
                 ],
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Error cancelling withdrawal: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
@@ -278,79 +287,4 @@ class WithdrawController extends Controller
 
         return $user;
     }
-
-
-    /**
- * Set withdrawal status (untuk testing)
- */
-public function setStatus(Request $request, $id)
-{
-    $user = $this->getAuthenticatedUser($request);
-    if ($user instanceof \Illuminate\Http\JsonResponse) return $user;
-
-    $validator = Validator::make($request->all(), [
-        'status' => 'required|in:pending,completed,rejected',
-        'rejection_reason' => 'nullable|string|max:255',
-    ]);
-
-    if ($validator->fails()) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Validasi gagal',
-            'errors' => $validator->errors(),
-        ], 422);
-    }
-
-    $withdrawal = WithdrawalPosmitra::where('id', $id)
-        ->where('posmitra_id', $user->id)
-        ->first();
-
-    if (!$withdrawal) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Data penarikan tidak ditemukan',
-        ], 404);
-    }
-
-    DB::beginTransaction();
-    try {
-        $newStatus = $request->status;
-
-        // Jika status diubah ke completed, kurangi saldo user
-        if ($newStatus === 'completed' && $withdrawal->status !== 'completed') {
-            $user->balance -= $withdrawal->amount;
-            $user->save();
-            $withdrawal->completed_at = now();
-        }
-
-        // Jika status diubah ke rejected
-        if ($newStatus === 'rejected') {
-            $withdrawal->rejected_at = now();
-            $withdrawal->rejection_reason = $request->rejection_reason ?? null;
-        }
-
-        $withdrawal->status = $newStatus;
-        $withdrawal->save();
-
-        DB::commit();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Status withdrawal berhasil diubah',
-            'data' => [
-                'withdrawal_id' => $withdrawal->id,
-                'status' => $withdrawal->status,
-                'remaining_balance' => (float) $user->balance,
-            ],
-        ]);
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return response()->json([
-            'success' => false,
-            'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
-        ], 500);
-    }
-}
-
 }

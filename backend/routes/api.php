@@ -395,6 +395,9 @@ Route::prefix('api/v1')->group(function () {
     // FCM token update from mobile app (expects bearer token)
     Route::post('/user/fcm-token', [FcmController::class, 'updateToken']);
 
+    // FCM token update for posmitra (expects bearer token)
+    Route::post('/posmitra/fcm-token', [FcmController::class, 'updatePosMitraToken']);
+
     // Notifications (requires auth via bearer token)
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
@@ -420,6 +423,7 @@ Route::prefix('api/v1')->group(function () {
     // =====================================================
 
     Route::get('/pos-mitra/profile', [ProfileController::class, 'show']);
+    Route::post('/pos-mitra/profile', [ProfileController::class, 'update']);
     Route::get('/posmitra/beranda', [BerandaController::class, 'beranda']);
     // Route::get('/posmitra/tebengan-akan-datang', [BerandaController::class, 'upcomingRides']);
     // Route::get('/posmitra/statistics', [BerandaController::class, 'statistics']);

@@ -43,6 +43,8 @@ class _BerandaPageState extends State<BerandaPage> {
     _loadSaldo();
     _loadUpcomingRides();
     _loadStatistics();
+    // Daftarkan FCM token ke backend (fallback jika belum terkirim saat login/app start)
+    PosMitraService.registerFcmToken();
   }
 
   Future<void> _loadStatistics() async {
@@ -257,7 +259,7 @@ Future<void> _loadSaldo() async {
                                 ),
                               ),
                               Text(
-                                _userProfile?['name'] ?? 'Mitra',
+                                _userProfile?['name'] ?? 'Pos Mitra',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
