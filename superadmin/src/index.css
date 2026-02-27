@@ -1,0 +1,89 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Nebeng Login Design System */
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 228 45% 20%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 228 45% 20%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 228 45% 20%;
+
+    --primary: 228 65% 25%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 228 45% 20%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 228 65% 25%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 228 65% 25%;
+
+    --radius: 0.5rem;
+
+    /* Nebeng brand colors */
+    --nebeng-navy: 228 65% 18%;
+    --nebeng-navy-light: 228 55% 28%;
+    --nebeng-blue: 210 100% 50%;
+    --nebeng-gradient: linear-gradient(135deg, hsl(228 65% 18%) 0%, hsl(228 55% 28%) 50%, hsl(210 70% 35%) 100%);
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+/* Custom decorative blob shapes */
+.blob-shape {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.4;
+}
+
+.blob-1 {
+  width: 300px;
+  height: 300px;
+  background: hsl(210 80% 40%);
+  top: 10%;
+  right: 10%;
+}
+
+.blob-2 {
+  width: 250px;
+  height: 250px;
+  background: hsl(228 60% 35%);
+  bottom: 20%;
+  left: 15%;
+}
