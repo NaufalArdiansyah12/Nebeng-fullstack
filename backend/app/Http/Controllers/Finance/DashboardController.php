@@ -17,10 +17,17 @@ class DashboardController extends Controller
             $query = DB::table('payments')
                 ->where('status', 'paid');
 
+
             // Filter by month if provided (format: YYYY-MM)
             if ($request->has('month')) {
                 $month = $request->month;
                 $query->whereRaw("DATE_FORMAT(paid_at, '%Y-%m') = ?", [$month]);
+            }
+
+            // Filter by year if provided (format: YYYY)
+            if ($request->has('year')) {
+                $year = intval($request->year);
+                $query->whereRaw("YEAR(paid_at) = ?", [$year]);
             }
 
             $pendapatan = $query->sum('total_amount');
@@ -50,16 +57,25 @@ class DashboardController extends Controller
                 ")
                 ->where('status', 'paid');
 
-            // If month filter provided, show data from 12 months before up to selected month
-            if ($request->has('month')) {
-                $selectedMonth = $request->month; // format: YYYY-MM
-                list($year, $month) = explode('-', $selectedMonth);
-                
-                // Calculate 11 months before selected month
-                $startDate = date('Y-m-01', strtotime("-11 months", strtotime("$selectedMonth-01")));
-                $endDate = date('Y-m-t', strtotime("$selectedMonth-01"));
-                
+
+            // If year filter provided, return monthly sums for that year
+            if ($request->has('year')) {
+                $year = intval($request->year);
+                $startDate = date(sprintf('%04d-01-01', $year));
+                $endDate = date(sprintf('%04d-12-31', $year));
                 $query->whereBetween('paid_at', [$startDate, $endDate]);
+            } else {
+                // If month filter provided, show data from 12 months before up to selected month
+                if ($request->has('month')) {
+                    $selectedMonth = $request->month; // format: YYYY-MM
+                    list($year, $month) = explode('-', $selectedMonth);
+                    
+                    // Calculate 11 months before selected month
+                    $startDate = date('Y-m-01', strtotime("-11 months", strtotime("$selectedMonth-01")));
+                    $endDate = date('Y-m-t', strtotime("$selectedMonth-01"));
+                    
+                    $query->whereBetween('paid_at', [$startDate, $endDate]);
+                }
             }
 
             $data = $query
@@ -67,13 +83,36 @@ class DashboardController extends Controller
                 ->orderByRaw('DATE_FORMAT(paid_at, "%Y-%m")')
                 ->get();
 
-            // Format response to match frontend expectation
-            $formattedData = $data->map(function($item) {
-                return [
-                    'month' => $item->month_name,
-                    'value' => (float) $item->total
+            // Build a map of results by month_key for easy lookup
+            $map = [];
+            foreach ($data as $item) {
+                $map[$item->month_key] = (float) $item->total;
+            }
+
+            // Ensure we have a startDate and endDate to iterate months
+            if (!isset($startDate) || !isset($endDate)) {
+                // default to last 12 months up to now
+                $endDate = date('Y-m-t');
+                $startDate = date('Y-m-01', strtotime('-11 months'));
+            }
+
+            // Create month list between startDate and endDate inclusive
+            $period = new \DatePeriod(
+                new \DateTime($startDate),
+                new \DateInterval('P1M'),
+                (new \DateTime($endDate))->modify('first day of next month')
+            );
+
+            $formattedData = [];
+            foreach ($period as $dt) {
+                $key = $dt->format('Y-m');
+                $label = $dt->format('M');
+                $formattedData[] = [
+                    'month' => $label,
+                    'month_key' => $key,
+                    'value' => $map[$key] ?? 0,
                 ];
-            });
+            }
 
             return response()->json($formattedData);
         } catch (\Exception $e) {

@@ -13,6 +13,8 @@ import {
   LogOut,
   ChevronRight,
   ChevronDown,
+  MapPin,
+  Gift,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +33,8 @@ const mainMenuItems: MenuItem[] = [
     children: [
       { title: "Verifikasi Mitra", path: "/dashboard/verifikasi-mitra" },
       { title: "Verifikasi Costumer", path: "/dashboard/verifikasi-costumer" },
+      { title: "Verifikasi Pos Mitra", path: "/dashboard/pos-mitra" },
+
     ],
   },
   {
@@ -50,9 +54,19 @@ const mainMenuItems: MenuItem[] = [
       { title: "Blokir", path: "/dashboard/costumer-blokir" },
     ],
   },
+  {
+    title: "Pos Mitra",
+    icon: MapPin,
+    children: [
+      { title: "Daftar Pos Mitra", path: "/dashboard/pos-mitra" },
+      { title: "Terminal", path: "/dashboard/pos-mitra-by-location" },
+    ],
+  },
   { title: "Pesanan", icon: ShoppingCart, path: "/dashboard/pesanan" },
   { title: "Refund", icon: RotateCcw, path: "/dashboard/refund" },
   { title: "Laporan", icon: BarChart3, path: "/dashboard/laporan" },
+  { title: "Reward", icon: Gift, path: "/dashboard/reward" },
+
 ];
 
 const supportMenuItems: MenuItem[] = [

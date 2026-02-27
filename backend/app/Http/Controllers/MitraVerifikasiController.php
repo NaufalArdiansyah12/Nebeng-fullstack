@@ -133,38 +133,22 @@ class MitraVerifikasiController extends Controller
                 'overall_status' => $overallStatus,
                 'ktp' => [
                     'status' => $mitraVerifikasi->ktpVerification?->status,
-
-                    'photo' => $mitraVerifikasi->ktpVerification?->photo_ktp ?? $mitraVerifikasi->ktpVerification?->ktp_photo ?? null,
-
                     'photo' => $mitraVerifikasi->ktpVerification?->photo_ktp,
-
                     'reviewed_at' => $mitraVerifikasi->ktpVerification?->reviewed_at,
                 ],
                 'sim' => [
                     'status' => $mitraVerifikasi->simVerification?->status,
-
-                    'photo' => $mitraVerifikasi->simVerification?->sim_photo ?? $mitraVerifikasi->simVerification?->photo_sim ?? null,
-
-                    'photo' => $mitraVerifikasi->simVerification?->photo_sim,
-
+                    'photo' => $mitraVerifikasi->simVerification?->sim_photo,
                     'reviewed_at' => $mitraVerifikasi->simVerification?->reviewed_at,
                 ],
                 'skck' => [
                     'status' => $mitraVerifikasi->skckVerification?->status,
-
-                    'photo' => $mitraVerifikasi->skckVerification?->skck_photo ?? $mitraVerifikasi->skckVerification?->photo_skck ?? null,
-
-                    'photo' => $mitraVerifikasi->skckVerification?->photo_skck,
-
+                    'photo' => $mitraVerifikasi->skckVerification?->skck_photo,
                     'reviewed_at' => $mitraVerifikasi->skckVerification?->reviewed_at,
                 ],
                 'bank' => [
                     'status' => $mitraVerifikasi->bankVerification?->status,
-
-                    'photo' => $mitraVerifikasi->bankVerification?->bank_account_photo ?? $mitraVerifikasi->bankVerification?->photo_buku_tabungan ?? null,
-
-                    'photo' => $mitraVerifikasi->bankVerification?->photo_buku_tabungan,
-
+                    'photo' => $mitraVerifikasi->bankVerification?->bank_account_photo,
                     'reviewed_at' => $mitraVerifikasi->bankVerification?->reviewed_at,
                 ],
                 'submitted_at' => $mitraVerifikasi->created_at,

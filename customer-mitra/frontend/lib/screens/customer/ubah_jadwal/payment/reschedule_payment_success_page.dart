@@ -13,6 +13,7 @@ class ReschedulePaymentSuccessPage extends StatefulWidget {
   final double amount;
   final double adminFee;
   final Map<String, dynamic>? updatedRides;
+  final Map<String, dynamic>? serverPayment;
 
   const ReschedulePaymentSuccessPage({
     Key? key,
@@ -26,6 +27,7 @@ class ReschedulePaymentSuccessPage extends StatefulWidget {
     required this.amount,
     required this.adminFee,
     this.updatedRides,
+    this.serverPayment,
   }) : super(key: key);
 
   @override
@@ -175,17 +177,23 @@ class _ReschedulePaymentSuccessPageState
           const SizedBox(height: 12),
           _buildPaymentRow('Metode Pembayaran', _getPaymentMethodName()),
           const SizedBox(height: 12),
+          // Prefer server-provided payment object when available
           _buildPaymentRow(
-              'Biaya Ubah Jadwal', 'Rp ${_formatPrice(widget.amount.toInt())}'),
-          if (widget.adminFee > 0) ...[
+            'Biaya Ubah Jadwal',
+            'Rp ${_formatPrice(((widget.serverPayment != null && widget.serverPayment!['amount'] != null) ? double.tryParse(widget.serverPayment!['amount'].toString())?.toInt() ?? widget.amount.toInt() : widget.amount.toInt()))}',
+          ),
+          if ((widget.serverPayment != null &&
+                  widget.serverPayment!['admin_fee'] != null) ||
+              widget.adminFee > 0) ...[
             const SizedBox(height: 12),
-            _buildPaymentRow(
-                'Biaya Admin', 'Rp ${_formatPrice(widget.adminFee.toInt())}'),
+            _buildPaymentRow('Biaya Admin',
+                'Rp ${_formatPrice((widget.serverPayment != null && widget.serverPayment!['admin_fee'] != null) ? (double.tryParse(widget.serverPayment!['admin_fee'].toString())?.toInt() ?? widget.adminFee.toInt()) : widget.adminFee.toInt())}'),
           ],
           const Divider(height: 24),
           _buildPaymentRow(
             'Total',
-            'Rp ${_formatPrice((widget.amount + widget.adminFee).toInt())}',
+            // Prefer server total_amount when available
+            'Rp ${_formatPrice(((widget.serverPayment != null && widget.serverPayment!['total_amount'] != null) ? (double.tryParse(widget.serverPayment!['total_amount'].toString())?.toInt() ?? (widget.amount + widget.adminFee).toInt()) : (widget.amount + widget.adminFee).toInt()))}',
             isBold: true,
           ),
         ],

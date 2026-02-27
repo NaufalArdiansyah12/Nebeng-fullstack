@@ -39,7 +39,34 @@ class PaymentController extends Controller
         }
 
         try {
-            $adminFee = $request->admin_fee ?? 15000;
+            // Prefer admin_fee provided by request, otherwise read from finance_settings table, fallback to 15000
+            $adminFee = $request->admin_fee ?? null;
+            if ($adminFee === null) {
+                try {
+                    $setting = \App\Models\FinanceSetting::first();
+                    $adminFee = $setting?->admin_fee ?? 15000;
+                } catch (\Exception $e) {
+                    // If anything goes wrong reading settings, fallback to sensible default
+                    $adminFee = 15000;
+                }
+            }
+
+            // Normalize incoming amount:
+            // - If caller provided `total_amount`, interpret that as total and compute nominal `amount = total_amount - adminFee`.
+            // - Otherwise, apply a conservative heuristic: if the provided `amount` is significantly larger than the admin fee
+            //   (likely the frontend sent total including admin), subtract adminFee once to recover nominal amount.
+            $incomingAmount = isset($request->amount) ? floatval($request->amount) : 0.0;
+            if ($request->has('total_amount')) {
+                $incomingTotal = floatval($request->input('total_amount'));
+                $incomingAmount = max(0.0, $incomingTotal - floatval($adminFee));
+                Log::info('PaymentController: normalizing amount from total_amount', ['total_amount' => $incomingTotal, 'admin_fee' => $adminFee, 'amount' => $incomingAmount]);
+            } else {
+                // Heuristic threshold: if incomingAmount > 1.5 * adminFee, assume it included adminFee and subtract it once.
+                if ($incomingAmount > (1.5 * floatval($adminFee))) {
+                    Log::warning('PaymentController: incoming amount appears to include admin_fee; normalizing by subtracting admin_fee', ['incoming' => $incomingAmount, 'admin_fee' => $adminFee]);
+                    $incomingAmount = max(0.0, $incomingAmount - floatval($adminFee));
+                }
+            }
 
             // Determine booking_number: prefer booking_id if provided
             $bookingNumber = $request->booking_number;
@@ -96,15 +123,49 @@ class PaymentController extends Controller
             // Only pass booking_id to payments if the booking is stored in booking_motor (legacy payments FK)
             $bookingIdToPass = (!$isCarRide && !$isBarangRide && !$isTitipBarang && $bookingFromMotor) ? $bookingId : null;
 
+            // Determine charge amount (what customer will pay) and optional booking_price (new ride nominal)
+            $chargeAmount = $incomingAmount;
+            $bookingPrice = $request->has('booking_price') ? floatval($request->input('booking_price')) : null;
+            $rescheduleRequestId = $request->has('reschedule_request_id') ? intval($request->input('reschedule_request_id')) : null;
+
+            // Apply same rounding rules as booking: round to nearest 1,000 rupiah
+            $roundToNearest = function ($v) {
+                // round to nearest 5,000 (kelipatan 5)
+                return intval(round(floatval($v) / 5000.0) * 5000);
+            };
+
+            $chargeAmount = $roundToNearest($chargeAmount);
+            if ($bookingPrice !== null) {
+                $bookingPrice = $roundToNearest($bookingPrice);
+            }
+
+            // Diagnostic log: record incoming vs normalized amounts for debugging reschedule/booking flows
+            try {
+                Log::info('PaymentController:createPayment debug', [
+                    'raw_amount' => $request->input('amount'),
+                    'normalized_amount' => $incomingAmount,
+                    'booking_price' => $bookingPrice,
+                    'admin_fee' => $adminFee,
+                    'total_amount_field' => $request->input('total_amount') ?? null,
+                    'ride_id' => $request->input('ride_id') ?? null,
+                    'booking_id' => $bookingId ?? null,
+                    'payload_keys' => array_keys($request->all()),
+                ]);
+            } catch (\Throwable $__logEx) {
+                // ignore logging errors
+            }
+
             // Handle QRIS payment separately
             if ($request->payment_method === 'qris') {
                 $result = $this->paymentService->createQRISPayment(
                     $request->ride_id,
                     $request->user_id,
                     $bookingNumber,
-                    $request->amount,
+                    $chargeAmount,
                     $adminFee,
-                    $bookingIdToPass
+                    $bookingIdToPass,
+                    $bookingPrice,
+                    $rescheduleRequestId
                 );
             } else {
                 // Create virtual account for bank transfer payments
@@ -113,9 +174,11 @@ class PaymentController extends Controller
                     $request->user_id,
                     $bookingNumber,
                     $request->payment_method,
-                    $request->amount,
+                    $chargeAmount,
                     $adminFee,
-                    $bookingIdToPass
+                    $bookingIdToPass,
+                    $bookingPrice,
+                    $rescheduleRequestId
                 );
             }
 

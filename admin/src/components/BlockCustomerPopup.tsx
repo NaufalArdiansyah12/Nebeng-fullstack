@@ -1,4 +1,4 @@
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
 interface BlockCustomerPopupProps {
@@ -12,6 +12,9 @@ const BlockCustomerPopup = ({ open, onOpenChange, onConfirm, type }: BlockCustom
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md p-0 border-0 overflow-hidden">
+        <DialogTitle className="sr-only">
+          {type === "confirm" ? "Konfirmasi Block Akun" : "Block Akun Berhasil"}
+        </DialogTitle>
         {/* Top accent border */}
         <div className="h-1.5 bg-[#6B5B7A]" />
         

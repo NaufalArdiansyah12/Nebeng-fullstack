@@ -1,10 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../../nebeng_motor/utils/theme.dart';
 import '../../nebeng_barang/models/trip_model.dart';
 import '../../nebeng_barang/pages/payment_selection_page.dart';
 import '../../../../services/api_service.dart';
+import '../../../../services/customer/booking_service.dart';
 
 class BookingDetailBarangUmumPage extends StatefulWidget {
   final Map<String, dynamic> trip;
@@ -44,6 +47,8 @@ class _BookingDetailBarangUmumPageState
   String? phonePenerima;
   bool _agreedToTerms = false;
   String bookingNumber = '';
+  int? _computedPrice;
+  Map<String, dynamic>? _tripData;
 
   @override
   void initState() {
@@ -52,6 +57,141 @@ class _BookingDetailBarangUmumPageState
     _loadUserData();
     namaPenerima = widget.dataPenerima;
     phonePenerima = widget.penerimaPhone;
+    _ensurePrice();
+    _fetchLatestTebenganIfNeeded();
+  }
+
+  Map<String, dynamic> get _currentTrip => _tripData ?? widget.trip;
+
+  Future<void> _fetchLatestTebenganIfNeeded() async {
+    try {
+      final idVal = widget.trip['id'];
+      if (idVal == null) return;
+      final id = idVal is int ? idVal : int.tryParse(idVal.toString());
+      if (id == null) return;
+
+      final uri =
+          Uri.parse('${ApiService.baseUrl}/api/v1/tebengan-titip-barang/$id');
+      final resp = await http.get(uri, headers: {'Accept': 'application/json'});
+      if (resp.statusCode == 200) {
+        final body = json.decode(resp.body);
+        if (body is Map && body['success'] == true && body['data'] != null) {
+          setState(() {
+            _tripData = Map<String, dynamic>.from(body['data']);
+            // If backend provided calculated_price, use it
+            if (_tripData!.containsKey('calculated_price')) {
+              final cp = _tripData!['calculated_price'];
+              if (cp is num) _computedPrice = cp.toInt();
+            } else if (_tripData!.containsKey('price_breakdown') &&
+                _tripData!['price_breakdown'] is Map) {
+              final pb =
+                  Map<String, dynamic>.from(_tripData!['price_breakdown']);
+              final candidate = pb['total'] ?? pb['final_price'] ?? pb['price'];
+              if (candidate is num) _computedPrice = candidate.toInt();
+            }
+          });
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  double _mapUkuranToKg(String ukuran) {
+    final key = ukuran.toLowerCase();
+    if (key.contains('kecil')) return 5.0;
+    if (key.contains('sedang') || key.contains('medium')) return 10.0;
+    if (key.contains('besar') || key.contains('large')) return 20.0;
+    // If ukuran is numeric like "5 kg" or "10", try to parse number
+    final digits = RegExp(r"(\d+)");
+    final m = digits.firstMatch(ukuran);
+    if (m != null) {
+      return double.tryParse(m.group(0) ?? '') ?? 0.0;
+    }
+    return 0.0;
+  }
+
+  Future<void> _ensurePrice() async {
+    try {
+      final current = _calculateTotal();
+      if (current > 0) return; // already has a price
+
+      final transport = (_currentTrip['transportation'] ??
+              _currentTrip['transportation_type'] ??
+              _currentTrip['vehicle_type'] ??
+              _currentTrip['transportationType'] ??
+              'motor')
+          .toString();
+      final weightKg = _mapUkuranToKg(widget.ukuranBarang);
+      if (weightKg <= 0) return;
+
+      final resp = await BookingService.calculatePrice(
+        transportMode: transport,
+        weight: weightKg,
+        serviceType: 'barang',
+      );
+
+      int finalPrice = 0;
+      if (resp.containsKey('final_price')) {
+        finalPrice = (resp['final_price'] is num)
+            ? (resp['final_price'] as num).toInt()
+            : int.tryParse(resp['final_price'].toString()) ?? 0;
+      } else if (resp.containsKey('total')) {
+        finalPrice = (resp['total'] is num)
+            ? (resp['total'] as num).toInt()
+            : int.tryParse(resp['total'].toString()) ?? 0;
+      } else if (resp.containsKey('price')) {
+        finalPrice = (resp['price'] is num)
+            ? (resp['price'] as num).toInt()
+            : int.tryParse(resp['price'].toString()) ?? 0;
+      }
+
+      if (finalPrice > 0) {
+        setState(() {
+          _computedPrice = finalPrice;
+        });
+      }
+    } catch (e) {
+      // ignore errors silently; keep showing 0
+    }
+  }
+
+  void _showDebugDialog() {
+    final tripJson = const JsonEncoder.withIndent('  ').convert(widget.trip);
+    final mappedKg = _mapUkuranToKg(widget.ukuranBarang);
+    final calcTotal = _calculateTotal();
+    final computed = _computedPrice;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Debug Info'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('ukuranBarang: ${widget.ukuranBarang}'),
+              const SizedBox(height: 6),
+              Text('mappedKg: $mappedKg'),
+              const SizedBox(height: 6),
+              Text('calculated total (_calculateTotal): $calcTotal'),
+              const SizedBox(height: 6),
+              Text('runtime _computedPrice: ${computed ?? 'null'}'),
+              const SizedBox(height: 12),
+              const Text('trip JSON:'),
+              const SizedBox(height: 6),
+              Text(tripJson, style: const TextStyle(fontSize: 11)),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Tutup'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _loadUserData() async {
@@ -98,9 +238,19 @@ class _BookingDetailBarangUmumPageState
   }
 
   int _calculateTotal() {
-    final priceValue = widget.trip['price'];
+    final trip = _currentTrip;
+    // Prefer server-calculated price when available
+    dynamic calcPrice = trip['calculated_price'] ?? trip['calculatedPrice'];
+    if (calcPrice == null && trip['price_breakdown'] is Map) {
+      final pb = Map<String, dynamic>.from(trip['price_breakdown']);
+      calcPrice =
+          pb['final_price'] ?? pb['total'] ?? pb['price'] ?? pb['amount'];
+    }
+
+    final priceValue = calcPrice ?? trip['price'];
     if (priceValue == null) return 0;
     if (priceValue is num) return priceValue.toInt();
+
     final raw = priceValue.toString();
     // Remove non-digit characters (dots, commas, currency symbols)
     final digits = raw.replaceAll(RegExp(r'[^0-9]'), '');
@@ -112,10 +262,16 @@ class _BookingDetailBarangUmumPageState
     }
   }
 
+  int _roundNearest(int value, [int nearest = 5000]) {
+    if (value == 0) return 0;
+    return ((value / nearest).round()) * nearest;
+  }
+
   String _formatDateTime() {
     try {
-      final dateStr = widget.trip['departure_date'];
-      final timeStr = widget.trip['departure_time'];
+      final trip = _currentTrip;
+      final dateStr = trip['departure_date'];
+      final timeStr = trip['departure_time'];
 
       if (dateStr == null) return '';
 
@@ -158,7 +314,7 @@ class _BookingDetailBarangUmumPageState
           ? '$formattedDate | $formattedTime'
           : formattedDate;
     } catch (e) {
-      return '${widget.trip['departure_date'] ?? ''}';
+      return '${_currentTrip['departure_date'] ?? ''}';
     }
   }
 
@@ -181,6 +337,13 @@ class _BookingDetailBarangUmumPageState
             fontWeight: FontWeight.w600,
           ),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.bug_report_outlined, color: Colors.white),
+            onPressed: _showDebugDialog,
+            tooltip: 'Debug',
+          ),
+        ],
         centerTitle: true,
       ),
       body: Column(
@@ -301,7 +464,7 @@ class _BookingDetailBarangUmumPageState
                   ),
                 ),
                 Text(
-                  'Rp ${_formatPrice(widget.trip['price'])}',
+                  'Rp ${_formatPrice(_roundNearest(_computedPrice ?? _calculateTotal()))}',
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -587,7 +750,7 @@ class _BookingDetailBarangUmumPageState
             ),
           ),
           Text(
-            'Rp ${_formatPrice(widget.trip['price'])}',
+            'Rp ${_formatPrice(_roundNearest(_computedPrice ?? _calculateTotal()))}',
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,

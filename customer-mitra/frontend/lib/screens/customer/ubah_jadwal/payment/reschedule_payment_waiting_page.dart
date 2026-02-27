@@ -23,6 +23,7 @@ class ReschedulePaymentWaitingPage extends StatefulWidget {
   final double amount;
   final double adminFee;
   final List<Map<String, dynamic>>? passengers;
+  final Map<String, dynamic>? serverPayment;
 
   const ReschedulePaymentWaitingPage({
     Key? key,
@@ -40,6 +41,7 @@ class ReschedulePaymentWaitingPage extends StatefulWidget {
     required this.paymentId,
     required this.amount,
     required this.adminFee,
+    this.serverPayment,
     this.passengers,
   }) : super(key: key);
 
@@ -124,6 +126,31 @@ class _ReschedulePaymentWaitingPageState
                           (newRide['available_seats'] ?? '').toString()) ??
                       widget.trip.availableSeats);
 
+              // Prefer server-provided new ride price when available
+              int finalPrice = widget.amount.toInt();
+              try {
+                if (newRide['price'] != null &&
+                    double.tryParse(newRide['price'].toString()) != null) {
+                  finalPrice = (double.tryParse(newRide['price'].toString()) ??
+                          finalPrice)
+                      .toInt();
+                } else if (newRide['price_per_seat'] != null &&
+                    double.tryParse(newRide['price_per_seat'].toString()) !=
+                        null) {
+                  finalPrice =
+                      (double.tryParse(newRide['price_per_seat'].toString()) ??
+                              finalPrice)
+                          .toInt();
+                } else if (resp['data'] != null &&
+                    resp['data']['price_after'] != null) {
+                  finalPrice =
+                      (int.tryParse(resp['data']['price_after'].toString()) ??
+                          finalPrice);
+                }
+              } catch (e) {
+                // ignore and keep widget.amount
+              }
+
               final updatedTrip = TripModel(
                 id: newRide['id']?.toString() ?? widget.trip.id,
                 date: newRide['departure_date'] ?? widget.trip.date,
@@ -132,7 +159,7 @@ class _ReschedulePaymentWaitingPageState
                 departureAddress: depAddr ?? widget.trip.departureAddress,
                 arrivalLocation: arrName,
                 arrivalAddress: arrAddr ?? widget.trip.arrivalAddress,
-                price: widget.amount.toInt(),
+                price: finalPrice,
                 availableSeats: avail,
               );
 
@@ -149,6 +176,7 @@ class _ReschedulePaymentWaitingPageState
                     totalPassengers: widget.totalPassengers,
                     amount: widget.amount,
                     adminFee: widget.adminFee,
+                    serverPayment: widget.serverPayment,
                   ),
                 ),
               );
@@ -449,7 +477,8 @@ class _ReschedulePaymentWaitingPageState
           ),
           const SizedBox(height: 8),
           Text(
-            'Rp ${_formatPrice((widget.amount + widget.adminFee).toInt())}',
+            // Prefer server-provided total_amount when available, otherwise sum amount + adminFee
+            'Rp ${_formatPrice((widget.serverPayment != null && widget.serverPayment!['total_amount'] != null ? (double.tryParse(widget.serverPayment!['total_amount'].toString()) ?? (widget.amount + widget.adminFee)) : (widget.amount + widget.adminFee)).toInt())}',
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,

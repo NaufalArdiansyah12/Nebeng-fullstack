@@ -41,7 +41,7 @@ const Refund = () => {
     try {
       setLoading(true);
       const params = statusFilter !== "all" ? { status: statusFilter } : {};
-      const response = await api.get("/refunds", { params });
+      const response = await api.get("/finance/refunds", { params });
       setRefunds(response.data);
     } catch (error) {
       console.error("Error fetching refunds:", error);

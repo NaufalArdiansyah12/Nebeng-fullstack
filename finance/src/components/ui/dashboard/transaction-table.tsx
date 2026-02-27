@@ -22,13 +22,16 @@ export function TransactionTable({ availableMonths, currentMonthValue }: Transac
   const navigate = useNavigate();
 
   useEffect(() => {
-    api.get(`/bookings/transactions?month=${selectedMonth}`)
+    api.get(`/finance/bookings/transactions?month=${selectedMonth}`)
       .then(res => setTransactions(res.data))
       .catch(err => console.error("transactions error:", err));
   }, [selectedMonth]);
 
   const mapStatus = (status: string) => {
-    switch (status) {
+    const s = (status ?? "").toString().toLowerCase().replace(/_/g, " ").trim();
+    if (!s) return "-";
+    if (s.includes("sampai") && s.includes("tujuan")) return "SAMPAI TUJUAN";
+    switch (s) {
       case "pending":
         return "PROSES";
       case "paid":
@@ -36,12 +39,15 @@ export function TransactionTable({ availableMonths, currentMonthValue }: Transac
       case "cancelled":
         return "BATAL";
       default:
-        return status.toUpperCase();
+        return s.toUpperCase();
     }
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    const s = (status ?? "").toString().toLowerCase().replace(/_/g, " ").trim();
+    if (!s) return "bg-gray-500";
+    if (s.includes("sampai") && s.includes("tujuan")) return "bg-green-600";
+    switch (s) {
       case "pending":
         return "bg-yellow-500";
       case "paid":

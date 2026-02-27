@@ -15,6 +15,10 @@ class TripModel {
   final int? bagasiCapacity;
   final int? jumlahBagasi;
   final String? serviceType;
+  final double? originLat;
+  final double? originLon;
+  final double? destinationLat;
+  final double? destinationLon;
 
   TripModel({
     required this.id,
@@ -33,6 +37,10 @@ class TripModel {
     this.bagasiCapacity,
     this.jumlahBagasi,
     this.serviceType,
+    this.originLat,
+    this.originLon,
+    this.destinationLat,
+    this.destinationLon,
   });
 
   // Factory constructor untuk convert dari API response
@@ -42,8 +50,15 @@ class TripModel {
         json['destination_location'] as Map<String, dynamic>?;
 
     // Parse price dengan aman, handle string atau number
+    // Prefer server-calculated price when available (calculated_price or price_breakdown.final_price)
     int parsedPrice = 0;
-    final priceValue = json['price'];
+    dynamic calcPrice = json['calculated_price'] ?? json['calculatedPrice'];
+    if (calcPrice == null && json['price_breakdown'] is Map) {
+      final pb = json['price_breakdown'] as Map<String, dynamic>;
+      calcPrice =
+          pb['final_price'] ?? pb['total'] ?? pb['price'] ?? pb['amount'];
+    }
+    final priceValue = calcPrice ?? json['price'];
     if (priceValue is num) {
       parsedPrice = priceValue.toInt();
     } else if (priceValue is String) {
@@ -137,6 +152,38 @@ class TripModel {
       }(),
       serviceType:
           (json['service_type'] ?? json['serviceType'] ?? '').toString(),
+      originLat: (() {
+        final o = json['origin_location'] as Map<String, dynamic>?;
+        if (o == null) return null;
+        final v = o['latitude'] ?? o['lat'] ?? o['latitude_deg'];
+        if (v is num) return v.toDouble();
+        if (v is String) return double.tryParse(v);
+        return null;
+      })(),
+      originLon: (() {
+        final o = json['origin_location'] as Map<String, dynamic>?;
+        if (o == null) return null;
+        final v = o['longitude'] ?? o['lon'] ?? o['lng'];
+        if (v is num) return v.toDouble();
+        if (v is String) return double.tryParse(v);
+        return null;
+      })(),
+      destinationLat: (() {
+        final d = json['destination_location'] as Map<String, dynamic>?;
+        if (d == null) return null;
+        final v = d['latitude'] ?? d['lat'] ?? d['latitude_deg'];
+        if (v is num) return v.toDouble();
+        if (v is String) return double.tryParse(v);
+        return null;
+      })(),
+      destinationLon: (() {
+        final d = json['destination_location'] as Map<String, dynamic>?;
+        if (d == null) return null;
+        final v = d['longitude'] ?? d['lon'] ?? d['lng'];
+        if (v is num) return v.toDouble();
+        if (v is String) return double.tryParse(v);
+        return null;
+      })(),
     );
   }
 }

@@ -14,7 +14,7 @@ class DetailTitipBarangPage extends StatelessWidget {
   final String transportationType;
   final int bagasiCapacity;
   final int? jumlahBagasi;
-  final double price;
+  final double? price;
 
   const DetailTitipBarangPage({
     Key? key,
@@ -27,7 +27,7 @@ class DetailTitipBarangPage extends StatelessWidget {
     required this.transportationType,
     required this.bagasiCapacity,
     this.jumlahBagasi,
-    required this.price,
+    this.price,
   }) : super(key: key);
 
   String _getMonthName(int month) {
@@ -346,7 +346,9 @@ class DetailTitipBarangPage extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  'Tarif per Kg',
+                                  price != null
+                                      ? 'Tarif per Kg'
+                                      : 'Akan dihitung',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Colors.grey[500],
@@ -355,11 +357,15 @@ class DetailTitipBarangPage extends StatelessWidget {
                               ],
                             ),
                             Text(
-                              'Rp ${price.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => '${m[1]}.')}',
-                              style: const TextStyle(
-                                fontSize: 18,
+                              price != null
+                                  ? 'Rp ${price!.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => '${m[1]}.')}'
+                                  : 'Akan dihitung saat booking',
+                              style: TextStyle(
+                                fontSize: price != null ? 18 : 14,
                                 fontWeight: FontWeight.w700,
-                                color: Colors.black87,
+                                color: price != null
+                                    ? Colors.black87
+                                    : Colors.grey[600],
                               ),
                             ),
                           ],

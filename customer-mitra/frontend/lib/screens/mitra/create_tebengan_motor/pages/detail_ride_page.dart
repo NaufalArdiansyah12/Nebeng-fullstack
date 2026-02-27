@@ -17,7 +17,7 @@ class DetailRidePage extends StatelessWidget {
   final String vehicleBrand;
   final String vehicleType;
   final String vehicleColor;
-  final double price;
+  final double? price;
   final int availableSeats;
   final int? kendaraanMitraId;
   final int? bagasiCapacity;
@@ -38,7 +38,7 @@ class DetailRidePage extends StatelessWidget {
     required this.vehicleBrand,
     required this.vehicleType,
     required this.vehicleColor,
-    required this.price,
+    this.price,
     required this.availableSeats,
     this.kendaraanMitraId,
     this.bagasiCapacity,
@@ -375,7 +375,9 @@ class DetailRidePage extends StatelessWidget {
                               ],
                             ),
                             Text(
-                              'Rp ${price.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => '${m[1]}.')}',
+                              price != null
+                                  ? 'Rp ${price!.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => '${m[1]}.')}'
+                                  : 'Akan dihitung saat booking',
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,

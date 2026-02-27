@@ -43,7 +43,8 @@ class TransactionHistoryController extends Controller
                 ->join('tebengan_motor', 'booking_motor.ride_id', '=', 'tebengan_motor.id')
                 ->leftJoin('locations as origin', 'tebengan_motor.origin_location_id', '=', 'origin.id')
                 ->leftJoin('locations as destination', 'tebengan_motor.destination_location_id', '=', 'destination.id')
-                ->leftJoin('payments', 'booking_motor.id', '=', 'payments.booking_id')
+                // Join payments by booking_number to include payments that don't have booking_id populated
+                ->leftJoin('payments', 'booking_motor.booking_number', '=', 'payments.booking_number')
                 ->where('booking_motor.user_id', $userId)
                 ->select(
                     'booking_motor.id',
@@ -67,7 +68,7 @@ class TransactionHistoryController extends Controller
                 ->join('tebengan_mobil', 'booking_mobil.ride_id', '=', 'tebengan_mobil.id')
                 ->leftJoin('locations as origin', 'tebengan_mobil.origin_location_id', '=', 'origin.id')
                 ->leftJoin('locations as destination', 'tebengan_mobil.destination_location_id', '=', 'destination.id')
-                ->leftJoin('payments', 'booking_mobil.id', '=', 'payments.booking_id')
+                ->leftJoin('payments', 'booking_mobil.booking_number', '=', 'payments.booking_number')
                 ->where('booking_mobil.user_id', $userId)
                 ->select(
                     'booking_mobil.id',
@@ -91,7 +92,7 @@ class TransactionHistoryController extends Controller
                 ->join('tebengan_barang', 'booking_barang.ride_id', '=', 'tebengan_barang.id')
                 ->leftJoin('locations as origin', 'tebengan_barang.origin_location_id', '=', 'origin.id')
                 ->leftJoin('locations as destination', 'tebengan_barang.destination_location_id', '=', 'destination.id')
-                ->leftJoin('payments', 'booking_barang.id', '=', 'payments.booking_id')
+                ->leftJoin('payments', 'booking_barang.booking_number', '=', 'payments.booking_number')
                 ->where('booking_barang.user_id', $userId)
                 ->select(
                     'booking_barang.id',
@@ -115,7 +116,7 @@ class TransactionHistoryController extends Controller
                 ->join('tebengan_titip_barang', 'booking_titip_barang.ride_id', '=', 'tebengan_titip_barang.id')
                 ->leftJoin('locations as origin', 'tebengan_titip_barang.origin_location_id', '=', 'origin.id')
                 ->leftJoin('locations as destination', 'tebengan_titip_barang.destination_location_id', '=', 'destination.id')
-                ->leftJoin('payments', 'booking_titip_barang.id', '=', 'payments.booking_id')
+                ->leftJoin('payments', 'booking_titip_barang.booking_number', '=', 'payments.booking_number')
                 ->where('booking_titip_barang.user_id', $userId)
                 ->select(
                     'booking_titip_barang.id',

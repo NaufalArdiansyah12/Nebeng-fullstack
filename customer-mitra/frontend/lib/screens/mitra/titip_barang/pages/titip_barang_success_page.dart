@@ -49,7 +49,6 @@ class TitipBarangSuccessPage extends StatelessWidget {
                 ),
                 child: Stack(
                   children: [
-                    // Decorative circles around the edge
                     ...List.generate(12, (index) {
                       final radius = 90.0;
                       return Positioned(
@@ -75,7 +74,6 @@ class TitipBarangSuccessPage extends StatelessWidget {
                         ),
                       );
                     }),
-                    // Checkmark Icon
                     const Center(
                       child: Icon(
                         Icons.check,
@@ -99,7 +97,9 @@ class TitipBarangSuccessPage extends StatelessWidget {
                   height: 1.5,
                 ),
               ),
+
               const SizedBox(height: 40),
+              const Spacer(),
 
               // Button
               SizedBox(
@@ -107,7 +107,6 @@ class TitipBarangSuccessPage extends StatelessWidget {
                 height: 54,
                 child: ElevatedButton(
                   onPressed: () {
-                    // Navigate to main page and remove all previous routes
                     Navigator.of(context).pushAndRemoveUntil(
                       MaterialPageRoute(
                         builder: (context) => const MitraMainPage(),
@@ -125,13 +124,15 @@ class TitipBarangSuccessPage extends StatelessWidget {
                   child: const Text(
                     'Lihat daftar tebengan akan datang',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 15,
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
                     ),
                   ),
                 ),
               ),
+
+              const SizedBox(height: 40),
             ],
           ),
         ),

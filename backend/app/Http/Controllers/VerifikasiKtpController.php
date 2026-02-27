@@ -144,7 +144,6 @@ class VerifikasiKtpController extends Controller
             ], 404);
         }
 
-
         $updateData = [
             'nik' => $request->ktp_number,
             'nama_lengkap' => $request->ktp_name,
@@ -157,20 +156,17 @@ class VerifikasiKtpController extends Controller
                 Storage::disk('public')->delete($verification->photo_ktp);
             }
             $photoPath = $request->file('ktp_photo')->store('verifikasi/ktp', 'public');
-
             $updateData['photo_ktp'] = $photoPath;
         }
 
         $verification->update($updateData);
-        $verification->photo_ktp = $photoPath;
 
-
-        $verification->update([
-            'nik' => $request->ktp_number,
-            'nama_lengkap' => $request->ktp_name,
-            'tanggal_lahir' => $request->ktp_birth_date,
-            'status' => 'pending',
-        ]);
+        // Reset user role to customer when documents are updated
+        $user = \App\Models\User::find($apiToken->user_id);
+        if ($user && $user->role === 'mitra') {
+            $user->role = 'customer';
+            $user->save();
+        }
 
         return response()->json([
             'success' => true,

@@ -74,7 +74,7 @@ const DetailWithdrawal = () => {
   const fetchWithdrawalDetail = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/withdrawals/${id}`, {
+      const response = await api.get(`/finance/withdrawals/${id}`, {
         params: { type }
       });
       setWithdrawal(response.data);
@@ -92,7 +92,7 @@ const DetailWithdrawal = () => {
     
     try {
       setActionLoading(true);
-      await api.post(`/withdrawals/${id}/approve`, {
+      await api.post(`/finance/withdrawals/${id}/approve`, {
         type: withdrawal.type,
         admin_fee: parseFloat(adminFee) || 0,
       });
@@ -115,7 +115,7 @@ const DetailWithdrawal = () => {
 
     try {
       setActionLoading(true);
-      await api.post(`/withdrawals/${id}/reject`, {
+      await api.post(`/finance/withdrawals/${id}/reject`, {
         type: withdrawal?.type,
         rejection_reason: rejectionReason,
       });
@@ -133,7 +133,7 @@ const DetailWithdrawal = () => {
   const handleProcess = async () => {
     try {
       setActionLoading(true);
-      await api.post(`/withdrawals/${id}/process`, {
+      await api.post(`/finance/withdrawals/${id}/process`, {
         type: withdrawal?.type
       });
       toast.success("Penarikan sedang diproses");
@@ -150,7 +150,7 @@ const DetailWithdrawal = () => {
   const handleComplete = async () => {
     try {
       setActionLoading(true);
-      await api.post(`/withdrawals/${id}/complete`, {
+      await api.post(`/finance/withdrawals/${id}/complete`, {
         type: withdrawal?.type
       });
       toast.success("Penarikan berhasil diselesaikan");

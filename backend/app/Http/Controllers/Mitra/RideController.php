@@ -163,7 +163,7 @@ class RideController extends Controller
             'departure_time' => 'required',
             'ride_type' => 'required|in:motor,mobil,barang',
             'service_type' => 'required|in:tebengan,barang,both',
-            'price' => 'required|numeric|min:0',
+            'price' => 'nullable|numeric|min:0',
             'bagasi_capacity' => 'nullable|integer|min:0',
             'jumlah_bagasi' => 'nullable|integer|min:0',
             'kendaraan_mitra_id' => 'nullable|exists:kendaraan_mitra,id',
@@ -211,7 +211,7 @@ class RideController extends Controller
                         'departure_time' => $request->departure_time,
                         'ride_type' => $request->ride_type,
                         'service_type' => $request->service_type,
-                        'price' => $request->price,
+                        'price' => $request->price ?? null,
                         'kendaraan_mitra_id' => $request->kendaraan_mitra_id ?? null,
                         'available_seats' => $request->available_seats ?? 1,
                         'status' => 'active',
@@ -292,7 +292,7 @@ class RideController extends Controller
                         'departure_time' => $request->departure_time,
                         'ride_type' => $request->ride_type,
                         'service_type' => $request->service_type,
-                        'price' => $request->price,
+                        'price' => $request->price ?? null,
                         'kendaraan_mitra_id' => $request->kendaraan_mitra_id ?? null,
                         'available_seats' => $availableSeats,
                         'status' => 'active',
@@ -366,7 +366,7 @@ class RideController extends Controller
                         'departure_time' => $request->departure_time,
                         'ride_type' => $request->ride_type,
                         'service_type' => $request->service_type,
-                        'price' => $request->price,
+                        'price' => $request->price ?? null,
                         'kendaraan_mitra_id' => $request->kendaraan_mitra_id ?? null,
                         'available_seats' => 0,
                         'status' => 'active',
@@ -453,9 +453,53 @@ class RideController extends Controller
             ], 404);
         }
 
+        // If ride has no explicit price, attempt to auto-calculate a sensible price
+        // using the PriceCalculator (distance-based) so clients receive a usable value.
+        $data = $ride->toArray();
+        try {
+            $priceVal = floatval($ride->price ?? 0);
+            if ($priceVal <= 0) {
+                // Map service_type to pricing service keys
+                $rawService = $ride->service_type ?? null;
+                $serviceTypeMap = [
+                    'tebengan' => 'hanya_tebengan',
+                    'barang' => 'hanya_barang',
+                    'both' => 'tebengan_dan_barang',
+                ];
+                $serviceType = $serviceTypeMap[$rawService] ?? $rawService;
+
+                // Compute approximate distance (km) if origin/destination present
+                $origin = $ride->originLocation;
+                $destination = $ride->destinationLocation;
+                $distance = 0.0;
+                if ($origin && $destination && isset($origin->latitude) && isset($origin->longitude) && isset($destination->latitude) && isset($destination->longitude)) {
+                    $lat1 = deg2rad(floatval($origin->latitude));
+                    $lon1 = deg2rad(floatval($origin->longitude));
+                    $lat2 = deg2rad(floatval($destination->latitude));
+                    $lon2 = deg2rad(floatval($destination->longitude));
+                    $dlat = $lat2 - $lat1;
+                    $dlon = $lon2 - $lon1;
+                    $a = pow(sin($dlat / 2), 2) + cos($lat1) * cos($lat2) * pow(sin($dlon / 2), 2);
+                    $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+                    $earthRadiusKm = 6371.0;
+                    $distance = $earthRadiusKm * $c;
+                }
+
+                $calculator = app(\App\Services\PriceCalculator::class);
+                $calc = $calculator->calculate('motor', 0.0, $serviceType, $distance);
+                if (is_array($calc) && array_key_exists('total', $calc) && $calc['total'] > 0) {
+                    $data['calculated_price'] = $calc['total'];
+                    $data['price_breakdown'] = $calc;
+                }
+            }
+        } catch (\Throwable $__e) {
+            // Non-fatal; just return ride without calculated fields if calculation fails
+            \Illuminate\Support\Facades\Log::debug('Ride price auto-calc failed: ' . $__e->getMessage());
+        }
+
         return response()->json([
             'success' => true,
-            'data' => $ride,
+            'data' => $data,
         ]);
     }
 

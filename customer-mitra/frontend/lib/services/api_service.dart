@@ -121,7 +121,7 @@ class ApiService {
     required String departureTime,
     required String rideType,
     required String serviceType,
-    required double price,
+    double? price,
     int? kendaraanMitraId,
     int? bagasiCapacity,
     int? jumlahBagasi,
@@ -682,6 +682,73 @@ class ApiService {
     );
   }
 
+  // Update methods for edit documents page
+  static Future<Map<String, dynamic>> updateKtpVerification({
+    required String token,
+    required String ktpNumber,
+    required String ktpName,
+    required String ktpBirthDate,
+    required String ktpPhotoPath,
+  }) async {
+    return VerificationService.updateKtpVerification(
+      token: token,
+      ktpNumber: ktpNumber,
+      ktpName: ktpName,
+      ktpBirthDate: ktpBirthDate,
+      ktpPhotoPath: ktpPhotoPath,
+    );
+  }
+
+  static Future<Map<String, dynamic>> updateSimVerification({
+    required String token,
+    required String simNumber,
+    required String namaLengkap,
+    required String simType,
+    required String simExpiryDate,
+    required String simPhotoPath,
+  }) async {
+    return VerificationService.updateSimVerification(
+      token: token,
+      simNumber: simNumber,
+      namaLengkap: namaLengkap,
+      simType: simType,
+      simExpiryDate: simExpiryDate,
+      simPhotoPath: simPhotoPath,
+    );
+  }
+
+  static Future<Map<String, dynamic>> updateSkckVerification({
+    required String token,
+    required String skckNumber,
+    required String skckName,
+    required String skckExpiryDate,
+    required String skckPhotoPath,
+  }) async {
+    return VerificationService.updateSkckVerification(
+      token: token,
+      skckNumber: skckNumber,
+      skckName: skckName,
+      skckExpiryDate: skckExpiryDate,
+      skckPhotoPath: skckPhotoPath,
+    );
+  }
+
+  static Future<Map<String, dynamic>> updateBankVerification({
+    required String token,
+    required String bankAccountNumber,
+    required String bankAccountName,
+    required String bankName,
+    required String bankPhotoPath,
+  }) async {
+    return VerificationService.updateBankVerification(
+      token: token,
+      bankAccountNumber: bankAccountNumber,
+      bankAccountName: bankAccountName,
+      bankName: bankName,
+      bankPhotoPath: bankPhotoPath,
+    );
+  }
+
   // ========== Reschedule Service Methods ==========
   static Future<Map<String, dynamic>> createReschedule({
     required String token,
@@ -712,6 +779,8 @@ class ApiService {
     required String paymentMethod,
     required double amount,
     double? adminFee,
+    double? bookingPrice,
+    int? rescheduleRequestId,
   }) async {
     // Use non-static PaymentService
     final service = PaymentService();
@@ -723,6 +792,8 @@ class ApiService {
       paymentMethod: paymentMethod,
       amount: amount,
       adminFee: adminFee,
+      bookingPrice: bookingPrice,
+      rescheduleRequestId: rescheduleRequestId,
     );
   }
 
@@ -908,6 +979,50 @@ class ApiService {
   }) =>
       SavedPassengerService.deletePassenger(
           token: token, passengerId: passengerId);
+
+  // =====================================================
+  // POINT REWARDS
+  // =====================================================
+
+  static Future<Map<String, dynamic>> getPointHistory(int userId) async {
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/points?user_id=$userId');
+
+    final resp = await http.get(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+      },
+    );
+
+    if (resp.statusCode == 200) {
+      final body = jsonDecode(resp.body);
+      if (body is Map && body['success'] == true) {
+        return Map<String, dynamic>.from(body['data'] ?? {});
+      }
+      throw Exception(body['message'] ?? 'Failed to get point history');
+    }
+    throw Exception('Failed to get point history: ${resp.statusCode}');
+  }
+
+  static Future<Map<String, dynamic>> getPointValues() async {
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/points/values');
+
+    final resp = await http.get(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+      },
+    );
+
+    if (resp.statusCode == 200) {
+      final body = jsonDecode(resp.body);
+      if (body is Map && body['success'] == true) {
+        return Map<String, dynamic>.from(body['data'] ?? {});
+      }
+      throw Exception(body['message'] ?? 'Failed to get point values');
+    }
+    throw Exception('Failed to get point values: ${resp.statusCode}');
+  }
 }
 
 // Note: For direct PaymentService usage (non-static methods):

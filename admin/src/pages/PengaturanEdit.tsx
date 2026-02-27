@@ -5,13 +5,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Eye, EyeOff, Camera } from "lucide-react";
 import SavePengaturanPopup from "@/components/SavePengaturanPopup";
 import { useAdmin } from "@/contexts/AdminContext";
@@ -33,8 +26,6 @@ const PengaturanEdit = () => {
     namaLengkap: profile.namaLengkap,
     email: profile.email,
     tempatLahir: profile.tempatLahir,
-    tanggalLahir: profile.tanggalLahir,
-    jenisKelamin: profile.jenisKelamin,
     noTlp: profile.noTlp,
   });
 
@@ -228,32 +219,6 @@ const PengaturanEdit = () => {
                   onChange={(e) => setProfileData({ ...profileData, tempatLahir: e.target.value })}
                   className="bg-muted/50 border-muted"
                 />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm text-muted-foreground">Tanggal Lahir</Label>
-                <div className="relative">
-                  <Input
-                    type="date"
-                    value="1999-02-01"
-                    onChange={(e) => setProfileData({ ...profileData, tanggalLahir: e.target.value })}
-                    className="bg-muted/50 border-muted"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm text-muted-foreground">Jenis Kelamin</Label>
-                <Select
-                  value={profileData.jenisKelamin}
-                  onValueChange={(value) => setProfileData({ ...profileData, jenisKelamin: value })}
-                >
-                  <SelectTrigger className="bg-muted/50 border-muted">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Laki - Laki">Laki - Laki</SelectItem>
-                    <SelectItem value="Perempuan">Perempuan</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
               <div className="space-y-2">
                 <Label className="text-sm text-muted-foreground">No. Tlp</Label>

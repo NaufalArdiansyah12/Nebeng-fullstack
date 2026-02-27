@@ -448,19 +448,19 @@ export const PesananProvider = ({ children }: { children: ReactNode }) => {
         setError(null);
         const response = await pesananApi.getAll();
         const pesanan = Array.isArray(response.data) ? response.data : [];
-        
+
         // Transform API response
         const transformedPesanan = pesanan.map((p: any) => ({
           id: String(p.id),
           noOrder: p.no_order,
           namaCustomer: p.namaCustomer || p.customerName,
           namaDriver: p.namaDriver || p.driverName,
-          tanggal: new Date(p.tanggal_pesanan || new Date()),
+          tanggal: new Date(p.tanggal || p.created_at || new Date()),
           layanan: p.layanan,
-          harga: p.harga,
+          harga: parseFloat(p.harga) || 0,
           status: p.status,
         }));
-        
+
         setPesananList(transformedPesanan);
       } catch (err) {
         console.error("Failed to fetch pesanan:", err);

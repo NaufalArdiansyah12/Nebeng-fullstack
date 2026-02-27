@@ -1,14 +1,14 @@
-import { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import { createContext, useContext, useState, ReactNode } from "react";
 import { mitraApi } from "../services/api";
 
 export interface KendaraanMitraData {
   id: string;
   mitraId: string;
-  namaMitra: string;
   kendaraan: "Mobil" | "Motor";
   merkKendaraan: string;
   platNomor: string;
   warna: string;
+  tahun: number;
   tanggal: Date;
 }
 
@@ -17,64 +17,17 @@ interface KendaraanMitraContextType {
   loading: boolean;
   error: string | null;
   fetchKendaraanByMitra: (mitraId: string) => Promise<void>;
+  fetchAllKendaraan: () => Promise<void>;
+  refreshData: (mitraId?: string) => Promise<void>;
 }
 
-const KendaraanMitraContext = createContext<KendaraanMitraContextType | undefined>(undefined);
+const KendaraanMitraContext =
+  createContext<KendaraanMitraContextType | undefined>(undefined);
 
 export function KendaraanMitraProvider({ children }: { children: ReactNode }) {
   const [kendaraanMitraList, setKendaraanMitraList] = useState<KendaraanMitraData[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Fetch all kendaraan from all mitra
-  useEffect(() => {
-    const fetchAllKendaraan = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // First, get all mitra
-        const mitraResponse = await mitraApi.getAll();
-        const mitraList = Array.isArray(mitraResponse.data) ? mitraResponse.data : [];
-
-        // Then fetch kendaraan for each mitra
-        const allKendaraan: KendaraanMitraData[] = [];
-
-        for (const mitra of mitraList) {
-          try {
-            const kendaraanResponse = await mitraApi.getKendaraan(String(mitra.id));
-            const kendaraanData = Array.isArray(kendaraanResponse.data)
-              ? kendaraanResponse.data
-              : [];
-
-            const transformed = kendaraanData.map((k: any) => ({
-              id: String(k.id),
-              mitraId: String(mitra.id),
-              namaMitra: mitra.nama_lengkap || mitra.nama || "Unknown",
-              kendaraan: (k.jenis_kendaraan || "Motor").charAt(0).toUpperCase() + (k.jenis_kendaraan || "Motor").slice(1),
-              merkKendaraan: k.merek_kendaraan || k.merk || "",
-              platNomor: k.plat_nomor || k.nomor_plat || "",
-              warna: k.warna || "",
-              tanggal: new Date(k.created_at || k.tanggal || new Date()),
-            }));
-
-            allKendaraan.push(...transformed);
-          } catch (err) {
-            console.error(`Failed to fetch kendaraan for mitra ${mitra.id}:`, err);
-          }
-        }
-
-        setKendaraanMitraList(allKendaraan);
-      } catch (err) {
-        console.error("Failed to fetch all kendaraan:", err);
-        setError(err instanceof Error ? err.message : "Failed to fetch kendaraan");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAllKendaraan();
-  }, []);
 
   const fetchKendaraanByMitra = async (mitraId: string) => {
     try {
@@ -82,43 +35,91 @@ export function KendaraanMitraProvider({ children }: { children: ReactNode }) {
       setError(null);
 
       const response = await mitraApi.getKendaraan(mitraId);
-      const kendaraanData = Array.isArray(response.data) ? response.data : [];
 
-      const transformed = kendaraanData.map((k: any) => ({
+      // backend: { success: true, data: [...] }
+      const kendaraanData = Array.isArray(response.data?.data)
+        ? response.data.data
+        : [];
+
+      const transformed: KendaraanMitraData[] = kendaraanData.map((k: any) => ({
         id: String(k.id),
-        mitraId: String(mitraId),
-        namaMitra: k.mitra_nama || "Unknown",
-        kendaraan: (k.jenis_kendaraan || "Motor").charAt(0).toUpperCase() + (k.jenis_kendaraan || "Motor").slice(1),
-        merkKendaraan: k.merek_kendaraan || k.merk || "",
-        platNomor: k.plat_nomor || k.nomor_plat || "",
-        warna: k.warna || "",
-        tanggal: new Date(k.created_at || k.tanggal || new Date()),
+        mitraId: String(k.user_id),
+        kendaraan:
+          k.vehicle_type?.toLowerCase() === "mobil" ? "Mobil" : "Motor",
+        merkKendaraan: k.name || "",
+        platNomor: k.plate_number || "",
+        warna: k.color || "",
+        tahun: k.year || 0,
+        tanggal: new Date(k.created_at),
       }));
 
-      // Update list with new data for this mitra
-      setKendaraanMitraList((prev) =>
-        [
-          ...prev.filter((k) => k.mitraId !== mitraId),
-          ...transformed,
-        ]
-      );
+      setKendaraanMitraList(transformed);
     } catch (err) {
-      console.error(`Failed to fetch kendaraan for mitra ${mitraId}:`, err);
+      console.error("Failed to fetch kendaraan:", err);
       setError(err instanceof Error ? err.message : "Failed to fetch kendaraan");
     } finally {
       setLoading(false);
     }
   };
 
-  const value = {
-    kendaraanMitraList,
-    loading,
-    error,
-    fetchKendaraanByMitra,
+  /* ===========================
+     GET semua kendaraan dari semua mitra
+     =========================== */
+  const fetchAllKendaraan = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await mitraApi.getAllKendaraan();
+
+      // backend: { success: true, data: [...] }
+      const kendaraanData = Array.isArray(response.data?.data)
+        ? response.data.data
+        : [];
+
+      const transformed: KendaraanMitraData[] = kendaraanData.map((k: any) => ({
+        id: String(k.id),
+        mitraId: String(k.user_id),
+        kendaraan:
+          k.vehicle_type?.toLowerCase() === "mobil" ? "Mobil" : "Motor",
+        merkKendaraan: k.name || "",
+        platNomor: k.plate_number || "",
+        warna: k.color || "",
+        tahun: k.year || 0,
+        tanggal: new Date(k.created_at),
+      }));
+
+      setKendaraanMitraList(transformed);
+    } catch (err) {
+      console.error("Failed to fetch all kendaraan:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch kendaraan");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* ===========================
+     Refresh data (bisa untuk specific mitra atau semua)
+     =========================== */
+  const refreshData = async (mitraId?: string) => {
+    if (mitraId) {
+      await fetchKendaraanByMitra(mitraId);
+    } else {
+      await fetchAllKendaraan();
+    }
   };
 
   return (
-    <KendaraanMitraContext.Provider value={value}>
+    <KendaraanMitraContext.Provider
+      value={{
+        kendaraanMitraList,
+        loading,
+        error,
+        fetchKendaraanByMitra,
+        fetchAllKendaraan,
+        refreshData,
+      }}
+    >
       {children}
     </KendaraanMitraContext.Provider>
   );
@@ -126,8 +127,8 @@ export function KendaraanMitraProvider({ children }: { children: ReactNode }) {
 
 export function useKendaraanMitra() {
   const context = useContext(KendaraanMitraContext);
-  if (context === undefined) {
-    throw new Error("useKendaraanMitra must be used within a KendaraanMitraProvider");
+  if (!context) {
+    throw new Error("useKendaraanMitra must be used within KendaraanMitraProvider");
   }
   return context;
 }

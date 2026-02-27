@@ -1,5 +1,8 @@
 export const mapStatus = (status: string) => {
-  switch (status) {
+  const s = (status ?? "").toString().toLowerCase().replace(/_/g, " ").trim();
+  if (!s) return "-";
+  if (s.includes("sampai") && s.includes("tujuan")) return "SAMPAI TUJUAN";
+  switch (s) {
     case "pending":
       return "PROSES";
     case "paid":
@@ -7,17 +10,24 @@ export const mapStatus = (status: string) => {
     case "cancelled":
       return "BATAL";
     default:
-      return status.toUpperCase();
+      return s.toUpperCase();
   }
 };
 
 export const getStatusColor = (status: string) => {
-  switch (status) {
-    case "PROSES":
+  const s = (status ?? "").toString().toLowerCase().replace(/_/g, " ").trim();
+  if (!s) return "bg-gray-500 hover:bg-gray-600";
+  if (s.includes("sampai") && s.includes("tujuan")) return "bg-green-600 hover:bg-green-700";
+  // Accept already-mapped labels like 'PROSES', 'SELESAI', 'BATAL'
+  if (s === 'proses') return "bg-yellow-500 hover:bg-yellow-600";
+  if (s === 'selesai') return "bg-green-500 hover:bg-green-600";
+  if (s === 'batal') return "bg-red-500 hover:bg-red-600";
+  switch (s) {
+    case "pending":
       return "bg-yellow-500 hover:bg-yellow-600";
-    case "SELESAI":
+    case "paid":
       return "bg-green-500 hover:bg-green-600";
-    case "BATAL":
+    case "cancelled":
       return "bg-red-500 hover:bg-red-600";
     default:
       return "bg-gray-500 hover:bg-gray-600";

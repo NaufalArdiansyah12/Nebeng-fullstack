@@ -17,7 +17,7 @@ const Mitra = () => {
 
   useEffect(() => {
     api
-      .get("/users/mitra")
+      .get("/finance/users/mitra")
       .then(res => {
         setMitraData(res.data);
       })

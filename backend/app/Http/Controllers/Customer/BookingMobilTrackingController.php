@@ -11,6 +11,7 @@ use App\Models\ApiToken;
 use App\Services\BookingNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use app\Services\PointRewardService;
 
 class BookingMobilTrackingController extends Controller
 {
@@ -28,7 +29,7 @@ class BookingMobilTrackingController extends Controller
         $apiToken = ApiToken::where('token', hash('sha256', $bearer))
             ->where('expires_at', '>', now())
             ->first();
-            
+
         if (!$apiToken) {
             return response()->json(['success' => false, 'message' => 'Token tidak valid atau sudah kadaluarsa'], 401);
         }
@@ -37,7 +38,7 @@ class BookingMobilTrackingController extends Controller
 
         // Try to find booking in all tables
         $booking = $this->findBooking($id, $userId);
-        
+
         if (!$booking) {
             return response()->json(['success' => false, 'message' => 'Booking tidak ditemukan'], 404);
         }
@@ -58,10 +59,10 @@ class BookingMobilTrackingController extends Controller
                             $booking->status = 'menuju_penjemputan';
                             $booking->trip_started_at = $booking->trip_started_at ?? now();
                             $booking->save();
-                            
+
                             // Send notification
                             BookingNotificationService::sendStatusNotification($booking, 'menuju_penjemputan');
-                            
+
                             Log::info('Auto set booking to menuju_penjemputan based on departure time', ['booking_id' => $booking->id]);
                         }
                     }
@@ -93,7 +94,7 @@ class BookingMobilTrackingController extends Controller
         // Ride and route information
         if ($booking->ride) {
             $ride = $booking->ride;
-            
+
             $trackingData['ride'] = [
                 'id' => $ride->id,
                 'departure_date' => $ride->departure_date,
@@ -144,7 +145,7 @@ class BookingMobilTrackingController extends Controller
             try {
                 $departureDateTime = \Carbon\Carbon::parse($ride->departure_date . ' ' . $ride->departure_time);
                 $now = \Carbon\Carbon::now();
-                
+
                 if ($booking->status === 'completed' || $booking->status === 'done') {
                     $trackingData['tracking_status'] = 'completed';
                 } elseif ($booking->status === 'cancelled') {
@@ -192,14 +193,14 @@ class BookingMobilTrackingController extends Controller
         $apiToken = ApiToken::where('token', hash('sha256', $bearer))
             ->where('expires_at', '>', now())
             ->first();
-            
+
         if (!$apiToken) {
             return response()->json(['success' => false, 'message' => 'Token tidak valid atau sudah kadaluarsa'], 401);
         }
 
         $userId = $apiToken->user_id;
         $booking = $this->findBooking($id, $userId);
-        
+
         if (!$booking) {
             return response()->json(['success' => false, 'message' => 'Booking tidak ditemukan'], 404);
         }
@@ -234,14 +235,14 @@ class BookingMobilTrackingController extends Controller
         $apiToken = ApiToken::where('token', hash('sha256', $bearer))
             ->where('expires_at', '>', now())
             ->first();
-            
+
         if (!$apiToken) {
             return response()->json(['success' => false, 'message' => 'Token tidak valid atau sudah kadaluarsa'], 401);
         }
 
         $userId = $apiToken->user_id;
         $booking = $this->findBooking($id, $userId);
-        
+
         if (!$booking) {
             return response()->json(['success' => false, 'message' => 'Booking tidak ditemukan'], 404);
         }
@@ -254,6 +255,11 @@ class BookingMobilTrackingController extends Controller
         $booking->status = 'completed';
         $booking->save();
 
+        // Award points to customer for completed booking
+        if ($booking->user_id) {
+            PointRewardService::awardPointsForBooking($booking->user_id, 'mobil', $booking->id);
+        }
+
         // Add balance to driver using amount from payment (not total_amount to exclude admin fee)
         if ($booking->ride && $booking->ride->user_id) {
             $driver = \App\Models\User::find($booking->ride->user_id);
@@ -262,7 +268,7 @@ class BookingMobilTrackingController extends Controller
                 $payment = \App\Models\Payment::where('booking_number', $booking->booking_number)
                     ->where('status', 'paid')
                     ->first();
-                
+
                 if ($payment && $payment->amount) {
                     $driver->balance = ($driver->balance ?? 0) + $payment->amount;
                     $driver->save();

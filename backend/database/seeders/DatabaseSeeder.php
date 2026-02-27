@@ -21,6 +21,11 @@ class DatabaseSeeder extends Seeder
         // Seed default locations
         $this->call(\Database\Seeders\LocationSeeder::class);
 
+        // Seed pricing system
+        $this->call(\Database\Seeders\TransportModeSeeder::class);
+        $this->call(\Database\Seeders\WeightCategorySeeder::class);
+        $this->call(\Database\Seeders\PricingConfigSeeder::class);
+
         // Seed PosMitra users
         $this->call(\Database\Seeders\PosMitraUserSeeder::class);
 

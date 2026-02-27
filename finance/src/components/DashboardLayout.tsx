@@ -64,11 +64,14 @@ const menuItems = [
   { icon: Receipt, label: "Transaksi", path: "/transaksi" },
   { icon: Users, label: "Mitra", path: "/mitra" },
   { icon: MapPin, label: "Pos Mitra", path: "/pos-mitra" },
+  { icon: Settings, label: "Tarif per Kg", path: "/tarif-per-kg" },
+  { icon: Settings, label: "Pengaturan Biaya", path: "/pengaturan/biaya" },
   { icon: Wallet, label: "Pencairan Dana", path: "/withdrawals" },
 ];
 
 const helpItems = [
   { icon: Settings, label: "Pengaturan", path: "/pengaturan" },
+  { icon: Wallet, label: "Pengaturan Biaya", path: "/pengaturan/biaya" },
 ];
 
 interface DashboardLayoutProps {
@@ -106,7 +109,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
     const parsed = JSON.parse(stored);
 
     // kalau ingin fetch dari backend:
-    api.get(`/users/${parsed.id}`)
+    api.get(`/finance/users/${parsed.id}`)
       .then(res => setUser(res.data))
       .catch(() => setUser(parsed)); // fallback ke localStorage
   }, []);
@@ -121,7 +124,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
 
   const fetchNotifications = async () => {
     try {
-      const res = await api.get('/notifications');
+      const res = await api.get('/finance/notifications');
       const notifs = res.data.data || res.data || [];
       
       // Check for new notifications
@@ -148,7 +151,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
 
   const markAsRead = async (id: number) => {
     try {
-      await api.put(`/notifications/${id}/read`);
+      await api.put(`/finance/notifications/${id}/read`);
       setNotifications(prev => 
         prev.map(n => n.id === id ? { ...n, is_read: true } : n)
       );

@@ -23,7 +23,7 @@ import UnblockCustomerPopup from "@/components/UnblockCustomerPopup";
 
 const BlokirCustomer = () => {
   const navigate = useNavigate();
-  const { customerList, unblockCustomer } = useCustomer();
+  const { customers, unblockCustomer } = useCustomer();
   
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -37,8 +37,8 @@ const BlokirCustomer = () => {
 
   // Filter only blocked customers
   const blockedCustomers = useMemo(() => {
-    return customerList.filter(customer => customer.status === "DIBLOCK");
-  }, [customerList]);
+    return customers.filter(customer => customer.status === "DIBLOCK");
+  }, [customers]);
 
   // Filter data based on search and date
   const filteredData = useMemo(() => {
@@ -46,13 +46,14 @@ const BlokirCustomer = () => {
       const matchesSearch = searchQuery === "" || 
         customer.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
         customer.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        customer.noTlp.includes(searchQuery) ||
-        customer.id.includes(searchQuery);
+        customer.no_tlp.includes(searchQuery) ||
+        customer.id.toString().includes(searchQuery);
 
       const matchesDate = !selectedDate || 
-        (customer.tanggal.getFullYear() === selectedDate.getFullYear() &&
-         customer.tanggal.getMonth() === selectedDate.getMonth() &&
-         customer.tanggal.getDate() === selectedDate.getDate());
+        (customer.tanggal_daftar instanceof Date &&
+         customer.tanggal_daftar.getFullYear() === selectedDate.getFullYear() &&
+         customer.tanggal_daftar.getMonth() === selectedDate.getMonth() &&
+         customer.tanggal_daftar.getDate() === selectedDate.getDate());
 
       return matchesSearch && matchesDate;
     });
@@ -78,8 +79,8 @@ const BlokirCustomer = () => {
   };
 
   // Unblock handlers
-  const handleUnblockClick = (id: string) => {
-    setSelectedCustomerId(id);
+  const handleUnblockClick = (id: number) => {
+    setSelectedCustomerId(id.toString());
     setShowUnblockConfirm(true);
   };
 
@@ -103,9 +104,9 @@ const BlokirCustomer = () => {
       "NO. ID": customer.id,
       "NAMA": customer.nama,
       "EMAIL": customer.email,
-      "NO. TLP": customer.noTlp,
+      "NO. TLP": customer.no_tlp,
       "STATUS": customer.status,
-      "TANGGAL": format(customer.tanggal, "dd-MM-yyyy")
+      "TANGGAL": format(customer.tanggal_daftar, "dd-MM-yyyy")
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(excelData);
@@ -218,7 +219,7 @@ const BlokirCustomer = () => {
                       <td className="py-4 px-4">{customer.id}</td>
                       <td className="py-4 px-4">{customer.nama}</td>
                       <td className="py-4 px-4">{customer.email}</td>
-                      <td className="py-4 px-4">{customer.noTlp}</td>
+                      <td className="py-4 px-4">{customer.no_tlp}</td>
                       <td className="py-4 px-4 text-center">
                         <Badge className="bg-red-500 hover:bg-red-600 text-white">
                           BLOCK

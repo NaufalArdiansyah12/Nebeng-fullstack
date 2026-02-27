@@ -1,7 +1,9 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 import '../../../../services/api_service.dart';
 import '../../../../services/customer/payment_service.dart';
 import '../../../../utils/chat_helper.dart';
@@ -43,6 +45,7 @@ class PaymentMethodPage extends StatefulWidget {
 
 class _PaymentMethodPageState extends State<PaymentMethodPage> {
   bool _isExpanded = false;
+  int? _adminFee;
 
   @override
   Widget build(BuildContext context) {
@@ -100,6 +103,31 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
       ),
       bottomNavigationBar: _buildPayButton(),
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAdminFee();
+  }
+
+  void _fetchAdminFee() async {
+    try {
+      final uri =
+          Uri.parse('${ApiService.baseUrl}/api/v1/finance/settings/fees');
+      final r = await http.get(uri, headers: {'Accept': 'application/json'});
+      if (r.statusCode == 200) {
+        final resp = json.decode(r.body);
+        if (resp != null && resp['admin_fee'] != null) {
+          setState(() {
+            _adminFee = (resp['admin_fee'] as num).toInt();
+          });
+        }
+      }
+    } catch (e) {
+      // fallback: leave _adminFee null
+      print('Failed to fetch admin fee: $e');
+    }
   }
 
   Widget _buildPaymentMethodIcon() {
@@ -320,13 +348,14 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
   }
 
   Widget _buildTotalPayment() {
-    // For barang service type, totalPassengers will be 1 but we should use trip price directly
-    // For regular service, multiply by totalPassengers only if > 1
-    final isBarangService = widget.trip.serviceType == 'barang' ||
-        widget.trip.serviceType == 'both';
-    final totalPrice = (isBarangService || widget.totalPassengers == 1)
+    // For `barang` service the price is a flat nominal (do not multiply).
+    // For other services (including `both`) price is per-penumpang and should
+    // be multiplied by `totalPassengers` when > 1.
+    final isBarangService = widget.trip.serviceType == 'barang';
+    final totalPrice = isBarangService
         ? widget.trip.price
-        : widget.trip.price * widget.totalPassengers;
+        : (widget.trip.price *
+            (widget.totalPassengers > 0 ? widget.totalPassengers : 1));
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -603,12 +632,67 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
         print('❌ Failed to create conversation: $e');
         // Don't fail the booking if conversation creation fails
       }
+      // Prefer server-calculated price if present in booking response.
+      // Use `meta.price_breakdown.final_price` first, fall back to `calculated_price`.
+      // Use the displayed trip price when available (keeps Payment page
+      // consistent with Booking Detail). Only fall back to server values
+      // when the displayed price is 0.
+      double amount = (widget.trip.price * seats).toDouble();
+      try {
+        if (widget.trip.price * seats > 0) {
+          amount = (widget.trip.price * seats).toDouble();
+        } else {
+          if (booking.containsKey('meta')) {
+            final meta = booking['meta'];
+            try {
+              if (meta is Map && meta['price_breakdown'] != null) {
+                final pb = meta['price_breakdown'];
+                if (pb is Map && pb['final_price'] != null) {
+                  final fp = pb['final_price'];
+                  if (fp is num)
+                    amount = fp.toDouble();
+                  else if (fp is String) amount = double.tryParse(fp) ?? amount;
+                }
+              } else if (meta is String) {
+                final parsed = json.decode(meta);
+                if (parsed is Map && parsed['price_breakdown'] != null) {
+                  final fp = parsed['price_breakdown']['final_price'];
+                  if (fp is num)
+                    amount = fp.toDouble();
+                  else if (fp is String) amount = double.tryParse(fp) ?? amount;
+                }
+              }
+            } catch (_) {}
+          }
+
+          if ((amount == 0.0 ||
+                  amount == (widget.trip.price * seats).toDouble()) &&
+              booking.containsKey('calculated_price')) {
+            final cp = booking['calculated_price'];
+            if (cp is num) {
+              amount = cp.toDouble();
+            } else if (cp is String) {
+              amount = double.tryParse(cp) ?? amount;
+            }
+          }
+        }
+      } catch (_) {}
 
       // 2) Create payment
       final paymentSvc = PaymentService();
-      final amount = (widget.trip.price * seats).toDouble();
       print(
           'Creating payment - amount: $amount, method: ${widget.paymentMethod}');
+      // Round amount to nearest 5000 to match display
+      double _roundNearestDouble(double value, [int nearest = 5000]) {
+        if (value == 0) return 0.0;
+        return ((value / nearest).ceil()) * nearest.toDouble();
+      }
+
+      amount = _roundNearestDouble(amount);
+
+      double adminFee =
+          widget.paymentMethod == 'cash' ? 0.0 : (_adminFee?.toDouble() ?? 0.0);
+
       final paymentResult = await paymentSvc.createPayment(
         rideId: int.parse(widget.trip.id),
         userId: userId,
@@ -616,7 +700,8 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
         bookingId: createdBookingId,
         paymentMethod: widget.paymentMethod,
         amount: amount,
-        adminFee: 15000,
+        bookingPrice: amount,
+        adminFee: adminFee,
       );
       print('Payment result: $paymentResult');
 
@@ -642,7 +727,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
           departureAddress: widget.trip.departureAddress,
           arrivalLocation: widget.trip.arrivalLocation,
           arrivalAddress: widget.trip.arrivalAddress,
-          price: widget.trip.price,
+          price: amount.toInt(),
           availableSeats: widget.trip.availableSeats,
         );
 
@@ -665,7 +750,10 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
                 expiresAt: expiresAt!,
                 paymentId: paymentData['id'],
                 amount: amount,
-                adminFee: 15000,
+                adminFee: adminFee,
+                totalAmount: double.tryParse(
+                        paymentData['total_amount']?.toString() ?? '') ??
+                    (amount + (adminFee ?? 0)),
               ),
             ),
           );
@@ -686,7 +774,10 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
                 expiresAt: expiresAt!,
                 paymentId: paymentData['id'],
                 amount: amount,
-                adminFee: 15000,
+                adminFee: adminFee,
+                totalAmount: double.tryParse(
+                        paymentData['total_amount']?.toString() ?? '') ??
+                    (amount + (adminFee ?? 0)),
               ),
             ),
           );

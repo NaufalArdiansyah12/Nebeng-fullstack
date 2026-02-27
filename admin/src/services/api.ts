@@ -1,7 +1,6 @@
 import axios from 'axios';
 
-// ✅ UPDATE: Connect ke Laravel backend
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/admin';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -31,19 +30,23 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Log error details for debugging
+    console.error('🔴 API Error:', error.message, error.response?.status);
+    
     if (error.response?.status === 401) {
       console.error('❌ Unauthorized - Token invalid or expired');
-      // Optional: redirect to login
-      // window.location.href = '/login';
     }
     
-    // ✅ TAMBAHAN: Handle 403, 404, 500
     if (error.response?.status === 403) {
       console.error('❌ Forbidden - Access denied');
     }
     
     if (error.response?.status === 404) {
       console.error('❌ Not Found - Resource tidak ditemukan');
+      // Extract the error message from backend response if available
+      const errorMessage = error.response?.data?.error || 'Resource not found';
+      // Return a rejected promise with the error message so the calling code can handle it properly
+      return Promise.reject(new Error(errorMessage));
     }
     
     if (error.response?.status === 500) {
@@ -54,100 +57,207 @@ api.interceptors.response.use(
   }
 );
 
-// Admin API (Auth & Profile)
+// Admin API
 export const adminApi = {
-  // Auth endpoints menggunakan /auth prefix
-  login: (email: string, password: string) => 
-    axios.post('http://localhost:8000/api/admin/auth/login', { email, password }),
-  logout: () => api.post('/auth/logout'),
-  verify: () => api.get('/auth/verify'),
-  
-  // Profile endpoints
-  getProfile: () => api.get('/auth/profile'),
-  updateProfile: (data: any) => api.put('/auth/profile', data),
-};
-
-// Dashboard API
-export const dashboardApi = {
-  getStatistics: (month?: number, year?: number) => {
-    const params: any = {};
-    if (month) params.month = month;
-    if (year) params.year = year;
-    return api.get('/dashboard', { params });
-  },
+  getProfile: () => api.get('/admin/profile'),
+  updateProfile: (data: any) => api.put('/admin/profile', data),
+  // ✅ UPDATED: Hanya kirim newPassword (tidak perlu currentPassword)
+  updatePassword: (data: { newPassword: string }) => api.put('/admin/password', data),
 };
 
 // Customer API
 export const customerApi = {
-  getAll: (params?: any) => api.get('/customers', { params }),
-  getPendingVerification: (params?: any) => api.get('/customers/pending-verification', { params }),
-  getBlocked: (params?: any) => api.get('/customers/blocked', { params }),
+  // Get operations
+  getAll: () => api.get('/customers'),
   getById: (id: string) => api.get(`/customers/${id}`),
-  verify: (id: string) => api.post(`/customers/${id}/verify`),
-  block: (id: string, reason: string) => api.post(`/customers/${id}/block`, { reason }),
+  
+  // Create operation
+  create: (data: any) => api.post('/customers', data),
+  
+  // Update operations - UPDATED ✅
+  update: (id: string, data: any) => api.put(`/customers/${id}`, data),
+  
+  // Full update dengan semua field
+  updateCustomer: (id: string, data: {
+    // Info Pribadi
+    nama?: string;
+    email?: string;
+    noTlp?: string;
+    jenisKelamin?: string;
+    tanggalLahir?: string;
+    alamat?: string;
+    
+    // Info KTP
+    nik?: string;
+    namaLengkapKtp?: string;
+    jenisKelaminKtp?: string;
+    
+    // Photos
+    photoWajah?: string;
+    photoKtp?: string;
+    
+    // Backward compatibility
+    ktp?: {
+      nama_lengkap?: string;
+      nik?: string;
+      alamat?: string;
+      tanggal_lahir?: string;
+    };
+  }) => api.put(`/customers/${id}`, data),
+  
+  // Partial update - hanya update field tertentu
+  updateFields: (id: string, fields: {
+    nama?: string;
+    email?: string;
+    noTlp?: string;
+    no_tlp?: string;
+    jenisKelamin?: string;
+    jenis_kelamin?: string;
+    nik?: string;
+    alamat?: string;
+    tanggalLahir?: string;
+    tanggal_lahir?: string;
+    photoWajah?: string;
+    photo_wajah?: string;
+    photoKtp?: string;
+    photo_ktp?: string;
+    namaLengkapKtp?: string;
+    jenisKelaminKtp?: string;
+  }) => api.patch(`/customers/${id}/fields`, fields),
+  
+  // Delete operation
+  delete: (id: string) => api.delete(`/customers/${id}`),
+  
+  // Status operations
+  updateStatus: (id: string, status: string) => api.patch(`/customers/${id}/status`, { status }),
+  block: (id: string) => api.post(`/customers/${id}/block`),
   unblock: (id: string) => api.post(`/customers/${id}/unblock`),
 };
 
 // Mitra API
 export const mitraApi = {
-  getAll: (params?: any) => api.get('/mitra', { params }),
+  getAll: () => api.get('/mitra'),
   getById: (id: string) => api.get(`/mitra/${id}`),
-  verify: (id: string) => api.post(`/mitra/${id}/verify`),
-  reject: (id: string, reason: string) => api.post(`/mitra/${id}/reject`, { reason }),
-  block: (id: string, reason: string) => api.post(`/mitra/${id}/block`, { reason }),
+  getMitraById: (id: string) => api.get(`/mitra/${id}`),
+  create: (data: any) => api.post('/mitra', data),
+  update: (id: string, data: any) => api.put(`/mitra/${id}`, data),
+  updateMitra: (id: string, data: {
+    nama: string;
+    email: string;
+    noTlp: string;
+    jenisKelamin: string;
+    tanggalLahir?: string;
+    ktp?: {
+      nama_lengkap: string;
+      nik: string;
+      alamat: string;
+      tanggal_lahir: string;
+    };
+  }) => api.put(`/mitra/${id}`, data),
+  delete: (id: string) => api.delete(`/mitra/${id}`),
+  updateStatus: (id: string, status: string) => api.patch(`/mitra/${id}/status`, { status }),
+  block: (id: string) => api.post(`/mitra/${id}/block`),
   unblock: (id: string) => api.post(`/mitra/${id}/unblock`),
-  getVehicles: (id: string) => api.get(`/mitra/${id}/vehicles`),
-  
-  // Vehicle endpoints
-  getAllVehicles: (params?: any) => api.get('/vehicles', { params }),
-  getVehicleDetail: (id: string) => api.get(`/vehicles/${id}`),
+  // Kendaraan
+  getKendaraan: (id: string) => api.get(`/mitra/${id}/kendaraan`),
+  getAllKendaraan: () => api.get(`/mitra/kendaraan/all`),
+  getKendaraanDetail: (mitraId: string, kendaraanId: string) => api.get(`/mitra/${mitraId}/kendaraan/${kendaraanId}`),
+  getKendaraanDetailById: (kendaraanId: string) => api.get(`/mitra/kendaraan/detail/${kendaraanId}`),
+  addKendaraan: (id: string, data: any) => api.post(`/mitra/${id}/kendaraan`, data),
+  updateKendaraan: (mitraId: string, kendaraanId: string, data: any) => api.put(`/mitra/${mitraId}/kendaraan/${kendaraanId}`, data),
+  deleteKendaraan: (mitraId: string, kendaraanId: string) => api.delete(`/mitra/${mitraId}/kendaraan/${kendaraanId}`),
 };
 
 // Pesanan API
 export const pesananApi = {
-  getAll: (params?: any) => api.get('/pesanan', { params }),
-  getStatistics: () => api.get('/pesanan/statistics'),
+  getAll: () => api.get('/pesanan'),
   getById: (id: string) => api.get(`/pesanan/${id}`),
+  create: (data: any) => api.post('/pesanan', data),
+  updateStatus: (id: string, status: string) => api.patch(`/pesanan/${id}/status`, { status }),
+  addPerjalanan: (id: string, data: any) => api.post(`/pesanan/${id}/perjalanan`, data),
+  addPembayaran: (id: string, data: any) => api.post(`/pesanan/${id}/pembayaran`, data),
 };
 
 // Laporan API
 export const laporanApi = {
-  getAll: (params?: any) => api.get('/laporan', { params }),
-  getStatistics: () => api.get('/laporan/statistics'),
+  getAll: () => api.get('/laporan'),
   getById: (id: string) => api.get(`/laporan/${id}`),
   create: (data: any) => api.post('/laporan', data),
-  updateStatus: (id: string, status: string, admin_notes?: string) => 
-    api.put(`/laporan/${id}/status`, { status, admin_notes }),
-  resolve: (id: string, resolution: string, action_taken?: string) => 
-    api.post(`/laporan/${id}/resolve`, { resolution, action_taken }),
+  updateStatus: (id: string, status: string) => api.patch(`/laporan/${id}/status`, { status }),
+  delete: (id: string) => api.delete(`/laporan/${id}`),
+  respond: (id: string, data: { tanggapan: string }) => api.post(`/laporan/${id}/respond`, data),
 };
 
 // Refund API
 export const refundApi = {
-  getAll: (params?: any) => api.get('/refund', { params }),
-  getStatistics: () => api.get('/refund/statistics'),
+  getAll: () => api.get('/refund'),
   getById: (id: string) => api.get(`/refund/${id}`),
-  approve: (id: string, admin_notes?: string, refund_amount?: number) => 
-    api.post(`/refund/${id}/approve`, { admin_notes, refund_amount }),
-  reject: (id: string, reason: string, admin_notes?: string) => 
-    api.post(`/refund/${id}/reject`, { reason, admin_notes }),
-  updateStatus: (id: string, status: string, admin_notes?: string) => 
-    api.put(`/refund/${id}/status`, { status, admin_notes }),
+  create: (data: any) => api.post('/refund', data),
+  updateStatus: (id: string, status: string) => api.patch(`/refund/${id}/status`, { status }),
+  delete: (id: string) => api.delete(`/refund/${id}`),
 };
 
-// Verifikasi API (untuk kompatibilitas backward)
+// Dashboard API
+export const dashboardApi = {
+  getStats: () => api.get('/dashboard/stats'),
+  getOrderChart: (month?: number, year?: number) => {
+    const params = month && year ? { month, year } : {};
+    return api.get('/dashboard/orders/chart', { params });
+  },
+  getTopDestinations: (month?: number, year?: number) => {
+    const params = month && year ? { month, year } : {};
+    return api.get('/dashboard/destinations/top', { params });
+  },
+  getRecentMitra: (month?: number, year?: number) => {
+    const params = month && year ? { month, year } : {};
+    return api.get('/dashboard/mitra/recent', { params });
+  },
+  getAllMitra: () => api.get('/dashboard/mitra/all'),
+};
+
+// Verifikasi API
 export const verifikasiApi = {
-  getMitra: () => mitraApi.getAll({ status: 'pending' }),
-  getCustomer: () => customerApi.getPendingVerification(),
-  updateMitraStatus: (id: string, status: string) => {
-    if (status === 'verified') return mitraApi.verify(id);
-    if (status === 'rejected') return mitraApi.reject(id, 'Rejected by admin');
-    return Promise.reject('Invalid status');
-  },
-  updateCustomerStatus: (id: string, status: string) => {
-    if (status === 'verified') return customerApi.verify(id);
-    return Promise.reject('Invalid status');
-  },
+  getMitra: () => api.get('/verifikasi/mitra'),
+  getCustomer: () => api.get('/verifikasi/customer'),
+  updateMitraStatus: (id: string, status: string) => api.patch(`/verifikasi/mitra/${id}/status`, { status }),
+  updateCustomerStatus: (id: string, status: string) => api.patch(`/verifikasi/customer/${id}/status`, { status }),
+};
+
+// Locations API
+export const locationsApi = {
+  getAll: () => api.get('/locations'),
+  getById: (id: string) => api.get(`/locations/${id}`),
+  create: (data: any) => api.post('/locations', data),
+  update: (id: string, data: any) => api.put(`/locations/${id}`, data),
+  delete: (id: string) => api.delete(`/locations/${id}`),
+};
+
+// Posmitra API
+export const posmitraApi = {
+  getAll: () => api.get('/posmitra'),
+  getById: (id: string) => api.get(`/posmitra/${id}`),
+  create: (data: any) => api.post('/posmitra', data),
+  update: (id: string, data: any) => api.put(`/posmitra/${id}`, data),
+  approve: (id: string, data: any) => api.patch(`/posmitra/${id}/approve`, data),
+  delete: (id: string) => api.delete(`/posmitra/${id}`),
+};
+
+// Posmitra Users API ✅ UPDATED
+export const posmitraUsersApi = {
+  getAll: () => api.get('/posmitra-users'),
+  getById: (id: string) => api.get(`/posmitra-users/${id}`),
+  create: (data: any) => api.post('/posmitra-users', data),
+  update: (id: string, data: any) => api.put(`/posmitra-users/${id}`, data),
+  delete: (id: string) => api.delete(`/posmitra-users/${id}`),
+};
+
+// Reward API
+export const rewardApi = {
+  getAll: () => api.get('/reward'),
+  getById: (id: string) => api.get(`/reward/${id}`),
+  updateStatus: (id: string, status: string) => api.patch(`/reward/${id}/status`, { status }),
+  delete: (id: string) => api.delete(`/reward/${id}`),
+  getAllRewards: () => api.get('/reward/rewards/all'),
 };
 
 export default api;

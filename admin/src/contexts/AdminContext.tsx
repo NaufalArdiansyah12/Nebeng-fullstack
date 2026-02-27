@@ -5,8 +5,6 @@ export interface AdminProfile {
   namaLengkap: string;
   email: string;
   tempatLahir: string;
-  tanggalLahir: string;
-  jenisKelamin: string;
   noTlp: string;
   role: string;
   layanan: string;
@@ -16,6 +14,7 @@ export interface AdminProfile {
 interface AdminContextType {
   profile: AdminProfile;
   updateProfile: (data: Partial<AdminProfile>) => Promise<void>;
+  updatePassword: (newPassword: string) => Promise<void>;
   loading: boolean;
   error: string | null;
 }
@@ -24,8 +23,6 @@ const defaultProfile: AdminProfile = {
   namaLengkap: "Administrator",
   email: "admin@nebeng.local",
   tempatLahir: "Indonesia",
-  tanggalLahir: "",
-  jenisKelamin: "",
   noTlp: "",
   role: "Admin",
   layanan: "Nebeng",
@@ -43,58 +40,47 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const fetchAdminProfile = async () => {
       try {
-        // Check if token exists
-        const token = localStorage.getItem('token');
-        if (!token) {
-          console.log('⚠️ No token found, skipping profile fetch');
-          setLoading(false);
-          return;
-        }
-
         setLoading(true);
         setError(null);
         
-        console.log('🔍 Fetching admin profile from Laravel...');
+        console.log('🔍 Fetching admin profile...');
         const response = await adminApi.getProfile();
         
-        console.log('📦 Laravel Response:', response.data);
+        console.log('📦 API Response:', response);
+        console.log('📦 Response data:', response.data);
         
-        // Laravel returns: { success: true, data: {...} }
-        if (!response.data || !response.data.success) {
-          console.error('❌ Invalid response from Laravel:', response);
-          throw new Error('Invalid response from server');
+        // Check if response has the expected structure
+        if (!response.data || !response.data.data) {
+          console.error('❌ Invalid response structure:', response);
+          throw new Error('Invalid response structure from API');
         }
         
         const data = response.data.data;
-        console.log('✅ Profile data from Laravel:', data);
+        console.log('🔍 Raw API Data:', data);
         
         const adminProfile: AdminProfile = {
           namaLengkap: data.namaLengkap || data.nama_lengkap || data.name || defaultProfile.namaLengkap,
           email: data.email || defaultProfile.email,
           tempatLahir: data.tempatLahir || data.tempat_lahir || defaultProfile.tempatLahir,
-          tanggalLahir: data.tanggalLahir || data.tanggal_lahir || defaultProfile.tanggalLahir,
-          jenisKelamin: data.jenisKelamin || data.jenis_kelamin || defaultProfile.jenisKelamin,
           noTlp: data.noTlp || data.no_tlp || defaultProfile.noTlp,
           role: data.role || defaultProfile.role,
           layanan: data.layanan || defaultProfile.layanan,
           foto: data.foto || defaultProfile.foto,
         };
         
-        console.log('✅ Admin Profile loaded:', adminProfile);
+        console.log('✅ Parsed Admin Profile:', adminProfile);
         setProfile(adminProfile);
         
       } catch (err: any) {
         console.error("❌ Failed to fetch admin profile:", err);
+        console.error("Error details:", {
+          message: err.message,
+          response: err.response,
+          status: err.response?.status,
+          data: err.response?.data
+        });
         
-        // If 401, token invalid - redirect to login
-        if (err.response?.status === 401) {
-          console.log('🔒 Token invalid, clearing localStorage');
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-        }
-        
-        setError(err.response?.data?.message || err.message || "Failed to fetch admin profile");
-        setProfile(defaultProfile);
+        setError(err.message || "Failed to fetch admin profile");
       } finally {
         setLoading(false);
       }
@@ -105,30 +91,67 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   const updateProfile = async (data: Partial<AdminProfile>) => {
     try {
-      setLoading(true);
-      console.log('📝 Updating profile to Laravel:', data);
-      
+      console.log('📝 Updating profile with:', data);
       const response = await adminApi.updateProfile(data);
-      console.log('✅ Profile updated:', response.data);
-      
-      if (response.data.success) {
-        // Merge updated data with current profile
-        setProfile(prev => ({
-          ...prev,
-          ...data
-        }));
+      console.log('✅ Update response:', response.data);
+
+      if (response.data.success && response.data.data) {
+        const updatedData = response.data.data;
+        const updatedProfile: AdminProfile = {
+          namaLengkap: updatedData.namaLengkap || updatedData.nama_lengkap || updatedData.name,
+          email: updatedData.email,
+          tempatLahir: updatedData.tempatLahir || updatedData.tempat_lahir || '',
+          noTlp: updatedData.noTlp || updatedData.no_tlp || '',
+          role: updatedData.role,
+          layanan: updatedData.layanan || 'Nebeng',
+          foto: updatedData.foto || '',
+        };
+        setProfile(updatedProfile);
+      } else {
+        setProfile((prev) => ({ ...prev, ...data }));
       }
-    } catch (err: any) {
-      console.error('❌ Failed to update profile:', err);
-      setError(err.response?.data?.message || err.message || 'Failed to update profile');
+    } catch (err) {
+      console.error("❌ Failed to update admin profile:", err);
       throw err;
-    } finally {
-      setLoading(false);
+    }
+  };
+
+  // ✅ UPDATED: Only send newPassword (no currentPassword verification)
+  const updatePassword = async (newPassword: string) => {
+    try {
+      console.log('🔐 Updating password...');
+      console.log('📤 Sending to server:', { 
+        newPassword: '***' 
+      });
+      
+      const response = await adminApi.updatePassword({
+        newPassword
+      });
+      console.log('✅ Password update response:', response.data);
+    } catch (err: any) {
+      console.error("❌ Failed to update password:", err.message);
+      
+      // 🔍 CAPTURE FULL SERVER ERROR
+      const serverError = {
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        message: err.response?.data?.message,
+        errors: err.response?.data?.errors,
+        received: err.response?.data?.received,
+        fullData: err.response?.data
+      };
+      
+      console.group('🔴 SERVER ERROR DETAILS');
+      console.table(serverError);
+      console.log('Full response object:', err.response?.data);
+      console.groupEnd();
+      
+      throw err;
     }
   };
 
   return (
-    <AdminContext.Provider value={{ profile, updateProfile, loading, error }}>
+    <AdminContext.Provider value={{ profile, updateProfile, updatePassword, loading, error }}>
       {children}
     </AdminContext.Provider>
   );

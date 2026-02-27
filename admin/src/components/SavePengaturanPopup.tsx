@@ -1,6 +1,7 @@
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Save, FileCheck, CheckCircle } from "lucide-react";
@@ -26,6 +27,7 @@ const SavePengaturanPopup = ({
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-md text-center p-8">
+          <DialogTitle className="sr-only">Data Berhasil Disimpan</DialogTitle>
           <div className="space-y-6">
             <h2 className="text-xl font-bold text-foreground">
               Data terbaru berhasil disimpan
@@ -68,6 +70,7 @@ const SavePengaturanPopup = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md text-center p-8 border-2 border-primary">
+        <DialogTitle className="sr-only">Konfirmasi Simpan Perubahan</DialogTitle>
         <div className="space-y-6">
           <h2 className="text-xl font-bold text-foreground">
             Apakah yakin ingin menyimpan<br />perubahan?

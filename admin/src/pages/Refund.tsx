@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Calendar as CalendarIcon, Download, Eye, Pencil } from "lucide-react";
+import { Search, Calendar as CalendarIcon, Download, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -18,12 +18,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useRefund } from "@/contexts/RefundContext";
 
 const getStatusBadge = (status: string) => {
@@ -46,7 +40,7 @@ const formatCurrency = (amount: number | undefined) => {
 
 const Refund = () => {
   const navigate = useNavigate();
-  const { refundList, updateRefundStatus } = useRefund();
+  const { refundList } = useRefund();
   
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -247,36 +241,10 @@ const Refund = () => {
                       <td className="py-4 px-4">
                         {format(refund.tanggal, "EEEE, dd MMM yyyy", { locale: localeId })}
                       </td>
-                      <td className="py-4 px-4">{refund.noTransaksi}</td>
+                      <td className="py-4 px-4">{refund.noTransaksi}</td>x
                       <td className="py-4 px-4">{formatCurrency(refund.jumlahRefund)}</td>
                       <td className="py-4 px-4 text-center">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button className="cursor-pointer hover:opacity-80 transition-opacity">
-                              {getStatusBadge(refund.status)}
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="center">
-                            <DropdownMenuItem 
-                              onClick={() => updateRefundStatus(refund.id, "PROSES")}
-                              className="cursor-pointer"
-                            >
-                              <Badge className="bg-yellow-500 text-white text-xs px-3 py-1 rounded-full">PROSES</Badge>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => updateRefundStatus(refund.id, "SELESAI")}
-                              className="cursor-pointer"
-                            >
-                              <Badge className="bg-green-500 text-white text-xs px-3 py-1 rounded-full">SELESAI</Badge>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => updateRefundStatus(refund.id, "BATAL")}
-                              className="cursor-pointer"
-                            >
-                              <Badge className="bg-orange-500 text-white text-xs px-3 py-1 rounded-full">BATAL</Badge>
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        {getStatusBadge(refund.status)}
                       </td>
                       <td className="py-4 px-4">
                         <div className="flex items-center justify-center">
@@ -326,7 +294,7 @@ const Refund = () => {
                 disabled={currentPage === 1}
                 onClick={() => setCurrentPage(currentPage - 1)}
               >
-                &lt;
+                <ChevronLeft size={18} />
               </Button>
               {getPageNumbers().map((page, idx) => (
                 typeof page === "number" ? (
@@ -350,7 +318,7 @@ const Refund = () => {
                 disabled={currentPage === totalPages || totalPages === 0}
                 onClick={() => setCurrentPage(currentPage + 1)}
               >
-                &gt;
+                <ChevronRight size={18} />
               </Button>
             </div>
           </div>

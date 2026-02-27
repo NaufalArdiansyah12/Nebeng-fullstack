@@ -5,41 +5,43 @@ export interface LaporanData {
   id: string;
   noOrder: string;
   namaCustomer: string;
-  customerId: string; // Link to CustomerContext
+  customerId: string;
   tanggal: Date;
   layanan: string;
   laporan: string;
   status?: string;
-  // Customer info
+  rating: number;
+  type: 'customer_rating' | 'driver_rating';
+  pickup_location?: string;
+  destination?: string;
   customerAvatar?: string;
   customerPhone: string;
   customerNote: string;
-  // Mitra info
-  mitraId: string; // Link to MitraContext
+  mitraId: string;
   namaMitra: string;
   mitraAvatar?: string;
   mitraPhone: string;
   mitraKendaraan: string;
   mitraMerkKendaraan: string;
   mitraPlatNomor: string;
-  // Mitra personal info for detail
   mitraEmail: string;
   mitraTempatLahir: string;
   mitraTanggalLahir: string;
   mitraJenisKelamin: string;
+  tanggapan?: string;
 }
 
 interface LaporanContextType {
   laporanList: LaporanData[];
   getLaporanDetail: (id: string) => LaporanData | undefined;
   updateLaporan: (id: string, laporan: string) => void;
+  respondLaporan: (id: string, tanggapan: string, status?: string) => Promise<void>;
   loading: boolean;
   error: string | null;
 }
 
 const LaporanContext = createContext<LaporanContextType | undefined>(undefined);
 
-// Empty initial data - will be fetched from backend
 const initialLaporanData: LaporanData[] = [];
 
 export const LaporanProvider = ({ children }: { children: ReactNode }) => {
@@ -47,7 +49,6 @@ export const LaporanProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch laporan on mount
   useEffect(() => {
     const fetchLaporan = async () => {
       try {
@@ -56,7 +57,6 @@ export const LaporanProvider = ({ children }: { children: ReactNode }) => {
         const response = await laporanApi.getAll();
         const laporan = Array.isArray(response.data) ? response.data : [];
         
-        // Transform API response
         const transformedLaporan = laporan.map((l: any) => ({
           id: String(l.id),
           noOrder: l.no_order,
@@ -66,6 +66,10 @@ export const LaporanProvider = ({ children }: { children: ReactNode }) => {
           layanan: l.layanan,
           laporan: l.deskripsi_laporan || l.laporan,
           status: l.status,
+          rating: l.rating || 0,
+          type: l.type || 'customer_rating',
+          pickup_location: l.pickup_location,
+          destination: l.destination,
           customerPhone: l.customerPhone || "",
           customerNote: "",
           mitraId: String(l.mitra_id || ""),
@@ -78,6 +82,7 @@ export const LaporanProvider = ({ children }: { children: ReactNode }) => {
           mitraTempatLahir: "",
           mitraTanggalLahir: "",
           mitraJenisKelamin: "",
+          tanggapan: l.admin_response || l.tanggapan || "",
         }));
         
         setLaporanList(transformedLaporan);
@@ -104,8 +109,26 @@ export const LaporanProvider = ({ children }: { children: ReactNode }) => {
     );
   };
 
+  const respondLaporan = async (id: string, tanggapan: string, status?: string) => {
+    try {
+      await laporanApi.respond(id, { tanggapan, status });
+      setLaporanList((prev) =>
+        prev.map((item) =>
+          item.id === id ? { 
+            ...item, 
+            tanggapan, 
+            status: status || item.status 
+          } : item
+        )
+      );
+    } catch (err) {
+      console.error("Failed to respond to laporan:", err);
+      throw err;
+    }
+  };
+
   return (
-    <LaporanContext.Provider value={{ laporanList, getLaporanDetail, updateLaporan, loading, error }}>
+    <LaporanContext.Provider value={{ laporanList, getLaporanDetail, updateLaporan, respondLaporan, loading, error }}>
       {children}
     </LaporanContext.Provider>
   );

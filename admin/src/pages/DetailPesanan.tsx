@@ -7,6 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { usePesanan } from "@/contexts/PesananContext";
+import { useState, useEffect } from "react";
+import { pesananApi, customerApi, mitraApi } from "@/services/api";
+import axios from "axios";
+
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 const getStatusBadge = (status: string) => {
   switch (status) {
@@ -34,25 +44,109 @@ const DetailPesanan = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { getPesananDetail } = usePesanan();
+  const [apiData, setApiData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   // Get data based on id
   const data = id ? getPesananDetail(id) : undefined;
 
-  if (!data) {
+  // Fetch detailed data from API
+  useEffect(() => {
+    const fetchDetail = async () => {
+      if (!id) return;
+
+      try {
+        setLoading(true);
+        const response = await pesananApi.getById(id);
+        const pesananData = response.data;
+
+        console.log("✅ Pesanan Data from API:", pesananData);
+
+        // Fetch customer data if user_id exists
+        let customerData = null;
+        if (pesananData.user_id) {
+          try {
+            const customerResponse = await customerApi.getById(pesananData.user_id);
+            customerData = customerResponse.data;
+          } catch (customerError) {
+            console.warn("Failed to fetch customer data:", customerError);
+          }
+        }
+
+        // Mitra data sudah ada di pesananData (driverId, driverName, driverEmail, etc)
+        // Tidak perlu fetch tebengan lagi
+        const mitraData = {
+          name: pesananData.driverName,
+          email: pesananData.driverEmail,
+          phone: pesananData.driverPhone,
+          address: pesananData.driverAddress,
+          vehicleName: pesananData.vehicleName,
+          platNomor: pesananData.platNomor,
+          merek: pesananData.merek,
+          model: pesananData.model,
+          vehicleType: pesananData.vehicleType,
+        };
+
+        // Combine data
+        const combinedData = {
+          ...pesananData,
+          customer: customerData,
+          mitra: mitraData,
+        };
+
+        console.log("Combined Data:", combinedData);
+        console.log("Price dari tebengan:", combinedData.tebenganPrice);
+
+        setApiData(combinedData);
+      } catch (error) {
+        console.error("Failed to fetch pesanan detail:", error);
+        toast({
+          title: "Error",
+          description: "Gagal memuat detail pesanan",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDetail();
+  }, [id, toast]);
+
+  // Use API data
+  const displayData = apiData;
+
+  if (!displayData) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Data pesanan tidak ditemukan</p>
+        <p className="text-muted-foreground">
+          {loading ? "Memuat data pesanan..." : "Data pesanan tidak ditemukan"}
+        </p>
       </div>
     );
   }
 
   const handleCopyId = () => {
-    navigator.clipboard.writeText(data.idPesanan);
+    navigator.clipboard.writeText(displayData.booking_number || displayData.idPesanan);
     toast({
       title: "Berhasil",
       description: "ID Pesanan berhasil disalin",
     });
   };
+
+  // Fungsi untuk menghitung persentase biaya admin
+  const calculateAdminFeePercentage = (price: number, fee: number): number => {
+    if (price === 0) return 0;
+    return Math.round((fee / price) * 100 * 100) / 100; // 2 desimal
+  };
+
+  // Hitung biaya admin (misalnya 10% dari harga tebengan)
+  const basePrice = parseFloat(displayData?.tebenganPrice || '0'); // Konversi string ke number
+  const adminFee = basePrice ? Math.round(basePrice * 0.1) : 0;
+  const adminFeePercentage = calculateAdminFeePercentage(basePrice, adminFee);
+  const totalAmount = basePrice + adminFee; // Sekarang penjumlahan numerik
+
+  console.log("🧮 Kalkulasi Harga:", { basePrice, adminFee, adminFeePercentage, totalAmount });
 
   return (
     <div className="space-y-6">
@@ -72,7 +166,7 @@ const DetailPesanan = () => {
       {/* ID Pesanan */}
       <div className="flex items-center gap-2">
         <span className="text-sm font-medium">ID Pesanan :</span>
-        <span className="text-sm text-muted-foreground">{data.idPesanan}</span>
+        <span className="text-sm text-muted-foreground">{displayData.booking_number || displayData.idPesanan}</span>
         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCopyId}>
           <Copy size={14} />
         </Button>
@@ -85,34 +179,44 @@ const DetailPesanan = () => {
           <CardContent className="p-6">
             <div className="flex items-center gap-4 mb-6">
               <Avatar className="h-14 w-14">
-                <AvatarImage src="/placeholder.svg" />
+                <AvatarImage src={displayData.customer?.foto || "/placeholder.svg"} />
                 <AvatarFallback className="bg-gray-200 text-gray-600">
-                  {data.customer.nama.charAt(0)}
+                  {(displayData.customer?.nama || displayData.customerName || "").charAt(0)}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
-                <h3 className="font-semibold">{data.customer.nama}</h3>
-                <p className="text-sm text-muted-foreground">Costumer</p>
+                <h3 className="font-semibold">{displayData.customer?.nama || displayData.customerName}</h3>
+                <p className="text-sm text-muted-foreground">Customer</p>
                 <div className="mt-1">
-                  {getStatusBadge(data.status)}
+                  {getStatusBadge(displayData.status)}
                 </div>
               </div>
             </div>
 
-            <h4 className="font-semibold mb-4">Informasi Costumer</h4>
+            <h4 className="font-semibold mb-4">Informasi Customer</h4>
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div className="space-y-2">
                 <label className="text-sm text-muted-foreground">Nama Lengkap</label>
-                <Input value={data.customer.namaLengkap} readOnly className="bg-muted/50" />
+                <Input value={displayData.customer?.namaLengkap || displayData.customer?.nama || displayData.customerName} readOnly className="bg-muted/50" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm text-muted-foreground">No. Tlp</label>
-                <Input value={data.customer.noTlp} readOnly className="bg-muted/50" />
+                <Input value={displayData.customer?.noTlp || displayData.customerPhone} readOnly className="bg-muted/50" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="space-y-2">
+                <label className="text-sm text-muted-foreground">Email</label>
+                <Input value={displayData.customer?.email || displayData.customerEmail} readOnly className="bg-muted/50" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm text-muted-foreground">Alamat</label>
+                <Input value={displayData.customer?.alamat || displayData.customer?.address} readOnly className="bg-muted/50" />
               </div>
             </div>
             <div className="space-y-2">
               <label className="text-sm text-muted-foreground">Catatan Untuk Driver</label>
-              <Input value={data.customer.catatan} readOnly className="bg-muted/50" />
+              <Input value={displayData.notes || displayData.customer?.catatan || ""} readOnly className="bg-muted/50" />
             </div>
           </CardContent>
         </Card>
@@ -124,19 +228,19 @@ const DetailPesanan = () => {
               <Avatar className="h-14 w-14">
                 <AvatarImage src="/placeholder.svg" />
                 <AvatarFallback className="bg-orange-100 text-orange-600">
-                  {data.mitra.nama.charAt(0)}
+                  {(displayData.driverName || displayData.mitra?.nama || "").charAt(0)}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
-                <h3 className="font-semibold">{data.mitra.nama}</h3>
+                <h3 className="font-semibold">{displayData.driverName || displayData.mitra?.nama}</h3>
                 <p className="text-sm text-muted-foreground">Mitra</p>
                 <div className="mt-1">
-                  {getStatusBadge(data.status)}
+                  {getStatusBadge(displayData.status)}
                 </div>
               </div>
               <div className="text-right">
                 <p className="text-xs text-muted-foreground">ID MITRA</p>
-                <p className="text-sm font-medium">{data.mitra.kode}</p>
+                <p className="text-sm font-medium">{displayData.mitra?.kode || ""}</p>
               </div>
             </div>
 
@@ -144,31 +248,41 @@ const DetailPesanan = () => {
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div className="space-y-2">
                 <label className="text-sm text-muted-foreground">Nama Lengkap</label>
-                <Input value={data.mitra.namaLengkap} readOnly className="bg-muted/50" />
+                <Input value={displayData.driverName || displayData.mitra?.name || displayData.mitra?.namaLengkap || ""} readOnly className="bg-muted/50" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm text-muted-foreground">No. Tlp</label>
-                <Input value={data.mitra.noTlp} readOnly className="bg-muted/50" />
+                <Input value={displayData.driverPhone || displayData.mitra?.phone || displayData.mitra?.noTlp || ""} readOnly className="bg-muted/50" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div className="space-y-2">
-                <label className="text-sm text-muted-foreground">Kendaraan</label>
-                <Input value={data.mitra.kendaraan} readOnly className="bg-muted/50" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm text-muted-foreground">Merk Kendaraan</label>
-                <Input value={data.mitra.merkKendaraan} readOnly className="bg-muted/50" />
+                <label className="text-sm text-muted-foreground">Email</label>
+                <Input value={displayData.driverEmail || displayData.mitra?.email || ""} readOnly className="bg-muted/50" />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2 mb-4">
+              <label className="text-sm text-muted-foreground">Alamat</label>
+              <Input value={displayData.driverAddress || displayData.mitra?.alamat || ""} readOnly className="bg-muted/50" />
+            </div>
+            <div className="grid grid-cols-2 gap-4 mb-4">
               <div className="space-y-2">
-                <label className="text-sm text-muted-foreground">Plat Nomor Kendaraan</label>
-                <Input value={data.mitra.platNomor} readOnly className="bg-muted/50" />
+                <label className="text-sm text-muted-foreground">Nama Kendaraan</label>
+                <Input value={displayData.vehicleName || ""} readOnly className="bg-muted/50" />
               </div>
               <div className="space-y-2">
-                <label className="text-sm text-muted-foreground">Merk Kendaraan</label>
-                <Input value={data.mitra.merkKendaraan} readOnly className="bg-muted/50" />
+                <label className="text-sm text-muted-foreground">Merek Kendaraan</label>
+                <Input value={displayData.merek || ""} readOnly className="bg-muted/50" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="space-y-2">
+                <label className="text-sm text-muted-foreground">Model Kendaraan</label>
+                <Input value={displayData.model || ""} readOnly className="bg-muted/50" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm text-muted-foreground">Plat Nomor Kendaraan</label>
+                <Input value={displayData.platNomor || ""} readOnly className="bg-muted/50" />
               </div>
             </div>
           </CardContent>
@@ -182,17 +296,17 @@ const DetailPesanan = () => {
           <CardContent className="p-6">
             <h4 className="font-semibold mb-4">Rincian Perjalanan</h4>
             <div className="flex items-center justify-between mb-4 text-sm">
-              <span className="text-muted-foreground">{data.perjalanan.tanggal}</span>
-              <span className="text-muted-foreground">{data.perjalanan.jarak} - {data.perjalanan.durasi}</span>
+              <span className="text-muted-foreground">{displayData.created_at ? new Date(displayData.created_at).toLocaleDateString('id-ID') : "N/A"}</span>
+              <span className="text-muted-foreground">{displayData.distance || "N/A"} - {displayData.duration || "N/A"}</span>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               {/* Titik Jemput */}
               <div>
                 <p className="text-xs text-primary font-medium mb-2">Titik Jemput</p>
-                <h5 className="font-semibold text-primary text-lg">{data.perjalanan.titikJemput.lokasi}</h5>
-                <p className="text-sm text-muted-foreground">{data.perjalanan.titikJemput.waktu}</p>
-                <p className="text-xs text-muted-foreground mt-1">{data.perjalanan.titikJemput.alamat}</p>
+                <h5 className="font-semibold text-primary text-lg">{displayData.originCity || displayData.origin_location || "N/A"}</h5>
+                <p className="text-sm text-muted-foreground">{displayData.departure_time || "N/A"}</p>
+                <p className="text-xs text-muted-foreground mt-1">{displayData.originAddress || displayData.origin_address || "N/A"}</p>
               </div>
 
               {/* Timeline dots */}
@@ -209,55 +323,63 @@ const DetailPesanan = () => {
 
             <div className="mt-4">
               <p className="text-xs text-primary font-medium mb-2">Tujuan</p>
-              <h5 className="font-semibold text-primary text-lg">{data.perjalanan.tujuan.lokasi}</h5>
-              <p className="text-sm text-muted-foreground">{data.perjalanan.tujuan.waktu}</p>
-              <p className="text-xs text-muted-foreground mt-1">{data.perjalanan.tujuan.alamat}</p>
+              <h5 className="font-semibold text-primary text-lg">{displayData.destinationCity || displayData.destination_location || "N/A"}</h5>
+              <p className="text-sm text-muted-foreground">{displayData.arrival_time || "N/A"}</p>
+              <p className="text-xs text-muted-foreground mt-1">{displayData.destinationAddress || displayData.destination_address || "N/A"}</p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Rincian Pembayaran */}
+        {/* Rincian Pembayaran - UPDATED dengan harga dari tebengan */}
         <Card className="shadow-sm">
           <CardContent className="p-6">
             <h4 className="font-semibold mb-4">Rincian Pembayaran</h4>
-            
+
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">Type Pembayaran</span>
-                <span className="text-sm font-medium">{data.pembayaran.type}</span>
+                <span className="text-sm font-medium">{displayData.payment_method || "Transfer Bank"}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">Tanggal</span>
-                <span className="text-sm font-medium">{data.pembayaran.tanggal}</span>
+                <span className="text-sm font-medium">{displayData.created_at ? new Date(displayData.created_at).toLocaleDateString('id-ID') : "N/A"}</span>
               </div>
-              
+
               <div className="border-t pt-3 mt-3">
                 <div className="flex justify-between mb-2">
                   <span className="text-sm text-muted-foreground">ID Pesanan</span>
-                  <span className="text-sm font-medium">{data.pembayaran.idPesanan}</span>
+                  <span className="text-sm font-medium">{displayData.booking_number || "N/A"}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">No Transaksi</span>
-                  <span className="text-sm font-medium">{data.pembayaran.noTransaksi}</span>
+                  <span className="text-sm font-medium">{displayData.booking_number || "N/A"}</span>
                 </div>
               </div>
 
               <div className="border-t pt-3 mt-3">
                 <div className="flex justify-between mb-2">
-                  <span className="text-sm text-muted-foreground">Biaya Per penebeng (2 Org)</span>
-                  <span className="text-sm font-medium">{formatCurrency(data.pembayaran.biayaPenebeng)}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {displayData.layanan === 'Titip Barang' || displayData.layanan === 'Barang' 
+                      ? 'Biaya Kirim Barang' 
+                      : displayData.layanan === 'Motor' || displayData.layanan === 'Mobil'
+                      ? 'Biaya Per Penumpang (2 Org)'
+                      : 'Biaya Layanan'}
+                  </span>
+                  <span className="text-sm font-medium">{formatCurrency(displayData.tebenganPrice || 0)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Biaya Admin</span>
-                  <span className="text-sm font-medium">{formatCurrency(data.pembayaran.biayaAdmin)}</span>
+                  <span className="text-sm text-muted-foreground">
+                    Biaya Admin ({adminFeePercentage}%)
+                  </span>
+                  <span className="text-sm font-medium">{formatCurrency(adminFee)}</span>
                 </div>
               </div>
 
               <div className="border-t pt-3 mt-3">
                 <div className="flex justify-between">
-                  <span className="text-sm font-semibold">Total</span>
-                  <span className={`text-lg font-bold ${data.status === "BATAL" ? "text-red-500 line-through" : "text-primary"}`}>
-                    {formatCurrency(data.pembayaran.total)}
+                  <span className="text-sm font-semibold">Total Pembayaran</span>
+                  <span className={`text-lg font-bold ${displayData.status === "BATAL" ? "text-red-500 line-through" : "text-primary"}`}>
+                    {formatCurrency(totalAmount)}
                   </span>
                 </div>
               </div>

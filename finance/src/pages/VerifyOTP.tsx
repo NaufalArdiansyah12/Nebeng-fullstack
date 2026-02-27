@@ -95,7 +95,7 @@ const VerifyOTP = () => {
     setLoading(true);
 
     try {
-      await api.post("/users/verify-otp", {
+      await api.post("/finance/users/verify-otp", {
         email,
         otp: otpString,
       });
@@ -121,7 +121,7 @@ const VerifyOTP = () => {
     setResendLoading(true);
 
     try {
-      const res = await api.post("/users/forgot-password", { email });
+      const res = await api.post("/finance/users/forgot-password", { email });
       toast.success("OTP baru telah dikirim");
       setCountdown(60);
       setOtp(["", "", "", "", "", ""]);

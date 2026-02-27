@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -6,6 +7,7 @@ import '../models/trip_model.dart';
 import '../../nebeng_motor/utils/theme.dart';
 import 'payment_selection_page.dart';
 import '../../../../services/api_service.dart';
+import '../../../../services/customer/booking_service.dart';
 import '../widgets/ukuran_picker.dart';
 
 class BookingDetailPage extends StatefulWidget {
@@ -35,6 +37,7 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
   String bookingNumber = '';
   File? selectedImage;
   final ImagePicker _picker = ImagePicker();
+  int displayPrice = 0;
 
   @override
   void initState() {
@@ -53,6 +56,11 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
     }
     if (widget.photoFile != null) {
       selectedImage = widget.photoFile;
+    }
+    if (widget.trip.price > 0) {
+      displayPrice = _roundNearest(widget.trip.price);
+    } else {
+      _fetchCalculatedPriceIfNeeded();
     }
   }
 
@@ -253,7 +261,7 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
                   ),
                 ),
                 Text(
-                  'Rp ${_formatPrice(widget.trip.price)}',
+                  'Rp ${_formatPrice(displayPrice)}',
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -427,7 +435,7 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
             ),
           ),
           Text(
-            'Rp ${_formatPrice(widget.trip.price)}',
+            'Rp ${_formatPrice(displayPrice)}',
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -437,6 +445,150 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
         ],
       ),
     );
+  }
+
+  Future<void> _fetchCalculatedPriceIfNeeded() async {
+    try {
+      double? distance;
+      if (widget.trip.originLat != null &&
+          widget.trip.originLon != null &&
+          widget.trip.destinationLat != null &&
+          widget.trip.destinationLon != null) {
+        final lat1 = widget.trip.originLat! * (3.141592653589793 / 180.0);
+        final lon1 = widget.trip.originLon! * (3.141592653589793 / 180.0);
+        final lat2 = widget.trip.destinationLat! * (3.141592653589793 / 180.0);
+        final lon2 = widget.trip.destinationLon! * (3.141592653589793 / 180.0);
+        final dlat = lat2 - lat1;
+        final dlon = lon2 - lon1;
+        final a = ((sin(dlat / 2) * sin(dlat / 2)) +
+            cos(lat1) * cos(lat2) * (sin(dlon / 2) * sin(dlon / 2)));
+        final c = 2 * atan2(sqrt(a), sqrt(1 - a));
+        final earthKm = 6371.0;
+        distance = earthKm * c;
+      }
+
+      final calc = await BookingService.calculatePrice(
+        transportMode: 'barang',
+        weight: 0.0,
+        serviceType: widget.trip.serviceType,
+        distance: distance,
+      );
+      int value = 0;
+      if (calc['final_price'] is num) {
+        value = (calc['final_price'] as num).toInt();
+      } else if (calc['total'] is num) {
+        value = (calc['total'] as num).toInt();
+      } else if (calc['price'] is num) {
+        value = (calc['price'] as num).toInt();
+      }
+      if (value > 0) {
+        // If backend returned a category_price, trust it and do not round.
+        final hasCategoryPrice = calc['category_price'] != null &&
+            (calc['category_price'] is num
+                ? (calc['category_price'] as num) > 0
+                : (double.tryParse(calc['category_price'].toString() ?? '0') ?? 0) > 0);
+        setState(() => displayPrice = hasCategoryPrice ? value : _roundNearest(value));
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  int _roundNearest(int value, [int nearest = 5000]) {
+    if (value == 0) return 0;
+    // Use ceiling to avoid rounding 6000 -> 5000; 6000 -> 10000 instead.
+    return ((value + nearest - 1) ~/ nearest) * nearest;
+  }
+
+  Future<void> _recalculatePriceForSelectedWeight() async {
+    if (_selectedWeight == null) return;
+
+    int numericKg = 0;
+    switch (_selectedWeight) {
+      case 'Kecil':
+        numericKg = 5;
+        break;
+      case 'Sedang':
+        numericKg = 10;
+        break;
+      case 'Besar':
+        numericKg = 20;
+        break;
+      default:
+        numericKg = int.tryParse(_selectedWeight ?? '0') ?? 0;
+    }
+
+    double? distance;
+    if (widget.trip.originLat != null &&
+        widget.trip.originLon != null &&
+        widget.trip.destinationLat != null &&
+        widget.trip.destinationLon != null) {
+      final lat1 = widget.trip.originLat! * (3.141592653589793 / 180.0);
+      final lon1 = widget.trip.originLon! * (3.141592653589793 / 180.0);
+      final lat2 = widget.trip.destinationLat! * (3.141592653589793 / 180.0);
+      final lon2 = widget.trip.destinationLon! * (3.141592653589793 / 180.0);
+      final dlat = lat2 - lat1;
+      final dlon = lon2 - lon1;
+      final a = ((sin(dlat / 2) * sin(dlat / 2)) +
+          cos(lat1) * cos(lat2) * (sin(dlon / 2) * sin(dlon / 2)));
+      final c = 2 * atan2(sqrt(a), sqrt(1 - a));
+      final earthKm = 6371.0;
+      distance = earthKm * c;
+    }
+
+    try {
+      final calc = await BookingService.calculatePrice(
+        transportMode: 'barang',
+        weight: numericKg.toDouble(),
+        serviceType: widget.trip.serviceType,
+        distance: distance,
+      );
+
+      // Better extraction: prefer final_price, total, category_price, weight_charge, price, unit_price
+      int value = 0;
+      try {
+        if (calc['final_price'] is num) {
+          value = (calc['final_price'] as num).toInt();
+        } else if (calc['total'] is num) {
+          value = (calc['total'] as num).toInt();
+        } else if (calc['category_price'] is num) {
+          value = (calc['category_price'] as num).toInt();
+        } else if (calc['weight_charge'] is num) {
+          value = (calc['weight_charge'] as num).toInt();
+        } else if (calc['price'] is num) {
+          value = (calc['price'] as num).toInt();
+        } else if (calc['unit_price'] is num) {
+          value = (calc['unit_price'] as num).toInt();
+        }
+      } catch (e) {
+        // keep value 0
+      }
+
+      // Log for debugging in dev builds
+      // ignore: avoid_print
+      print('Price calc (barang) response: ' + calc.toString());
+
+      if (value > 0) {
+        setState(() {
+          final hasCategoryPrice = calc['category_price'] != null &&
+              (calc['category_price'] is num
+                  ? (calc['category_price'] as num) > 0
+                  : (double.tryParse(calc['category_price'].toString() ?? '0') ?? 0) > 0);
+          displayPrice = hasCategoryPrice ? value : _roundNearest(value);
+        });
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Gagal mendapatkan tarif. Silakan coba lagi.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
   }
 
   Widget _buildTermsCheckbox() {
@@ -712,7 +864,28 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
       context,
       MaterialPageRoute(
         builder: (context) => PaymentSelectionPage(
-          trip: widget.trip,
+          trip: TripModel(
+            id: widget.trip.id,
+            date: widget.trip.date,
+            time: widget.trip.time,
+            departureLocation: widget.trip.departureLocation,
+            departureAddress: widget.trip.departureAddress,
+            arrivalLocation: widget.trip.arrivalLocation,
+            arrivalAddress: widget.trip.arrivalAddress,
+            price: displayPrice,
+            vehicleName: widget.trip.vehicleName,
+            vehiclePlate: widget.trip.vehiclePlate,
+            vehicleBrand: widget.trip.vehicleBrand,
+            vehicleType: widget.trip.vehicleType,
+            availableSeats: widget.trip.availableSeats,
+            bagasiCapacity: widget.trip.bagasiCapacity,
+            jumlahBagasi: widget.trip.jumlahBagasi,
+            serviceType: widget.trip.serviceType,
+            originLat: widget.trip.originLat,
+            originLon: widget.trip.originLon,
+            destinationLat: widget.trip.destinationLat,
+            destinationLon: widget.trip.destinationLon,
+          ),
           bookingNumber: bookingNumber,
           passengerName: _nameController.text,
           phoneNumber: _phoneController.text,
@@ -935,10 +1108,11 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
         const SizedBox(height: 8),
         GestureDetector(
           onTap: () {
-            UkuranPicker.show(context, (selected) {
+            UkuranPicker.show(context, (selected) async {
               setState(() {
                 _selectedWeight = selected;
               });
+              await _recalculatePriceForSelectedWeight();
             });
           },
           child: Container(

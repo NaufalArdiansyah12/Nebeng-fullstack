@@ -63,7 +63,7 @@ const Withdrawal = () => {
       if (statusFilter && statusFilter !== "all") params.status = statusFilter;
       if (typeFilter && typeFilter !== "all") params.type = typeFilter;
 
-      const response = await api.get("/withdrawals", { params });
+      const response = await api.get("/finance/withdrawals", { params });
       setWithdrawals(response.data.data);
       setStatistics(response.data.statistics);
       setTotalPages(response.data.meta.last_page);

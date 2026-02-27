@@ -134,6 +134,45 @@ class DetailTebenganScaffold extends StatelessWidget {
                 final status = (ride['status'] ?? '').toString().toLowerCase();
 
                 if (status == 'paid') {
+                  // Compute departure readiness also from ride's date/time as a fallback
+                  bool effectiveIsDepartureReady = state.isDepartureReady;
+                  try {
+                    final departureDate =
+                        ride['departure_date']?.toString() ?? '';
+                    final departureTime =
+                        ride['departure_time']?.toString() ?? '';
+                    if (departureDate.isNotEmpty && departureTime.isNotEmpty) {
+                      // Try robust parsing first
+                      DateTime? dt =
+                          DateTime.tryParse('$departureDate $departureTime');
+                      if (dt == null) {
+                        // Fallback: try ISO-like with 'T' between date and time
+                        dt = DateTime.tryParse(
+                            '${departureDate}T$departureTime');
+                      }
+                      if (dt == null) {
+                        // Last resort: manual split parsing
+                        final dateParts = departureDate.split('-');
+                        final timeParts = departureTime.split(':');
+                        if (dateParts.length >= 3 && timeParts.length >= 2) {
+                          dt = DateTime(
+                            int.parse(dateParts[0]),
+                            int.parse(dateParts[1]),
+                            int.parse(dateParts[2]),
+                            int.parse(timeParts[0]),
+                            int.parse(timeParts[1]),
+                          );
+                        }
+                      }
+                      if (dt != null) {
+                        effectiveIsDepartureReady = effectiveIsDepartureReady ||
+                            !dt.isAfter(DateTime.now());
+                      }
+                    }
+                  } catch (_) {
+                    // ignore parse errors and fall back to state
+                  }
+
                   return Container(
                     margin: const EdgeInsets.only(bottom: 20),
                     child: Column(
@@ -141,7 +180,7 @@ class DetailTebenganScaffold extends StatelessWidget {
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
-                            onPressed: state.isDepartureReady
+                            onPressed: effectiveIsDepartureReady
                                 ? onMarkMenujuPenjemputan
                                 : null,
                             style: ElevatedButton.styleFrom(
@@ -159,7 +198,7 @@ class DetailTebenganScaffold extends StatelessWidget {
                                     color: Colors.white),
                                 const SizedBox(width: 8),
                                 Text(
-                                  state.isDepartureReady
+                                  effectiveIsDepartureReady
                                       ? 'Mulai Tebengan'
                                       : 'Menunggu Waktu Keberangkatan',
                                   style: const TextStyle(

@@ -20,20 +20,30 @@ import api from "@/lib/api";
 interface PendapatanChartProps {
   availableMonths: Array<{ label: string; value: string }>;
   currentMonthValue: string;
+  availableYears?: Array<{ label: string; value: string }>;
+  currentYearValue?: string;
 }
 
-export function PendapatanChart({ availableMonths, currentMonthValue }: PendapatanChartProps) {
+export function PendapatanChart({ availableMonths, currentMonthValue, availableYears = [], currentYearValue }: PendapatanChartProps) {
   const [chartData, setChartData] = useState<any[]>([]);
   const [selectedMonth, setSelectedMonth] = useState(currentMonthValue);
+  const [selectedYear, setSelectedYear] = useState(currentYearValue ?? (availableYears[0]?.value ?? ""));
 
   useEffect(() => {
+    const query = selectedYear ? `year=${selectedYear}` : `month=${selectedMonth}`;
     api
-      .get(`/pendapatan/chart?month=${selectedMonth}`)
+      .get(`/finance/pendapatan/chart?${query}`)
       .then(res => {
-        setChartData(res.data || []);
+        const data = res.data || [];
+        // Normalize data to { label, value } for XAxis compatibility
+        const normalized = (data || []).map((d: any) => ({
+          label: d.year ?? d.month ?? d.label ?? d.monthLabel ?? d.month_name,
+          value: d.value ?? d.pendapatan ?? 0,
+        }));
+        setChartData(normalized);
       })
       .catch(err => console.error("chart pendapatan error:", err));
-  }, [selectedMonth]);
+  }, [selectedMonth, selectedYear]);
 
   return (
     <div className="bg-background p-5 border rounded-xl">
@@ -42,18 +52,33 @@ export function PendapatanChart({ availableMonths, currentMonthValue }: Pendapat
           <h3 className="font-semibold text-lg">Pendapatan</h3>
           <p className="text-sm text-muted-foreground">Pendapatan dari penjualan Nebeng</p>
         </div>
-        <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-          <SelectTrigger className="w-32 h-8 text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {availableMonths.map((month) => (
-              <SelectItem key={month.value} value={month.value}>
-                {month.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {availableYears.length > 0 ? (
+          <Select value={selectedYear} onValueChange={setSelectedYear}>
+            <SelectTrigger className="w-32 h-8 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {availableYears.map((y) => (
+                <SelectItem key={y.value} value={y.value}>
+                  {y.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+            <SelectTrigger className="w-32 h-8 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {availableMonths.map((month) => (
+                <SelectItem key={month.value} value={month.value}>
+                  {month.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
       <ResponsiveContainer width="100%" height={250}>
         <AreaChart data={chartData}>
@@ -64,7 +89,7 @@ export function PendapatanChart({ availableMonths, currentMonthValue }: Pendapat
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-          <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+          <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={12} />
           <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
           <Tooltip 
             contentStyle={{

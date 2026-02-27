@@ -166,7 +166,23 @@ class _InProgressLayoutState extends State<InProgressLayout> {
     final rawTime = (ride['departure_time'] ?? '').toString();
     final arrivalTime = (ride['arrival_time'] ?? '18:45').toString();
     final dateOnly = BookingFormatters.formatDateOnly(rawDate);
-    final price = ride['price'] ?? widget.booking['total_price'] ?? 20000;
+    dynamic price = ride['price'] ?? widget.booking['total_price'];
+    if ((price == null || price == 0) &&
+        widget.booking.containsKey('calculated_price')) {
+      price = widget.booking['calculated_price'];
+    }
+    if ((price == null || price == 0) &&
+        widget.booking.containsKey('price_breakdown')) {
+      final pb = widget.booking['price_breakdown'];
+      if (pb is Map) {
+        price = pb['total'] ??
+            pb['final_price'] ??
+            pb['category_price'] ??
+            pb['price'] ??
+            price;
+      }
+    }
+    price = price ?? 20000;
 
     // Determine status message based on current status
     String statusMessage;

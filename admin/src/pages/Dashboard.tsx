@@ -1,10 +1,15 @@
-import { Briefcase, Users, ShieldCheck, UserCheck, Eye, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Briefcase, Users, ShieldCheck, UserCheck, Eye } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { dashboardApi } from "@/services/api";
 import {
   BarChart,
   Bar,
@@ -14,103 +19,71 @@ import {
   ResponsiveContainer,
   Cell,
   LabelList,
-  Tooltip,
 } from "recharts";
+import { dashboardApi } from "@/services/api";
+
+// Interfaces for dashboard data
+interface DashboardStats {
+  totalMitra: number;
+  totalCustomer: number;
+  verifiedMitra: number;
+  verifiedCustomer: number;
+}
+
+interface ChartDataItem {
+  name: string;
+  value: number;
+  color: string;
+}
+
+interface DestinationData {
+  no: number;
+  kotaAsal: string;
+  kotaTujuan: string;
+  total: string;
+}
+
+interface MitraData {
+  id: string;
+  nama: string;
+  email: string;
+  noTlp: string;
+  layanan: string;
+  status: string;
+}
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "TERVERIFIKASI":
+      return "bg-green-500 hover:bg-green-600";
+    case "DITOLAK":
+      return "bg-red-500 hover:bg-red-600";
+    case "PENGAJUAN":
+      return "bg-orange-500 hover:bg-orange-600";
+    default:
+      return "bg-gray-500";
+  }
+};
 
 const Dashboard = () => {
-  const navigate = useNavigate();
-  const [statistics, setStatistics] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  
-  // State untuk filter bulan
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1); // 1-12
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  
-  const currentDate = new Date();
-  const currentMonth = currentDate.getMonth() + 1;
-  const currentYear = currentDate.getFullYear();
-  
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
-      console.log(`📊 Fetching dashboard for ${selectedMonth}/${selectedYear}...`);
-      const response = await dashboardApi.getStatistics(selectedMonth, selectedYear);
-      
-      if (response.data.success) {
-        console.log('✅ Dashboard data:', response.data.data);
-        setStatistics(response.data.data);
-      }
-    } catch (err: any) {
-      console.error('❌ Failed to fetch dashboard:', err);
-      setError(err.response?.data?.message || 'Failed to load dashboard');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchDashboardData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedMonth, selectedYear]);
-  
-  // Function untuk navigasi bulan
-  const goToPreviousMonth = () => {
-    if (selectedMonth === 1) {
-      setSelectedMonth(12);
-      setSelectedYear(selectedYear - 1);
-    } else {
-      setSelectedMonth(selectedMonth - 1);
-    }
-  };
-  
-  const goToNextMonth = () => {
-    // Cek apakah bulan berikutnya melebihi bulan saat ini
-    const nextMonth = selectedMonth === 12 ? 1 : selectedMonth + 1;
-    const nextYear = selectedMonth === 12 ? selectedYear + 1 : selectedYear;
-    
-    if (nextYear > currentYear || (nextYear === currentYear && nextMonth > currentMonth)) {
-      // Tidak boleh maju ke bulan depan
-      return;
-    }
-    
-    setSelectedMonth(nextMonth);
-    setSelectedYear(nextYear);
-  };
-  
-  const isNextMonthDisabled = () => {
-    const nextMonth = selectedMonth === 12 ? 1 : selectedMonth + 1;
-    const nextYear = selectedMonth === 12 ? selectedYear + 1 : selectedYear;
-    return nextYear > currentYear || (nextYear === currentYear && nextMonth > currentMonth);
-  };
-  
-  const getMonthYearDisplay = () => {
-    const monthNames = [
-      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-    ];
-    return `${monthNames[selectedMonth - 1]} ${selectedYear}`;
-  };
-
-  // Stats data dari API
-  const statsData = statistics ? [
+  const [statsData, setStatsData] = useState([
     {
       title: "Total Mitra",
-      value: statistics.statistics.totalMitra?.toLocaleString() || "0",
+      value: "0",
       icon: Briefcase,
       bgColor: "bg-[#1e3a5f]",
       iconBg: "bg-white/20",
     },
     {
       title: "Total Pelanggan",
-      value: statistics.statistics.totalCustomer?.toLocaleString() || "0",
+      value: "0",
       icon: Users,
       bgColor: "bg-[#1e3a5f]",
       iconBg: "bg-white/20",
     },
     {
       title: "Verifikasi Mitra",
-      value: statistics.statistics.pendingVerifikasiMitra?.toLocaleString() || "0",
+      value: "0",
       icon: ShieldCheck,
       bgColor: "bg-white border",
       iconBg: "bg-primary/10",
@@ -119,101 +92,126 @@ const Dashboard = () => {
     },
     {
       title: "Verifikasi Pelanggan",
-      value: statistics.statistics.pendingVerifikasiCustomer?.toLocaleString() || "0",
+      value: "0",
       icon: UserCheck,
       bgColor: "bg-white border",
       iconBg: "bg-orange-100",
       textColor: "text-foreground",
       iconColor: "text-orange-500",
     },
-  ] : [];
+  ]);
 
-  if (loading) {
+  const [chartData, setChartData] = useState<ChartDataItem[]>([
+    { name: "Nebeng Mobil", value: 0, color: "#1e3a5f" },
+    { name: "Nebeng Motor", value: 0, color: "#1e3a5f" },
+    { name: "Nebeng Barang", value: 0, color: "#6366f1" },
+    { name: "Titip Barang", value: 0, color: "#6366f1" },
+  ]);
+
+  const [tujuanData, setTujuanData] = useState<DestinationData[]>([]);
+  const [mitraData, setMitraData] = useState<MitraData[]>([]);
+  const [allMitraData, setAllMitraData] = useState<MitraData[]>([]);
+  const [showAllMitra, setShowAllMitra] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+
+  // Function to fetch all mitra data
+  const fetchAllMitraData = async () => {
+    try {
+      const response = await dashboardApi.getAllMitra();
+      setAllMitraData(response.data);
+    } catch (error) {
+      console.error('Failed to fetch all mitra data:', error);
+    }
+  };
+
+  // Fetch dashboard data on component mount and when month/year changes
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setIsLoading(true);
+
+        // Fetch stats
+        const statsResponse = await dashboardApi.getStats();
+        const stats = statsResponse.data;
+
+        setStatsData([
+          {
+            title: "Total Mitra",
+            value: stats.totalMitra.toLocaleString(),
+            icon: Briefcase,
+            bgColor: "bg-[#1e3a5f]",
+            iconBg: "bg-white/20",
+          },
+          {
+            title: "Total Pelanggan",
+            value: stats.totalCustomer.toLocaleString(),
+            icon: Users,
+            bgColor: "bg-[#1e3a5f]",
+            iconBg: "bg-white/20",
+          },
+          {
+            title: "Verifikasi Mitra",
+            value: stats.verifiedMitra.toLocaleString(),
+            icon: ShieldCheck,
+            bgColor: "bg-white border",
+            iconBg: "bg-primary/10",
+            textColor: "text-foreground",
+            iconColor: "text-primary",
+          },
+          {
+            title: "Verifikasi Pelanggan",
+            value: stats.verifiedCustomer.toLocaleString(),
+            icon: UserCheck,
+            bgColor: "bg-white border",
+            iconBg: "bg-orange-100",
+            textColor: "text-foreground",
+            iconColor: "text-orange-500",
+          },
+        ]);
+
+        // Fetch chart data for selected month/year
+        const chartResponse = await dashboardApi.getOrderChart(selectedMonth, selectedYear);
+        setChartData(chartResponse.data.data);
+
+        // Fetch top destinations for selected month/year
+        const destinationsResponse = await dashboardApi.getTopDestinations(selectedMonth, selectedYear);
+        setTujuanData(destinationsResponse.data);
+
+        // Fetch mitra registered in selected month/year
+        const mitraResponse = await dashboardApi.getRecentMitra(selectedMonth, selectedYear);
+        setMitraData(mitraResponse.data);
+
+      } catch (error) {
+        console.error('Failed to fetch dashboard data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [selectedMonth, selectedYear]);
+
+  if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-foreground">Dashboard</h1>
-            <p className="text-sm text-muted-foreground mt-1">Loading...</p>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i} className="shadow-sm">
+              <CardContent className="p-6">
+                <div className="animate-pulse">
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                  <div className="h-8 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
+        <div className="text-center py-8">Memuat data dashboard...</div>
       </div>
     );
   }
-
-  if (error) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-foreground">Dashboard</h1>
-            <p className="text-sm text-red-500 mt-1">{error}</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Chart data - bisa diambil dari statistics.grafik
-  const chartData = statistics?.grafik?.map((item: any) => ({
-    name: item.date,
-    value: item.count,
-    month: item.month,
-    color: "#6366f1"
-  })) || [];
-  
-  // Debug: Log chart data
-  console.log('📊 Chart Data:', chartData);
-  console.log('📊 Total items:', chartData.length);
-
-  // Recent orders
-  const recentOrders = statistics?.pesananTerbaru || [];
-  
-  // Custom tooltip untuk chart
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3">
-          <p className="font-semibold text-sm">{payload[0].payload.month}</p>
-          <p className="text-primary font-bold text-lg">{payload[0].value} Pesanan</p>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "completed":
-        return "bg-green-500 hover:bg-green-600";
-      case "cancelled":
-      case "rejected":
-        return "bg-red-500 hover:bg-red-600";
-      case "pending":
-        return "bg-orange-500 hover:bg-orange-600";
-      case "accepted":
-        return "bg-blue-500 hover:bg-blue-600";
-      default:
-        return "bg-gray-500";
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "completed":
-        return "Selesai";
-      case "cancelled":
-        return "Dibatalkan";
-      case "rejected":
-        return "Ditolak";
-      case "pending":
-        return "Menunggu";
-      case "accepted":
-        return "Diterima";
-      default:
-        return status;
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -260,30 +258,46 @@ const Dashboard = () => {
             <CardTitle className="text-lg font-semibold">
               Pesanan{" "}
               <span className="text-sm font-normal text-muted-foreground">
-                ({statistics?.statistics?.totalPesanan || 0} Pesanan)
+                ({chartData.reduce((sum, item) => sum + item.value, 0)} Pesanan)
               </span>
             </CardTitle>
             <div className="flex items-center gap-2">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8"
-                onClick={goToPreviousMonth}
+              <Select
+                value={selectedMonth.toString()}
+                onValueChange={(value) => setSelectedMonth(parseInt(value))}
               >
-                <ChevronLeft size={16} />
-              </Button>
-              <span className="text-sm font-medium min-w-[120px] text-center">
-                {getMonthYearDisplay()}
-              </span>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8"
-                onClick={goToNextMonth}
-                disabled={isNextMonthDisabled()}
+                <SelectTrigger className="w-24 h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Jan</SelectItem>
+                  <SelectItem value="2">Feb</SelectItem>
+                  <SelectItem value="3">Mar</SelectItem>
+                  <SelectItem value="4">Apr</SelectItem>
+                  <SelectItem value="5">Mei</SelectItem>
+                  <SelectItem value="6">Jun</SelectItem>
+                  <SelectItem value="7">Jul</SelectItem>
+                  <SelectItem value="8">Ags</SelectItem>
+                  <SelectItem value="9">Sep</SelectItem>
+                  <SelectItem value="10">Okt</SelectItem>
+                  <SelectItem value="11">Nov</SelectItem>
+                  <SelectItem value="12">Des</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select
+                value={selectedYear.toString()}
+                onValueChange={(value) => setSelectedYear(parseInt(value))}
               >
-                <ChevronRight size={16} className={isNextMonthDisabled() ? 'opacity-30' : ''} />
-              </Button>
+                <SelectTrigger className="w-20 h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="2023">2023</SelectItem>
+                  <SelectItem value="2024">2024</SelectItem>
+                  <SelectItem value="2025">2025</SelectItem>
+                  <SelectItem value="2026">2026</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </CardHeader>
           <CardContent>
@@ -300,19 +314,17 @@ const Dashboard = () => {
                   tick={{ fontSize: 11 }}
                   tickLine={false}
                   axisLine={false}
-                  domain={[0, 'auto']}
-                  allowDecimals={false}
+                  domain={[0, 'dataMax + 50']}
                 />
-                <Tooltip content={<CustomTooltip />} cursor={{fill: 'rgba(99, 102, 241, 0.1)'}} />
-                <Bar 
-                  dataKey="value" 
-                  radius={[4, 4, 0, 0]}
-                  minPointSize={5}
-                  fill="#6366f1"
-                >
+                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                   {chartData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
+                  <LabelList
+                    dataKey="value"
+                    position="top"
+                    style={{ fontSize: 11, fill: "#666" }}
+                  />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -323,45 +335,67 @@ const Dashboard = () => {
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-lg font-semibold">
-              Pesanan Terbaru
+              Tujuan Terbanyak
             </CardTitle>
+            <div className="flex items-center gap-2">
+              <Select
+                value={selectedMonth.toString()}
+                onValueChange={(value) => setSelectedMonth(parseInt(value))}
+              >
+                <SelectTrigger className="w-24 h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Jan</SelectItem>
+                  <SelectItem value="2">Feb</SelectItem>
+                  <SelectItem value="3">Mar</SelectItem>
+                  <SelectItem value="4">Apr</SelectItem>
+                  <SelectItem value="5">Mei</SelectItem>
+                  <SelectItem value="6">Jun</SelectItem>
+                  <SelectItem value="7">Jul</SelectItem>
+                  <SelectItem value="8">Ags</SelectItem>
+                  <SelectItem value="9">Sep</SelectItem>
+                  <SelectItem value="10">Okt</SelectItem>
+                  <SelectItem value="11">Nov</SelectItem>
+                  <SelectItem value="12">Des</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select
+                value={selectedYear.toString()}
+                onValueChange={(value) => setSelectedYear(parseInt(value))}
+              >
+                <SelectTrigger className="w-20 h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="2023">2023</SelectItem>
+                  <SelectItem value="2024">2024</SelectItem>
+                  <SelectItem value="2025">2025</SelectItem>
+                  <SelectItem value="2026">2026</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-muted-foreground">
-                    <th className="text-left py-2 font-medium">ID</th>
-                    <th className="text-left py-2 font-medium">Customer</th>
-                    <th className="text-left py-2 font-medium">Mitra</th>
-                    <th className="text-right py-2 font-medium">Total</th>
-                    <th className="text-center py-2 font-medium">Status</th>
+                    <th className="text-left py-2 font-medium">No</th>
+                    <th className="text-left py-2 font-medium">Kota Asal</th>
+                    <th className="text-left py-2 font-medium">Kota Tujuan</th>
+                    <th className="text-right py-2 font-medium">Tot. Perjalanan</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {recentOrders.length > 0 ? (
-                    recentOrders.map((order: any) => (
-                      <tr key={order.id} className="border-t border-border/50">
-                        <td className="py-2">#{order.id}</td>
-                        <td className="py-2">{order.customer_name}</td>
-                        <td className="py-2">{order.mitra_name}</td>
-                        <td className="py-2 text-right">
-                          Rp {order.total_price?.toLocaleString('id-ID') || '0'}
-                        </td>
-                        <td className="py-2 text-center">
-                          <Badge className={`${getStatusColor(order.status)} text-white text-xs`}>
-                            {getStatusLabel(order.status)}
-                          </Badge>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={5} className="py-4 text-center text-muted-foreground">
-                        Tidak ada pesanan terbaru
-                      </td>
+                  {tujuanData.map((item) => (
+                    <tr key={item.no} className="border-t border-border/50">
+                      <td className="py-2">{item.no}.</td>
+                      <td className="py-2">{item.kotaAsal}</td>
+                      <td className="py-2">{item.kotaTujuan}</td>
+                      <td className="py-2 text-right">{item.total}</td>
                     </tr>
-                  )}
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -369,44 +403,101 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      {/* Additional Stats Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="shadow-sm">
-          <CardContent className="p-6">
-            <p className="text-sm text-muted-foreground">Total Pesanan</p>
-            <p className="text-2xl font-bold mt-1">
-              {statistics?.statistics?.totalPesanan?.toLocaleString() || '0'}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-sm">
-          <CardContent className="p-6">
-            <p className="text-sm text-muted-foreground">Pesanan Selesai</p>
-            <p className="text-2xl font-bold mt-1 text-green-600">
-              {statistics?.statistics?.pesananSelesai?.toLocaleString() || '0'}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-sm">
-          <CardContent className="p-6">
-            <p className="text-sm text-muted-foreground">Pesanan Hari Ini</p>
-            <p className="text-2xl font-bold mt-1 text-blue-600">
-              {statistics?.statistics?.pesananHariIni?.toLocaleString() || '0'}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-sm">
-          <CardContent className="p-6">
-            <p className="text-sm text-muted-foreground">Total Pendapatan</p>
-            <p className="text-2xl font-bold mt-1 text-primary">
-              Rp {statistics?.statistics?.totalPendapatan?.toLocaleString('id-ID') || '0'}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Data Mitra Table */}
+      <Card className="shadow-sm">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-lg font-semibold">Data Mitra</CardTitle>
+          <div className="flex items-center gap-2">
+            <Select
+              value={selectedMonth.toString()}
+              onValueChange={(value) => setSelectedMonth(parseInt(value))}
+            >
+              <SelectTrigger className="w-24 h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">Jan</SelectItem>
+                <SelectItem value="2">Feb</SelectItem>
+                <SelectItem value="3">Mar</SelectItem>
+                <SelectItem value="4">Apr</SelectItem>
+                <SelectItem value="5">Mei</SelectItem>
+                <SelectItem value="6">Jun</SelectItem>
+                <SelectItem value="7">Jul</SelectItem>
+                <SelectItem value="8">Ags</SelectItem>
+                <SelectItem value="9">Sep</SelectItem>
+                <SelectItem value="10">Okt</SelectItem>
+                <SelectItem value="11">Nov</SelectItem>
+                <SelectItem value="12">Des</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              value={selectedYear.toString()}
+              onValueChange={(value) => setSelectedYear(parseInt(value))}
+            >
+              <SelectTrigger className="w-20 h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="2023">2023</SelectItem>
+                <SelectItem value="2024">2024</SelectItem>
+                <SelectItem value="2025">2025</SelectItem>
+                <SelectItem value="2026">2026</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="link"
+              size="sm"
+              className="text-primary"
+              onClick={async () => {
+                if (!showAllMitra) {
+                  await fetchAllMitraData();
+                }
+                setShowAllMitra(!showAllMitra);
+              }}
+            >
+              {showAllMitra ? 'Sembunyikan' : 'Lihat Lebih'}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-muted-foreground border-b">
+                  <th className="text-left py-3 font-medium">NO. ID</th>
+                  <th className="text-left py-3 font-medium">NAMA</th>
+                  <th className="text-left py-3 font-medium">EMAIL</th>
+                  <th className="text-left py-3 font-medium">NO. TLP</th>
+                  <th className="text-left py-3 font-medium">LAYANAN</th>
+                  <th className="text-left py-3 font-medium">STATUS</th>
+                  <th className="text-center py-3 font-medium">AKSI</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(showAllMitra ? allMitraData : mitraData).map((mitra, index) => (
+                  <tr key={index} className="border-b border-border/50">
+                    <td className="py-4">{mitra.id}</td>
+                    <td className="py-4">{mitra.nama}</td>
+                    <td className="py-4">{mitra.email}</td>
+                    <td className="py-4">{mitra.noTlp}</td>
+                    <td className="py-4">{mitra.layanan}</td>
+                    <td className="py-4">
+                      <Badge className={`${getStatusColor(mitra.status)} text-white text-xs`}>
+                        {mitra.status}
+                      </Badge>
+                    </td>
+                    <td className="py-4 text-center">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Eye size={18} className="text-primary" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

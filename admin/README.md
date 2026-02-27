@@ -1,129 +1,73 @@
-# 🚀 Admin Panel - Nebeng Fullstack
+# Welcome to your Lovable project
 
-Admin Panel untuk Nebeng sudah dimigrasi dari Express.js backend ke **Laravel backend**.
+## Project info
 
-## 🎯 Prerequisites
+**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
 
-- **Laravel Backend** harus sudah berjalan di `http://localhost:8000`
-- Node.js atau Bun terinstall
-- Admin account di database
+## How can I edit this code?
 
-## ⚡ Quick Start
+There are several ways of editing your application.
 
-### 1. Setup & Run (Otomatis)
+**Use Lovable**
 
-```bash
-./start.sh
+Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+
+Changes made via Lovable will be committed automatically to this repo.
+
+**Use your preferred IDE**
+
+If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+
+The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+
+Follow these steps:
+
+```sh
+# Step 1: Clone the repository using the project's Git URL.
+git clone <YOUR_GIT_URL>
+
+# Step 2: Navigate to the project directory.
+cd <YOUR_PROJECT_NAME>
+
+# Step 3: Install the necessary dependencies.
+npm i
+
+# Step 4: Start the development server with auto-reloading and an instant preview.
+npm run dev
 ```
 
-Script ini akan:
-- ✓ Check dependencies
-- ✓ Install packages
-- ✓ Verify .env configuration
-- ✓ Check Laravel backend
-- ✓ Start dev server
+**Edit a file directly in GitHub**
 
-### 2. Manual Setup
+- Navigate to the desired file(s).
+- Click the "Edit" button (pencil icon) at the top right of the file view.
+- Make your changes and commit the changes.
 
-```bash
-# Install dependencies
-npm install  # atau: bun install
+**Use GitHub Codespaces**
 
-# Copy .env (jika belum ada)
-cp .env.example .env
+- Navigate to the main page of your repository.
+- Click on the "Code" button (green button) near the top right.
+- Select the "Codespaces" tab.
+- Click on "New codespace" to launch a new Codespace environment.
+- Edit files directly within the Codespace and commit and push your changes once you're done.
 
-# Start dev server
-npm run dev  # atau: bun run dev
-```
+## What technologies are used for this project?
 
-### 3. Start Laravel Backend
+This project is built with:
 
-```bash
-cd ../backend
-php artisan serve
-```
+- Vite
+- TypeScript
+- React
+- shadcn-ui
+- Tailwind CSS
 
-## 🔐 Login
+## How can I deploy this project?
 
-Buka browser: `http://localhost:5173`
+Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
 
-**Default admin account:**
-```
-Email: admin@nebeng.com
-Password: password123
-```
+## Can I connect a custom domain to my Lovable project?
 
-⚠️ **PENTING**: Ganti password setelah login pertama!
+Yes, you can!
 
-## 🧪 Test API
+To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
-Test semua endpoint admin API:
-
-```bash
-./test-api.sh
-```
-
-Script ini akan test:
-- Login
-- Token verification
-- Profile
-- Dashboard statistics
-- Customers list
-- Mitra list
-- Pesanan list
-- Logout
-
-## 📚 Dokumentasi
-
-Dokumentasi lengkap ada di [BACKEND_MIGRATION.md](./BACKEND_MIGRATION.md):
-
-- ✓ Daftar semua API endpoints
-- ✓ Authentication flow
-- ✓ Response format
-- ✓ Troubleshooting guide
-- ✓ Testing checklist
-
-## 🛠️ Development
-
-### Build untuk Production
-
-```bash
-npm run build  # atau: bun run build
-```
-
-### Preview Production Build
-
-```bash
-npm run preview  # atau: bun run preview
-```
-
-## 📦 Tech Stack
-
-- **Frontend**: React + TypeScript + Vite
-- **UI Library**: shadcn/ui + Tailwind CSS
-- **State Management**: React Context API
-- **HTTP Client**: Axios
-- **Backend**: Laravel 11
-
-## 🔗 Links
-
-- Admin Panel: `http://localhost:5173`
-- Laravel API: `http://localhost:8000/api/admin`
-- API Routes: `../backend/routes/api.php`
-- Controllers: `../backend/app/Http/Controllers/Admin/`
-
-## 📞 Support
-
-Jika ada masalah:
-
-1. Check Laravel logs: `backend/storage/logs/laravel.log`
-2. Check browser console untuk frontend errors
-3. Test API dengan `./test-api.sh`
-4. Baca troubleshooting di [BACKEND_MIGRATION.md](./BACKEND_MIGRATION.md)
-
----
-
-**Status:** ✅ Production Ready  
-**Backend:** Laravel 11  
-**Last Updated:** February 14, 2026
-
+Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)

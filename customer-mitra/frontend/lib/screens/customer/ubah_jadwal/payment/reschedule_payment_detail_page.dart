@@ -12,6 +12,7 @@ class ReschedulePaymentDetailPage extends StatefulWidget {
   final double priceBefore;
   final double priceAfter;
   final double priceDiff;
+  final Map<String, dynamic>? serverPayment;
   final int totalPassengers;
   final List<Map<String, dynamic>> passengers;
 
@@ -27,6 +28,7 @@ class ReschedulePaymentDetailPage extends StatefulWidget {
     required this.priceBefore,
     required this.priceAfter,
     required this.priceDiff,
+    this.serverPayment,
     this.totalPassengers = 1,
     this.passengers = const [],
   }) : super(key: key);
@@ -54,8 +56,13 @@ class _ReschedulePaymentDetailPageState
 
   double get pricePerSeat {
     // Prefer explicit price information from new ride data if available
-    final dynamic ridePrice =
+    dynamic ridePrice =
         widget.newRideData['price_per_seat'] ?? widget.newRideData['price'];
+    // try nested ride object (some endpoints return related ride)
+    if (ridePrice == null && widget.newRideData['ride'] != null) {
+      ridePrice = widget.newRideData['ride']['price'] ??
+          widget.newRideData['ride']['price_per_seat'];
+    }
     if (ridePrice != null) {
       final p = double.tryParse(ridePrice.toString()) ?? 0;
       if (p > 0) return p;
@@ -73,22 +80,66 @@ class _ReschedulePaymentDetailPageState
 
   double get newTotalPrice {
     // Total price for new ride with current passenger count
-    return pricePerSeat * currentPassengerCount;
+    final base = pricePerSeat * currentPassengerCount;
+    if (base <= 0 && widget.priceAfter != null && widget.priceAfter > 0) {
+      return widget.priceAfter;
+    }
+    return base;
+  }
+
+  double get displayPricePerSeat {
+    final p = pricePerSeat;
+    if (p > 0) return p;
+    if (widget.priceAfter != null && widget.priceAfter > 0) {
+      final seats = currentPassengerCount <= 0 ? 1 : currentPassengerCount;
+      return widget.priceAfter / seats;
+    }
+    return 0;
   }
 
   double get currentTotalPrice {
-    // Calculate difference: new price - old price
+    // Calculate difference: new total - old total
     return newTotalPrice - widget.priceBefore;
   }
 
   double get currentTotalAmount {
-    // Total payment: absolute difference + admin fee (always positive)
-    return currentTotalPrice.abs() + 15000;
+    // Total payment: only charge when new total is higher than old total
+    // Prefer server-provided total_amount when available
+    try {
+      if (widget.serverPayment != null) {
+        final srv = widget.serverPayment!;
+        if (srv['total_amount'] != null) {
+          return double.tryParse(srv['total_amount'].toString()) ?? 0.0;
+        }
+      }
+    } catch (_) {}
+
+    final diff = currentTotalPrice;
+    final passengerCharge = diff > 0 ? diff : 0.0;
+    final adminFee = widget.serverPayment != null &&
+            widget.serverPayment!['admin_fee'] != null
+        ? double.tryParse(widget.serverPayment!['admin_fee'].toString()) ??
+            15000.0
+        : 15000.0;
+    return passengerCharge + adminFee;
+  }
+
+  String formatSignedAmount(double value) {
+    final absVal = value.abs();
+    final formatted = _formatAmount(absVal);
+    return value < 0 ? '-$formatted' : formatted;
   }
 
   String _formatAmount(dynamic amount) {
     final numAmount = double.tryParse(amount.toString()) ?? 0;
     return 'Rp${numAmount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}';
+  }
+
+  int _roundNearestInt(num value, [int nearest = 5000]) {
+    final intVal = value.round();
+    if (intVal == 0) return 0;
+    final parts = (intVal / nearest).round();
+    return parts * nearest;
   }
 
   void _continueToPayment() {
@@ -111,6 +162,7 @@ class _ReschedulePaymentDetailPageState
           virtualAccount: widget.virtualAccount,
           bankCode: widget.bankCode,
           amount: currentTotalAmount,
+          serverPayment: widget.serverPayment,
           bookingData: {
             ...widget.bookingData,
             'seats': currentPassengerCount,
@@ -474,27 +526,57 @@ class _ReschedulePaymentDetailPageState
                       ),
                       child: Column(
                         children: [
-                          _buildPriceRow(
-                            'Nebeng Mobil (Baru)',
-                            _formatAmount(newTotalPrice),
-                            subtitle:
-                                '$currentPassengerCount Penumpang × ${_formatAmount(pricePerSeat)}',
-                          ),
+                          // Round prices like booking creation (ceil to nearest 5000)
+                          (() {
+                            final roundedPerSeat =
+                                _roundNearestInt(displayPricePerSeat);
+                            final roundedNewTotal =
+                                _roundNearestInt(newTotalPrice);
+                            return _buildPriceRow(
+                              bookingType == 'motor'
+                                  ? 'Nebeng Motor (Baru)'
+                                  : 'Nebeng Mobil (Baru)',
+                              _formatAmount(roundedNewTotal),
+                              subtitle:
+                                  '$currentPassengerCount Penumpang × ${_formatAmount(roundedPerSeat)}',
+                            );
+                          })(),
                           const SizedBox(height: 12),
-                          _buildPriceRow(
-                            'Harga Sebelumnya',
-                            _formatAmount(widget.priceBefore),
-                            subtitle: '${widget.totalPassengers} Penumpang',
-                          ),
+                          (() {
+                            final roundedBefore =
+                                _roundNearestInt(widget.priceBefore);
+                            return _buildPriceRow(
+                              'Harga Sebelumnya',
+                              _formatAmount(roundedBefore),
+                              subtitle: '${widget.totalPassengers} Penumpang',
+                            );
+                          })(),
                           const SizedBox(height: 12),
-                          _buildPriceRow(
-                            'Selisih Harga',
-                            _formatAmount(currentTotalPrice.abs()),
-                          ),
+                          (() {
+                            // compute signed difference using rounded totals
+                            final roundedNew = _roundNearestInt(newTotalPrice);
+                            final roundedBefore =
+                                _roundNearestInt(widget.priceBefore);
+                            final selisih = roundedNew - roundedBefore;
+                            String signed = selisih < 0
+                                ? '-${_formatAmount(selisih.abs())}'
+                                : _formatAmount(selisih);
+                            return _buildPriceRow(
+                              'Selisih Harga',
+                              signed,
+                            );
+                          })(),
                           const SizedBox(height: 12),
                           _buildPriceRow(
                             'Biaya Admin',
-                            _formatAmount(15000),
+                            _formatAmount(widget.serverPayment != null &&
+                                    widget.serverPayment!['admin_fee'] != null
+                                ? double.tryParse(widget
+                                            .serverPayment!['admin_fee']
+                                            .toString())
+                                        ?.toInt() ??
+                                    15000
+                                : 15000),
                           ),
                           const SizedBox(height: 16),
                           Container(
@@ -515,7 +597,42 @@ class _ReschedulePaymentDetailPageState
                                   ),
                                 ),
                                 Text(
-                                  _formatAmount(currentTotalAmount),
+                                  // Prefer server-provided total_amount if available
+                                  (() {
+                                    try {
+                                      if (widget.serverPayment != null &&
+                                          widget.serverPayment![
+                                                  'total_amount'] !=
+                                              null) {
+                                        final t = double.tryParse(widget
+                                                .serverPayment!['total_amount']
+                                                .toString()) ??
+                                            0;
+                                        return _formatAmount(t.toInt());
+                                      }
+                                    } catch (_) {}
+
+                                    final roundedNew =
+                                        _roundNearestInt(newTotalPrice);
+                                    final roundedBefore =
+                                        _roundNearestInt(widget.priceBefore);
+                                    final selisih = roundedNew - roundedBefore;
+                                    final passengerCharge =
+                                        selisih > 0 ? selisih : 0;
+                                    final adminFee = widget.serverPayment !=
+                                                null &&
+                                            widget.serverPayment![
+                                                    'admin_fee'] !=
+                                                null
+                                        ? double.tryParse(widget
+                                                    .serverPayment!['admin_fee']
+                                                    .toString())
+                                                ?.toInt() ??
+                                            15000
+                                        : 15000;
+                                    final total = passengerCharge + adminFee;
+                                    return _formatAmount(total);
+                                  })(),
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w700,

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
+use App\Services\PriceCalculationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
@@ -53,6 +54,51 @@ class BookingTitipBarangController extends Controller
             return response()->json(['success' => false, 'message' => 'Ride not found'], 404);
         }
 
+        // Auto-calculate price based on weight
+        $calculatedPrice = null;
+        $priceBreakdown = null;
+        $weight = $request->weight ?? null;
+
+        if ($weight) {
+            // Determine service type the same way as before
+            $serviceType = PriceCalculationService::determineServiceType('titip_barang', $ride->service_type ?? 'tebengan');
+
+            // Map weight label (Kecil/Sedang/Besar) to numeric kg using enum max weights
+            $numericWeight = 0.0;
+            try {
+                $enum = \App\Enums\WeightCategory::from($weight);
+                $numericWeight = (float) $enum->getMaxWeight();
+            } catch (\Throwable $e) {
+                // Fallback: try to parse as numeric value
+                $numericWeight = floatval($weight);
+            }
+
+            // Determine transport slug for titip barang profiles
+            $transportation = $ride->transportation_type ?? null;
+            $transportMap = [
+                'bus' => 'titip-barang-bus',
+                'kereta' => 'titip-barang-kereta',
+                'pesawat' => 'titip-barang-pesawat',
+            ];
+            $transportSlug = $transportMap[$transportation] ?? 'titip-barang-bus';
+
+            // Use PriceCalculator (modern pricing) instead of legacy PricePerKg flow
+            try {
+                $calculator = app(\App\Services\PriceCalculator::class);
+                $priceResult = $calculator->calculate($transportSlug, $numericWeight, $serviceType, 0.0);
+
+                if (is_array($priceResult) && array_key_exists('total', $priceResult)) {
+                    $calculatedPrice = $priceResult['total'];
+                    $priceBreakdown = $priceResult;
+                    Log::info('Price auto-calculated for titip_barang booking', $priceBreakdown);
+                } else {
+                    Log::warning('PriceCalculator returned unexpected format for titip_barang booking', ['result' => $priceResult]);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('PriceCalculator failed for titip_barang booking', ['error' => $e->getMessage(), 'weight' => $weight]);
+            }
+        }
+
         // Handle photo upload
         $photoPath = null;
         if ($request->hasFile('photo')) {
@@ -84,7 +130,7 @@ class BookingTitipBarangController extends Controller
             'booking_number' => $bookingNumber,
             'seats' => $request->seats ?? 1,
             'status' => 'pending',
-            'meta' => null,
+            'meta' => $priceBreakdown ? json_encode(['price_breakdown' => $priceBreakdown]) : null,
             'photo' => $photoPath,
             'weight' => $request->weight,
             'description' => $request->description,
@@ -119,7 +165,18 @@ class BookingTitipBarangController extends Controller
             bookingNumber: $bookingNumber
         );
 
-        return response()->json(['success' => true, 'data' => $booking], 201);
+        // Add calculated price to response
+        $response = [
+            'success' => true,
+            'data' => $booking,
+        ];
+
+        if ($calculatedPrice !== null) {
+            $response['calculated_price'] = $calculatedPrice;
+            $response['price_breakdown'] = $priceBreakdown;
+        }
+
+        return response()->json($response, 201);
     }
 
     public function index(Request $request)

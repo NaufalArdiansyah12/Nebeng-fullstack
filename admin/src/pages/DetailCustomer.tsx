@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"; // 1. Tambahkan useEffect
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ChevronLeft, Calendar, Edit, Check, X, CheckCircle, XCircle, Lock, LockOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,36 @@ import { useToast } from "@/hooks/use-toast";
 import ktpPlaceholder from "@/assets/ktp-placeholder.png";
 import BlockCustomerPopup from "@/components/BlockCustomerPopup";
 import UnblockCustomerPopup from "@/components/UnblockCustomerPopup";
+
+// ✅ Format tanggal ke format yang readable
+const formatDate = (dateString: string | null | undefined): string => {
+  if (!dateString) return "";
+  
+  try {
+    const date = new Date(dateString);
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) return "";
+    
+    // Format: DD/MM/YYYY
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    
+    return `${day}/${month}/${year}`;
+    
+    // Atau gunakan format Indonesia:
+    // const options: Intl.DateTimeFormatOptions = { 
+    //   day: '2-digit', 
+    //   month: 'long', 
+    //   year: 'numeric' 
+    // };
+    // return date.toLocaleDateString('id-ID', options);
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return "";
+  }
+};
 
 const getStatusBadge = (status?: string | null) => {
   switch (status) {
@@ -32,24 +62,35 @@ const DetailCustomer = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   
-  // 2. Tambahkan fetchCustomerDetail di sini
-  const { customerDetail, fetchCustomerDetail, updateCustomerStatus, updateCustomerInfo, blockCustomer, unblockCustomer } = useCustomer();
+  // ✅ GUNAKAN CONTEXT BARU (Simple)
+  const { 
+    getCustomer, 
+    updateCustomer, 
+    updateCustomerFields, 
+    updateStatus, 
+    blockCustomer, 
+    unblockCustomer 
+  } = useCustomer();
   
   const { toast } = useToast();
   
-  const customer = id ? customerDetail[id] : null;
+  // ✅ STATE UNTUK MENYIMPAN CUSTOMER DATA
+  const [customer, setCustomer] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
   const currentStatus = customer?.status || "PENGAJUAN";
   const isBlocked = currentStatus === "DIBLOCK";
 
   // Edit mode state
   const [isEditMode, setIsEditMode] = useState(false);
   const [editData, setEditData] = useState({
-    namaLengkap: "",
+    nama: "",
     email: "",
-    tempatLahir: "",
+    alamat: "",
     tanggalLahir: "",
     jenisKelamin: "",
     noTlp: "",
+    nik: "",
   });
   
   // Modal states
@@ -64,34 +105,69 @@ const DetailCustomer = () => {
   const [showUnblockConfirm, setShowUnblockConfirm] = useState(false);
   const [showUnblockSuccess, setShowUnblockSuccess] = useState(false);
 
-  // 3. TAMBAHKAN LOGIC FETCH INI (PENTING)
+  // ✅ FETCH CUSTOMER DATA
   useEffect(() => {
-    if (id) {
-      // Jika data customer ini BELUM ada di context, ambil dari server
-      if (!customerDetail[id]) {
-        fetchCustomerDetail(id);
+    const fetchData = async () => {
+      if (!id) return;
+      
+      setLoading(true);
+      try {
+        const data = await getCustomer(id);
+        if (data) {
+          setCustomer(data);
+          console.log('✅ Customer loaded:', data);
+        } else {
+          toast({
+            title: "Error",
+            description: "Customer tidak ditemukan",
+            variant: "destructive",
+          });
+          navigate(-1);
+        }
+      } catch (error) {
+        console.error('❌ Error loading customer:', error);
+        toast({
+          title: "Error",
+          description: "Gagal memuat data customer",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
       }
-    }
-  }, [id, customerDetail, fetchCustomerDetail]);
-  // ---------------------------------------
+    };
 
+    fetchData();
+  }, [id, getCustomer]);
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="p-6 flex items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  // Customer not found
   if (!customer) {
     return (
       <div className="p-6">
-        <p>Loading atau Data customer tidak ditemukan</p>
+        <p>Data customer tidak ditemukan</p>
         <Button onClick={() => navigate(-1)} className="mt-4">Kembali</Button>
       </div>
     );
   }
 
+  // ✅ HANDLE EDIT MODE
   const handleEnterEditMode = () => {
     setEditData({
-      namaLengkap: customer.informasiPribadi.namaLengkap,
-      email: customer.informasiPribadi.email,
-      tempatLahir: customer.informasiPribadi.tempatLahir,
-      tanggalLahir: customer.informasiPribadi.tanggalLahir,
-      jenisKelamin: customer.informasiPribadi.jenisKelamin,
-      noTlp: customer.informasiPribadi.noTlp,
+      nama: customer.nama || "",
+      email: customer.email || "",
+      alamat: customer.alamat || "",
+      tanggalLahir: customer.tanggal_lahir || "",
+      jenisKelamin: customer.jenis_kelamin || "",
+      noTlp: customer.no_tlp || "",
+      nik: customer.nik || "",
     });
     setIsEditMode(true);
   };
@@ -100,10 +176,11 @@ const DetailCustomer = () => {
     setIsEditMode(false);
   };
 
-  const handleSaveEdit = () => {
+  // ✅ SAVE EDIT - Gunakan updateCustomer dari context baru
+  const handleSaveEdit = async () => {
     if (!id) return;
     
-    if (!editData.namaLengkap.trim() || !editData.email.trim() || !editData.noTlp.trim()) {
+    if (!editData.nama.trim() || !editData.email.trim() || !editData.noTlp.trim()) {
       toast({
         title: "Error",
         description: "Nama, Email, dan No. Tlp wajib diisi",
@@ -112,15 +189,46 @@ const DetailCustomer = () => {
       return;
     }
     
-    updateCustomerInfo(id, editData);
-    setIsEditMode(false);
-    setShowEditSuccessModal(true);
+    try {
+      // ✅ Gunakan updateCustomer yang baru
+      await updateCustomer(id, {
+        nama: editData.nama,
+        email: editData.email,
+        no_tlp: editData.noTlp,
+        jenis_kelamin: editData.jenisKelamin,
+        tanggal_lahir: editData.tanggalLahir,
+        alamat: editData.alamat,
+        nik: editData.nik,
+      });
+      
+      // Refresh customer data
+      const updatedCustomer = await getCustomer(id);
+      if (updatedCustomer) {
+        setCustomer(updatedCustomer);
+      }
+      
+      setIsEditMode(false);
+      setShowEditSuccessModal(true);
+      
+      toast({
+        title: "Berhasil",
+        description: "Data customer berhasil diupdate",
+      });
+    } catch (error) {
+      console.error('❌ Error updating customer:', error);
+      toast({
+        title: "Error",
+        description: "Gagal update data customer",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleInputChange = (field: keyof typeof editData, value: string) => {
     setEditData(prev => ({ ...prev, [field]: value }));
   };
 
+  // ✅ HANDLE STATUS CHANGES
   const handleTerimaClick = () => {
     setShowConfirmTerima(true);
   };
@@ -129,32 +237,101 @@ const DetailCustomer = () => {
     setShowConfirmTolak(true);
   };
 
-  const handleConfirmTerima = () => {
+  const handleConfirmTerima = async () => {
     if (!id) return;
-    updateCustomerStatus(id, "TERVERIFIKASI");
-    setShowConfirmTerima(false);
-    setShowTerimaModal(true);
+    
+    try {
+      await updateStatus(id, "TERVERIFIKASI");
+      
+      // Refresh customer data
+      const updatedCustomer = await getCustomer(id);
+      if (updatedCustomer) {
+        setCustomer(updatedCustomer);
+      }
+      
+      setShowConfirmTerima(false);
+      setShowTerimaModal(true);
+    } catch (error) {
+      console.error('❌ Error updating status:', error);
+      toast({
+        title: "Error",
+        description: "Gagal update status",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleConfirmTolak = () => {
+  const handleConfirmTolak = async () => {
     if (!id) return;
-    updateCustomerStatus(id, "DITOLAK");
-    setShowConfirmTolak(false);
-    setShowTolakModal(true);
+    
+    try {
+      await updateStatus(id, "DITOLAK");
+      
+      // Refresh customer data
+      const updatedCustomer = await getCustomer(id);
+      if (updatedCustomer) {
+        setCustomer(updatedCustomer);
+      }
+      
+      setShowConfirmTolak(false);
+      setShowTolakModal(true);
+    } catch (error) {
+      console.error('❌ Error updating status:', error);
+      toast({
+        title: "Error",
+        description: "Gagal update status",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleBlock = () => {
+  // ✅ HANDLE BLOCK/UNBLOCK
+  const handleBlock = async () => {
     if (!id) return;
-    blockCustomer(id);
-    setShowBlockConfirm(false);
-    setShowBlockSuccess(true);
+    
+    try {
+      await blockCustomer(id);
+      
+      // Refresh customer data
+      const updatedCustomer = await getCustomer(id);
+      if (updatedCustomer) {
+        setCustomer(updatedCustomer);
+      }
+      
+      setShowBlockConfirm(false);
+      setShowBlockSuccess(true);
+    } catch (error) {
+      console.error('❌ Error blocking customer:', error);
+      toast({
+        title: "Error",
+        description: "Gagal block customer",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleUnblock = () => {
+  const handleUnblock = async () => {
     if (!id) return;
-    unblockCustomer(id);
-    setShowUnblockConfirm(false);
-    setShowUnblockSuccess(true);
+    
+    try {
+      await unblockCustomer(id);
+      
+      // Refresh customer data
+      const updatedCustomer = await getCustomer(id);
+      if (updatedCustomer) {
+        setCustomer(updatedCustomer);
+      }
+      
+      setShowUnblockConfirm(false);
+      setShowUnblockSuccess(true);
+    } catch (error) {
+      console.error('❌ Error unblocking customer:', error);
+      toast({
+        title: "Error",
+        description: "Gagal unblock customer",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -169,7 +346,7 @@ const DetailCustomer = () => {
         >
           <ChevronLeft size={20} />
         </Button>
-        <h1 className="text-xl font-semibold">Detail Data Costumer</h1>
+        <h1 className="text-xl font-semibold">Detail Data Customer</h1>
       </div>
 
       {/* Profile Section */}
@@ -178,16 +355,16 @@ const DetailCustomer = () => {
           <div className="flex items-center gap-4">
             <div className="relative">
               <Avatar className="h-20 w-20 border-4 border-orange-200">
-                <AvatarImage src="/placeholder.svg" />
+                <AvatarImage src={customer.photo_wajah || "/placeholder.svg"} />
                 <AvatarFallback className="bg-orange-100 text-orange-600 text-lg">
-                  {customer.nama.split(" ").map(n => n[0]).join("")}
+                  {customer.nama?.split(" ").map((n: string) => n[0]).join("") || "N/A"}
                 </AvatarFallback>
               </Avatar>
             </div>
             <div>
               <h2 className="text-lg font-semibold">{customer.nama}</h2>
               <p className="text-muted-foreground text-sm">Nebeng Motor</p>
-              <span className="text-primary font-medium text-sm">{customer.kode || "No Code"}</span>
+              <span className="text-primary font-medium text-sm">#{customer.id}</span>
               <div className="mt-2">
                 {getStatusBadge(customer.status)}
               </div>
@@ -232,27 +409,27 @@ const DetailCustomer = () => {
             <div>
               <label className="text-sm text-muted-foreground">Nama Lengkap</label>
               <Input 
-                value={isEditMode ? editData.namaLengkap : customer.informasiPribadi.namaLengkap} 
+                value={isEditMode ? editData.nama : customer.nama || ""} 
                 readOnly={!isEditMode}
-                onChange={(e) => handleInputChange("namaLengkap", e.target.value)}
+                onChange={(e) => handleInputChange("nama", e.target.value)}
                 className={`mt-1 ${isEditMode ? "bg-background" : "bg-muted/50"}`}
               />
             </div>
             <div>
               <label className="text-sm text-muted-foreground">Email</label>
               <Input 
-                value={isEditMode ? editData.email : customer.informasiPribadi.email} 
+                value={isEditMode ? editData.email : customer.email || ""} 
                 readOnly={!isEditMode}
                 onChange={(e) => handleInputChange("email", e.target.value)}
                 className={`mt-1 ${isEditMode ? "bg-background" : "bg-muted/50"}`}
               />
             </div>
             <div>
-              <label className="text-sm text-muted-foreground">Tempat Lahir</label>
+              <label className="text-sm text-muted-foreground">Alamat</label>
               <Input 
-                value={isEditMode ? editData.tempatLahir : customer.informasiPribadi.tempatLahir} 
+                value={isEditMode ? editData.alamat : customer.alamat || ""} 
                 readOnly={!isEditMode}
-                onChange={(e) => handleInputChange("tempatLahir", e.target.value)}
+                onChange={(e) => handleInputChange("alamat", e.target.value)}
                 className={`mt-1 ${isEditMode ? "bg-background" : "bg-muted/50"}`}
               />
             </div>
@@ -260,12 +437,13 @@ const DetailCustomer = () => {
               <label className="text-sm text-muted-foreground">Tanggal Lahir</label>
               <div className="relative mt-1">
                 <Input 
-                  value={isEditMode ? editData.tanggalLahir : customer.informasiPribadi.tanggalLahir} 
+                  type={isEditMode ? "date" : "text"}
+                  value={isEditMode ? editData.tanggalLahir : formatDate(customer.tanggal_lahir)} 
                   readOnly={!isEditMode}
                   onChange={(e) => handleInputChange("tanggalLahir", e.target.value)}
                   className={`pr-10 ${isEditMode ? "bg-background" : "bg-muted/50"}`}
                 />
-                <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                {!isEditMode && <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />}
               </div>
             </div>
             <div>
@@ -276,17 +454,17 @@ const DetailCustomer = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Laki - Laki">Laki - Laki</SelectItem>
+                    <SelectItem value="Laki-laki">Laki-laki</SelectItem>
                     <SelectItem value="Perempuan">Perempuan</SelectItem>
                   </SelectContent>
                 </Select>
               ) : (
-                <Select value={customer.informasiPribadi.jenisKelamin} disabled>
+                <Select value={customer.jenis_kelamin || ""} disabled>
                   <SelectTrigger className="mt-1 bg-muted/50">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Laki - Laki">Laki - Laki</SelectItem>
+                    <SelectItem value="Laki-laki">Laki-laki</SelectItem>
                     <SelectItem value="Perempuan">Perempuan</SelectItem>
                   </SelectContent>
                 </Select>
@@ -295,7 +473,7 @@ const DetailCustomer = () => {
             <div>
               <label className="text-sm text-muted-foreground">No. Tlp</label>
               <Input 
-                value={isEditMode ? editData.noTlp : customer.informasiPribadi.noTlp} 
+                value={isEditMode ? editData.noTlp : customer.no_tlp || ""} 
                 readOnly={!isEditMode}
                 onChange={(e) => handleInputChange("noTlp", e.target.value)}
                 className={`mt-1 ${isEditMode ? "bg-background" : "bg-muted/50"}`}
@@ -313,27 +491,29 @@ const DetailCustomer = () => {
                 <div>
                   <label className="text-sm text-muted-foreground">Nama Lengkap</label>
                   <Input 
-                    value={customer.informasiKTP?.namaLengkap || customer.informasiPribadi.namaLengkap} 
-                    readOnly
-                    className="mt-1 bg-muted/50" 
+                    value={isEditMode ? editData.nama : (customer.nama_lengkap_ktp || customer.nama || "")} 
+                    readOnly={!isEditMode}
+                    onChange={(e) => handleInputChange("nama", e.target.value)}
+                    className={`mt-1 ${isEditMode ? "bg-background" : "bg-muted/50"}`}
                   />
                 </div>
                 <div>
                   <label className="text-sm text-muted-foreground">NIK</label>
                   <Input 
-                    value={customer.informasiKTP?.nik || "-"} 
-                    readOnly
-                    className="mt-1 bg-muted/50" 
+                    value={isEditMode ? editData.nik : (customer.nik || "-")} 
+                    readOnly={!isEditMode}
+                    onChange={(e) => handleInputChange("nik", e.target.value)}
+                    className={`mt-1 ${isEditMode ? "bg-background" : "bg-muted/50"}`}
                   />
                 </div>
                 <div>
                   <label className="text-sm text-muted-foreground">Jenis Kelamin</label>
-                  <Select value={customer.informasiKTP?.jenisKelamin || customer.informasiPribadi.jenisKelamin} disabled>
+                  <Select value={customer.jenis_kelamin_ktp || customer.jenis_kelamin || ""} disabled>
                     <SelectTrigger className="mt-1 bg-muted/50">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Laki - Laki">Laki - Laki</SelectItem>
+                      <SelectItem value="Laki-laki">Laki-laki</SelectItem>
                       <SelectItem value="Perempuan">Perempuan</SelectItem>
                     </SelectContent>
                   </Select>
@@ -342,7 +522,7 @@ const DetailCustomer = () => {
                   <label className="text-sm text-muted-foreground">Tanggal Lahir</label>
                   <div className="relative mt-1">
                     <Input 
-                      value={customer.informasiKTP?.tanggalLahir || customer.informasiPribadi.tanggalLahir} 
+                      value={formatDate(customer.tanggal_lahir)} 
                       readOnly
                       className="pr-10 bg-muted/50" 
                     />
@@ -353,8 +533,8 @@ const DetailCustomer = () => {
             </div>
             <div className="flex justify-center md:justify-end">
               <img 
-                src={ktpPlaceholder} 
-                alt={`KTP ${customer.informasiKTP?.namaLengkap || customer.nama}`}
+                src={customer.photo_ktp || ktpPlaceholder} 
+                alt={`KTP ${customer.nama}`}
                 className="w-48 h-auto rounded-lg border-2 border-blue-200 shadow-md object-cover cursor-pointer hover:opacity-90 hover:shadow-lg transition-all"
                 onClick={() => setShowKTPPreview(true)}
               />
@@ -377,6 +557,7 @@ const DetailCustomer = () => {
               <Button 
                 className="bg-primary hover:bg-primary/90 text-primary-foreground px-8"
                 onClick={handleTerimaClick}
+                disabled={currentStatus === "TERVERIFIKASI"}
               >
                 Terima
               </Button>
@@ -384,6 +565,7 @@ const DetailCustomer = () => {
                 variant="outline"
                 className="border-red-500 text-red-500 hover:bg-red-50 px-8"
                 onClick={handleTolakClick}
+                disabled={currentStatus === "DITOLAK"}
               >
                 Tolak
               </Button>
@@ -495,12 +677,12 @@ const DetailCustomer = () => {
           <div className="flex flex-col items-center">
             <h3 className="text-lg font-semibold mb-4">Preview KTP</h3>
             <img 
-              src={ktpPlaceholder} 
-              alt={`KTP ${customer.informasiKTP?.namaLengkap || customer.nama}`}
+              src={customer.photo_ktp || ktpPlaceholder} 
+              alt={`KTP ${customer.nama}`}
               className="w-full max-w-lg h-auto rounded-lg border-2 border-blue-200 shadow-lg"
             />
             <p className="mt-4 text-sm text-muted-foreground">
-              {customer.informasiKTP?.namaLengkap || customer.nama} - NIK: {customer.informasiKTP?.nik || "-"}
+              {customer.nama} - NIK: {customer.nik || "-"}
             </p>
           </div>
         </DialogContent>

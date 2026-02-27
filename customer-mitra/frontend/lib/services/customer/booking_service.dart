@@ -67,7 +67,14 @@ class BookingService {
       if (resp.statusCode == 201 || resp.statusCode == 200) {
         final body = json.decode(resp.body);
         if (body is Map && body['success'] == true && body['data'] != null) {
-          return Map<String, dynamic>.from(body['data']);
+          final bookingMap = Map<String, dynamic>.from(body['data']);
+          if (body.containsKey('calculated_price')) {
+            bookingMap['calculated_price'] = body['calculated_price'];
+          }
+          if (body.containsKey('price_breakdown')) {
+            bookingMap['price_breakdown'] = body['price_breakdown'];
+          }
+          return bookingMap;
         }
         throw Exception('Unexpected response format');
       } else {
@@ -102,7 +109,14 @@ class BookingService {
     if (resp.statusCode == 201 || resp.statusCode == 200) {
       final body = json.decode(resp.body);
       if (body is Map && body['success'] == true && body['data'] != null) {
-        return Map<String, dynamic>.from(body['data']);
+        final bookingMap = Map<String, dynamic>.from(body['data']);
+        if (body.containsKey('calculated_price')) {
+          bookingMap['calculated_price'] = body['calculated_price'];
+        }
+        if (body.containsKey('price_breakdown')) {
+          bookingMap['price_breakdown'] = body['price_breakdown'];
+        }
+        return bookingMap;
       }
       throw Exception('Unexpected response format');
     } else {
@@ -197,6 +211,56 @@ class BookingService {
       throw Exception(
           'Failed to fetch booking: ${resp.statusCode}. Preview: $preview');
     }
+  }
+
+  /// Calculate price via backend pricing endpoint
+  static Future<Map<String, dynamic>> calculatePrice({
+    required String transportMode,
+    required double weight,
+    String? serviceType,
+    double? distance,
+  }) async {
+    // Normalize serviceType to the pricing keys expected by backend
+    String? normalizedServiceType;
+    if (serviceType != null && serviceType.isNotEmpty) {
+      switch (serviceType) {
+        case 'barang':
+          normalizedServiceType = 'hanya_barang';
+          break;
+        case 'tebengan':
+          normalizedServiceType = 'hanya_tebengan';
+          break;
+        case 'both':
+          normalizedServiceType = 'tebengan_dan_barang';
+          break;
+        default:
+          normalizedServiceType = serviceType;
+      }
+    }
+
+    final params = <String, String>{
+      'transport_mode': transportMode,
+      'weight': weight.toString(),
+      if (normalizedServiceType != null && normalizedServiceType.isNotEmpty)
+        'service_type': normalizedServiceType,
+    };
+    if (distance != null) params['distance'] = distance.toString();
+
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/finance/price/calculate')
+        .replace(queryParameters: params);
+
+    final resp = await http.get(uri, headers: {
+      'Accept': 'application/json',
+    });
+
+    if (resp.statusCode == 200) {
+      final body = json.decode(resp.body);
+      if (body is Map && body['success'] == true && body['data'] is Map) {
+        return Map<String, dynamic>.from(body['data']);
+      }
+      throw Exception('Unexpected response format');
+    }
+    throw Exception('Failed to calculate price: ${resp.statusCode}');
   }
 
   /// Update booking status

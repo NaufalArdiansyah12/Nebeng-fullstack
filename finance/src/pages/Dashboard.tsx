@@ -34,12 +34,26 @@ export default function Dashboard() {
   const availableMonths = generateAvailableMonths();
   const currentMonthValue = availableMonths[0].value; // Current month
 
+  // Generate available years (current year and previous 4 years)
+  const generateAvailableYears = (count = 5) => {
+    const years: Array<{ label: string; value: string }> = [];
+    const currentYear = new Date().getFullYear();
+    for (let i = 0; i < count; i++) {
+      const y = currentYear - i;
+      years.push({ label: String(y), value: String(y) });
+    }
+    return years;
+  };
+
+  const availableYears = generateAvailableYears();
+  const currentYearValue = availableYears[0].value;
+
   /* =========================
      FETCH DATA
   ========================= */
   // total user
   useEffect(() => {
-    api.get("/users/count-by-role")
+    api.get("/finance/users/count-by-role")
       .then(res => {
         setTotalMitra(res.data.mitra ?? 0);
         setTotalCustomer(res.data.customer ?? 0);
@@ -59,6 +73,8 @@ export default function Dashboard() {
         <RevenueCard 
           availableMonths={availableMonths} 
           currentMonthValue={currentMonthValue}
+          availableYears={availableYears}
+          currentYearValue={currentYearValue}
         />
         <UserStatsCard type="mitra" count={totalMitra} />
         <UserStatsCard type="customer" count={totalCustomer} />
@@ -69,6 +85,8 @@ export default function Dashboard() {
         <PendapatanChart 
           availableMonths={availableMonths} 
           currentMonthValue={currentMonthValue}
+          availableYears={availableYears}
+          currentYearValue={currentYearValue}
         />
         <PesananChart 
           availableMonths={availableMonths} 

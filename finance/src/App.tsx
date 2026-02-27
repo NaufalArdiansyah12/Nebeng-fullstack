@@ -20,6 +20,8 @@ import DetailWithdrawal from "./pages/DetailWithdrawal";
 import Refund from "./pages/Refund";
 import DetailRefund from "./pages/DetailRefund";
 import Pengaturan from "./pages/Pengaturan";
+import Fees from "./pages/Fees";
+import Pricing from "./pages/Pricing";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -33,7 +35,6 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
-
           <Route path="/login" element={<Login />} />
           <Route path="/login-finance" element={<Navigate to="/login" replace />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -54,11 +55,8 @@ const App = () => (
 <Route path="/refund" element={<ProtectedRoute><Refund /></ProtectedRoute>} />
 <Route path="/refund/:id" element={<ProtectedRoute><DetailRefund /></ProtectedRoute>} />
 <Route path="/pengaturan" element={<ProtectedRoute><Pengaturan /></ProtectedRoute>} />
-
-
-
-
-
+          <Route path="/pengaturan/biaya" element={<ProtectedRoute><Fees /></ProtectedRoute>} />
+          <Route path="/tarif-per-kg" element={<ProtectedRoute><Pricing /></ProtectedRoute>} />
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

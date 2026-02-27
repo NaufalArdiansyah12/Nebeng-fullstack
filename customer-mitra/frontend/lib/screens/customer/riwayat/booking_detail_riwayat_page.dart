@@ -679,10 +679,29 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
     }
 
     final seats = (widget.booking['seats'] ?? 1).toString();
-    final price = ride['price'] ??
+    // Determine price with multiple fallbacks. For titip bookings the
+    // backend may return `calculated_price` or a `price_breakdown` inside
+    // the booking object (meta). Check those fields before falling back
+    // to 0 so UI shows the actual nominal when available.
+    dynamic price = ride['price'] ??
         widget.booking['price'] ??
-        widget.booking['total_price'] ??
-        0;
+        widget.booking['total_price'];
+    if ((price == null || price == 0) &&
+        widget.booking.containsKey('calculated_price')) {
+      price = widget.booking['calculated_price'];
+    }
+    if ((price == null || price == 0) &&
+        widget.booking.containsKey('price_breakdown')) {
+      final pb = widget.booking['price_breakdown'];
+      if (pb is Map) {
+        price = pb['total'] ??
+            pb['final_price'] ??
+            pb['category_price'] ??
+            pb['price'] ??
+            price;
+      }
+    }
+    price = price ?? 0;
     final pricePerSeat = BookingFormatters.formatPrice(price);
     final totalPrice = BookingFormatters.formatPrice(
         (double.tryParse(price.toString()) ?? 0) * (int.tryParse(seats) ?? 1));

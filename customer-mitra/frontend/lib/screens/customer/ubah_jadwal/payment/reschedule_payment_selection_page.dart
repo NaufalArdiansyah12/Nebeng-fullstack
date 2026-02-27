@@ -12,6 +12,7 @@ class ReschedulePaymentSelectionPage extends StatefulWidget {
   final dynamic amount;
   final Map<String, dynamic> bookingData;
   final Map<String, dynamic> newRideData;
+  final Map<String, dynamic>? serverPayment;
 
   const ReschedulePaymentSelectionPage({
     Key? key,
@@ -22,6 +23,7 @@ class ReschedulePaymentSelectionPage extends StatefulWidget {
     required this.amount,
     required this.bookingData,
     required this.newRideData,
+    this.serverPayment,
   }) : super(key: key);
 
   @override
@@ -391,6 +393,26 @@ class _ReschedulePaymentSelectionPageState
                         (newRide['available_seats'] ?? '').toString()) ??
                     motorTrip.availableSeats);
 
+            // Prefer server-provided new ride price if present
+            int finalPrice =
+                (double.tryParse(widget.amount.toString()) ?? 0).toInt();
+            try {
+              if (newRide['price'] != null) {
+                finalPrice =
+                    (double.tryParse(newRide['price'].toString()) ?? finalPrice)
+                        .toInt();
+              } else if (newRide['price_per_seat'] != null) {
+                finalPrice =
+                    (double.tryParse(newRide['price_per_seat'].toString()) ??
+                            finalPrice)
+                        .toInt();
+              } else if (resp['data']['price_after'] != null) {
+                finalPrice =
+                    (int.tryParse(resp['data']['price_after'].toString()) ??
+                        finalPrice);
+              }
+            } catch (_) {}
+
             updatedTrip = motor_model.TripModel(
               id: newRide['id']?.toString() ?? motorTrip.id,
               date: newRide['departure_date'] ?? motorTrip.date,
@@ -399,7 +421,7 @@ class _ReschedulePaymentSelectionPageState
               departureAddress: depAddr ?? motorTrip.departureAddress,
               arrivalLocation: arrName,
               arrivalAddress: arrAddr ?? motorTrip.arrivalAddress,
-              price: (double.tryParse(widget.amount.toString()) ?? 0).toInt(),
+              price: finalPrice,
               availableSeats: avail,
             );
           }
@@ -407,6 +429,12 @@ class _ReschedulePaymentSelectionPageState
       } catch (e) {
         print('Error confirming reschedule: $e');
       }
+
+      final double adminFeeVal = widget.serverPayment != null &&
+              widget.serverPayment!['admin_fee'] != null
+          ? (double.tryParse(widget.serverPayment!['admin_fee'].toString()) ??
+              0.0)
+          : 0.0;
 
       Navigator.pushReplacement(
         context,
@@ -420,7 +448,8 @@ class _ReschedulePaymentSelectionPageState
             paymentMethod: selectedPaymentMethod!,
             totalPassengers: totalPassengers,
             amount: double.tryParse(widget.amount.toString()) ?? 0,
-            adminFee: 0,
+            adminFee: adminFeeVal,
+            serverPayment: widget.serverPayment,
           ),
         ),
       );
@@ -430,6 +459,12 @@ class _ReschedulePaymentSelectionPageState
 
       // Try to parse paymentTxnId as int
       int paymentId = int.tryParse(widget.paymentTxnId) ?? 0;
+
+      final double adminFeeVal = widget.serverPayment != null &&
+              widget.serverPayment!['admin_fee'] != null
+          ? (double.tryParse(widget.serverPayment!['admin_fee'].toString()) ??
+              0.0)
+          : 0.0;
 
       Navigator.pushReplacement(
         context,
@@ -448,7 +483,8 @@ class _ReschedulePaymentSelectionPageState
             expiresAt: expiresAt,
             paymentId: paymentId,
             amount: double.tryParse(widget.amount.toString()) ?? 0,
-            adminFee: 0,
+            adminFee: adminFeeVal,
+            serverPayment: widget.serverPayment,
             passengers: passengers,
           ),
         ),

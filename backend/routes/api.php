@@ -12,7 +12,8 @@ use App\Http\Controllers\Mitra\RideController;
 use App\Http\Controllers\Mitra\VehicleController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PaymentTestController;
-use App\Http\Controllers\TebenganTitipBarangController;
+// App\Http\Controllers\TebenganTitipBarangController removed (deprecated)
+// use App\Http\Controllers\TebenganTitipBarangController;
 use App\Http\Controllers\Mitra\MitraHistoryController;
 use App\Http\Controllers\Customer\TransactionHistoryController;
 use App\Http\Controllers\Finance\DashboardController;
@@ -21,6 +22,10 @@ use App\Http\Controllers\Finance\UserController as FinanceUserController;
 use App\Http\Controllers\Finance\TransactionController;
 use App\Http\Controllers\Finance\RefundController;
 use App\Http\Controllers\Finance\WithdrawalController;
+use App\Http\Controllers\Finance\PricingController;
+use App\Http\Controllers\Finance\SettingsController;
+// App\Http\Controllers\Finance\PricePerKgController removed (deprecated)
+// use App\Http\Controllers\Finance\PricePerKgController;
 use App\Http\Controllers\PosMitra\ProfileController;
 use App\Http\Controllers\PosMitra\BerandaController;
 use App\Http\Controllers\PosMitra\QrController;
@@ -46,6 +51,7 @@ use App\Http\Controllers\Customer\BookingBarangTrackingController;
 use App\Http\Controllers\Customer\BookingTitipBarangLocationController;
 use App\Http\Controllers\Customer\BookingTitipBarangTrackingController;
 use App\Http\Controllers\Customer\RefundController as CustomerRefundController;
+use App\Http\Controllers\Customer\PointController;
 
 // Admin Controllers
 use App\Http\Controllers\Admin\AuthController as AdminAuthController;
@@ -85,6 +91,26 @@ Route::prefix('api/v1')->group(function () {
 
     // Weight category options endpoint
     Route::get('/weight-categories', [App\Http\Controllers\Api\WeightCategoryController::class, 'index']);
+
+    // Pricing Config endpoints (new simplified API)
+    Route::get('/finance/pricing-config', [App\Http\Controllers\Finance\PricingConfigController::class, 'index']);
+    Route::get('/finance/pricing-config/{slug}', [App\Http\Controllers\Finance\PricingConfigController::class, 'show']);
+    Route::put('/finance/pricing-config/{slug}', [App\Http\Controllers\Finance\PricingConfigController::class, 'update']);
+    Route::get('/finance/weight-categories', [App\Http\Controllers\Finance\PricingConfigController::class, 'weightCategories']);
+
+    // Pricing endpoints (finance) - keep for backward compatibility
+    Route::get('/finance/pricing-profiles', [PricingController::class, 'index']);
+    Route::get('/finance/pricing-profiles/{id}', [PricingController::class, 'show']);
+    Route::post('/finance/pricing-profiles', [PricingController::class, 'store']);
+    Route::put('/finance/pricing-profiles/{id}', [PricingController::class, 'update']);
+    Route::delete('/finance/pricing-profiles/{id}', [PricingController::class, 'destroy']);
+
+    // Finance settings (fees)
+    Route::get('/finance/settings/fees', [SettingsController::class, 'getFees']);
+    Route::put('/finance/settings/fees', [SettingsController::class, 'updateFees']);
+
+    // Calculate price (public helper)
+    Route::get('/finance/price/calculate', [PricingController::class, 'calculate']);
 
     // Test conversation creation
     Route::get('/test-conversation', function () {
@@ -310,6 +336,11 @@ Route::prefix('api/v1')->group(function () {
     Route::post('/booking-titip-barang/{id}/location', [BookingTitipBarangLocationController::class, 'store']);
     Route::get('/booking-titip-barang/{id}/location', [BookingTitipBarangLocationController::class, 'show']);
 
+    // Restore legacy Tebengan Titip Barang endpoints (temporary compatibility)
+    Route::post('/tebengan-titip-barang', [\App\Http\Controllers\TebenganTitipBarangController::class, 'store']);
+    Route::get('/tebengan-titip-barang', [\App\Http\Controllers\TebenganTitipBarangController::class, 'index']);
+    Route::get('/tebengan-titip-barang/{id}', [\App\Http\Controllers\TebenganTitipBarangController::class, 'show']);
+
     // =====================================================
     // CUSTOMER - RESCHEDULE BOOKINGS
     // =====================================================
@@ -331,6 +362,14 @@ Route::prefix('api/v1')->group(function () {
     Route::get('/refunds/{id}', [CustomerRefundController::class, 'show']);
     Route::post('/refunds', [CustomerRefundController::class, 'store']);
     Route::get('/bookings/{bookingId}/refund-eligibility', [CustomerRefundController::class, 'checkEligibility']);
+
+    // =====================================================
+    // CUSTOMER - REWARD POINTS
+    // =====================================================
+
+    // Point routes
+    Route::get('/points', [PointController::class, 'index']);
+    Route::get('/points/values', [PointController::class, 'getPointValues']);
 
     // =====================================================
     // CUSTOMER - RATINGS & REVIEWS
@@ -403,16 +442,11 @@ Route::prefix('api/v1')->group(function () {
     Route::delete('/notifications/clear-read', [NotificationController::class, 'clearRead']);
 
     // =====================================================
-    // TEBENGAN TITIP BARANG (SHARED)
+    // TEBENGAN TITIP BARANG (SHARED) - REMOVED
     // =====================================================
-
-    // Tebengan Titip Barang routes
-    Route::get('/tebengan-titip-barang', [TebenganTitipBarangController::class, 'index']);
-    Route::get('/tebengan-titip-barang/{id}', [TebenganTitipBarangController::class, 'show']);
-    Route::post('/tebengan-titip-barang', [TebenganTitipBarangController::class, 'store']);
-    Route::put('/tebengan-titip-barang/{id}', [TebenganTitipBarangController::class, 'update']);
-    Route::delete('/tebengan-titip-barang/{id}', [TebenganTitipBarangController::class, 'destroy']);
-    Route::get('/tebengan-titip-barang/my/list', [TebenganTitipBarangController::class, 'myTebengan']);
+    // Routes for 'tebengan-titip-barang' have been removed and the
+    // implementation moved to backend/deprecated/removed_price_system.
+    // If you need to restore: see backend/deprecated/removed_price_system/TebenganTitipBarangController.php
 
     // =====================================================
     // POSMITRA - PROFILE & DASHBOARD
@@ -462,13 +496,7 @@ Route::prefix('api/v1')->group(function () {
     Route::post('/payments/test/{id}/simulate', [PaymentTestController::class, 'simulatePayment']);
 
 
-    // Tebengan Titip Barang routes
-    Route::get('/tebengan-titip-barang', [TebenganTitipBarangController::class, 'index']);
-    Route::get('/tebengan-titip-barang/{id}', [TebenganTitipBarangController::class, 'show']);
-    Route::post('/tebengan-titip-barang', [TebenganTitipBarangController::class, 'store']);
-    Route::put('/tebengan-titip-barang/{id}', [TebenganTitipBarangController::class, 'update']);
-    Route::delete('/tebengan-titip-barang/{id}', [TebenganTitipBarangController::class, 'destroy']);
-    Route::get('/tebengan-titip-barang/my/list', [TebenganTitipBarangController::class, 'myTebengan']);
+    // Tebengan Titip Barang routes removed (see deprecated/removed_price_system)
 
     // Mitra: riwayat tebengan (partner history)
     Route::get('/mitra/riwayat', [MitraHistoryController::class, 'index']);
@@ -485,9 +513,9 @@ Route::prefix('api/v1')->group(function () {
 });
 
 // =====================================================
-// Finance Dashboard Routes (prefix: /api/finance)
+// Finance Dashboard Routes (available under /api/v1/finance)
 // =====================================================
-Route::prefix('finance')->group(function () {
+Route::prefix('v1/finance')->group(function () {
     // Password reset routes
     Route::post('/forgot-password', function (Request $request) {
         $request->validate([
@@ -592,6 +620,10 @@ Route::prefix('finance')->group(function () {
         Route::post('/{id}/process', [WithdrawalController::class, 'process']);
         Route::post('/{id}/complete', [WithdrawalController::class, 'complete']);
     });
+
+    // Price Per Kg routes removed (deprecated)
+    // The price-per-kg implementation has been removed from active routes.
+    // Implementation moved to backend/deprecated/removed_price_system for archival.
 });
 
 // =====================================================

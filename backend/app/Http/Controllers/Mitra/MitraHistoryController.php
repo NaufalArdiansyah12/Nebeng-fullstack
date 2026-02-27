@@ -78,19 +78,12 @@ class MitraHistoryController extends Controller
                 ->pluck('booking_number')
                 ->toArray();
             
-            $income = 0;
-            if (!empty($validBookingNumbers)) {
-                // For each valid booking_number, get only the latest paid payment
-                $income = Payment::selectRaw('MAX(id) as latest_payment_id')
-                    ->whereIn('booking_number', $validBookingNumbers)
-                    ->where('status', 'paid')
-                    ->groupBy('booking_number')
-                    ->get()
-                    ->sum(function($item) {
-                        $payment = Payment::find($item->latest_payment_id);
-                        return $payment ? $payment->total_amount : 0;
-                    });
-            }
+            // Calculate income from ride price * number of bookings
+            $price = $row->price ?? 0;
+            $bookingCount = \App\Models\Booking::where('ride_id', $row->id)
+                ->whereNotIn('status', ['cancelled', 'dibatalkan'])
+                ->count();
+            $income = (float) $price * (int) $bookingCount;
             
             $rideArr = $row->toArray();
             // Ensure kendaraan_mitra key exists in snake_case for frontend compatibility
@@ -145,19 +138,12 @@ class MitraHistoryController extends Controller
                 ->pluck('booking_number')
                 ->toArray();
             
-            $income = 0;
-            if (!empty($validBookingNumbers)) {
-                // For each valid booking_number, get only the latest paid payment
-                $income = Payment::selectRaw('MAX(id) as latest_payment_id')
-                    ->whereIn('booking_number', $validBookingNumbers)
-                    ->where('status', 'paid')
-                    ->groupBy('booking_number')
-                    ->get()
-                    ->sum(function($item) {
-                        $payment = Payment::find($item->latest_payment_id);
-                        return $payment ? $payment->total_amount : 0;
-                    });
-            }
+            // Calculate income from ride price * number of bookings (mobil)
+            $price = $row->price ?? 0;
+            $bookingCount = \App\Models\BookingMobil::where('ride_id', $row->id)
+                ->whereNotIn('status', ['cancelled', 'dibatalkan'])
+                ->count();
+            $income = (float) $price * (int) $bookingCount;
             
             $rideArr = $row->toArray();
             $rideArr['kendaraan_mitra'] = $row->kendaraanMitra ? $row->kendaraanMitra->toArray() : null;
@@ -209,19 +195,12 @@ class MitraHistoryController extends Controller
                 ->pluck('booking_number')
                 ->toArray();
             
-            $income = 0;
-            if (!empty($bookings)) {
-                // For each booking_number, take only the latest paid payment to avoid duplicates
-                $income = Payment::selectRaw('MAX(id) as latest_payment_id')
-                    ->whereIn('booking_number', $bookings)
-                    ->where('status', 'paid')
-                    ->groupBy('booking_number')
-                    ->get()
-                    ->sum(function($item) {
-                        $payment = Payment::find($item->latest_payment_id);
-                        return $payment ? $payment->total_amount : 0;
-                    });
-            }
+            // Calculate income from ride price * number of bookings (barang)
+            $price = $row->price ?? 0;
+            $bookingCount = \App\Models\BookingBarang::where('ride_id', $row->id)
+                ->whereNotIn('status', ['cancelled', 'dibatalkan'])
+                ->count();
+            $income = (float) $price * (int) $bookingCount;
             
             $rideArr = $row->toArray();
             $rideArr['kendaraan_mitra'] = $row->kendaraanMitra ? $row->kendaraanMitra->toArray() : null;
@@ -273,19 +252,12 @@ class MitraHistoryController extends Controller
                 ->pluck('booking_number')
                 ->toArray();
             
-            $income = 0;
-            if (!empty($bookings)) {
-                // For each booking_number, take only the latest paid payment to avoid duplicates
-                $income = Payment::selectRaw('MAX(id) as latest_payment_id')
-                    ->whereIn('booking_number', $bookings)
-                    ->where('status', 'paid')
-                    ->groupBy('booking_number')
-                    ->get()
-                    ->sum(function($item) {
-                        $payment = Payment::find($item->latest_payment_id);
-                        return $payment ? $payment->total_amount : 0;
-                    });
-            }
+            // Calculate income from price * number of bookings (titip barang)
+            $price = $row->price ?? 0;
+            $bookingCount = \App\Models\BookingTitipBarang::where('ride_id', $row->id)
+                ->whereNotIn('status', ['cancelled', 'dibatalkan'])
+                ->count();
+            $income = (float) $price * (int) $bookingCount;
             
             $rideArr = $row->toArray();
             $rideArr['kendaraan_mitra'] = $row->kendaraanMitra ? $row->kendaraanMitra->toArray() : null;
