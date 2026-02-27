@@ -25,7 +25,7 @@ class PaymentService
         $this->paymentMethodApi = new PaymentMethodApi();
     }
 
-    public function createVirtualAccount($rideId, $userId, $bookingNumber, $paymentMethod, $amount, $adminFee = 15000, $bookingId = null)
+    public function createVirtualAccount($rideId, $userId, $bookingNumber, $paymentMethod, $chargeAmount, $adminFee = null, $bookingId = null, $bookingPrice = null, $rescheduleRequestId = null)
     {
         // support motor, mobil, barang rides, and tebengan titip barang
         $ride = Ride::find($rideId);
@@ -43,17 +43,53 @@ class PaymentService
         if (!$ride) {
             throw new \Exception('Ride not found');
         }
-        $totalAmount = $amount + $adminFee;
+        // Resolve admin fee from settings when not provided
+        if ($adminFee === null) {
+            try {
+                $adminFee = \App\Models\FinanceSetting::first()?->admin_fee ?? 15000;
+            } catch (\Exception $e) {
+                $adminFee = 15000;
+            }
+        }
+
+        // Compute stored values:
+        // - If $bookingPrice is provided, store `amount` = bookingPrice (nominal trip price), and
+        //   set `total_amount` to the actual charge amount (fees customer pays).
+        // - Otherwise (normal booking), `amount` is the charged amount and `total_amount = amount + adminFee`.
+        $chargeAmount = floatval($chargeAmount);
+        $adminFee = floatval($adminFee ?: 0);
+        if ($bookingPrice !== null) {
+            $storeAmount = floatval($bookingPrice);
+            // When bookingPrice is provided, it represents the nominal trip price.
+            // The total amount charged to the customer must include the admin fee.
+            $totalAmount = $storeAmount + $adminFee;
+        } else {
+            $storeAmount = $chargeAmount;
+            $totalAmount = $chargeAmount + $adminFee;
+        }
+
+        // Normalize rounding: convert to integer Rupiah.
+        // Round to the nearest 1,000 to match booking display expectations.
+        $roundToNearest = function ($v) {
+            // round to nearest 5,000 (kelipatan 5)
+            return intval(round(floatval($v) / 5000.0) * 5000);
+        };
+
+        $storeAmount = $roundToNearest($storeAmount);
+        $adminFee = $roundToNearest($adminFee);
+        $totalAmount = $roundToNearest($totalAmount);
         $externalId = 'PAYMENT-' . $bookingNumber . '-' . time();
 
-        Log::info('Creating payment', [
-            'ride_id' => $rideId,
-            'user_id' => $userId,
-            'booking_number' => $bookingNumber,
-            'external_id' => $externalId,
-            'payment_method' => $paymentMethod,
-            'amount' => $amount,
-        ]);
+            Log::info('Creating payment', [
+                'ride_id' => $rideId,
+                'user_id' => $userId,
+                'booking_number' => $bookingNumber,
+                'external_id' => $externalId,
+                'payment_method' => $paymentMethod,
+                'charge_amount' => $chargeAmount,
+                'booking_price' => $bookingPrice,
+                'admin_fee' => $adminFee,
+            ]);
 
         // Map payment method to bank code
         $bankCode = $this->getBankCode($paymentMethod);
@@ -135,11 +171,12 @@ class PaymentService
             // Save payment to database
             $payment = Payment::create([
                 'booking_id' => $bookingId,
+                'reschedule_request_id' => $rescheduleRequestId,
                 'ride_id' => $rideIdToSave,
                 'user_id' => $userId,
                 'booking_number' => $bookingNumber,
                 'payment_method' => $paymentMethod,
-                'amount' => $amount,
+                'amount' => $storeAmount,
                 'admin_fee' => $adminFee,
                 'total_amount' => $totalAmount,
                 'external_id' => $externalId,
@@ -415,6 +452,115 @@ class PaymentService
                         Log::error('Failed to update booking status: ' . $e->getMessage());
                     }
 
+                    // If this payment is for a reschedule request, attempt to apply it now
+                    try {
+                        if (!empty($payment->reschedule_request_id)) {
+                            Log::info('Reschedule payment detected - attempting to apply reschedule', ['reschedule_request_id' => $payment->reschedule_request_id]);
+                            $rescheduleController = app(\App\Http\Controllers\Customer\RescheduleController::class);
+                            $fakeReq = new \Illuminate\Http\Request();
+                            // pass payment txn id so RescheduleController can store it
+                            $fakeReq->replace(['payment_txn_id' => $payment->external_id]);
+                            // Call confirmPayment; it returns a JsonResponse
+                            try {
+                                $res = $rescheduleController->confirmPayment($fakeReq, $payment->reschedule_request_id);
+                                Log::info('Reschedule apply result', ['res' => is_object($res) && method_exists($res, 'getContent') ? $res->getContent() : json_encode($res)]);
+                            } catch (\Throwable $__rEx) {
+                                Log::error('Failed to apply reschedule via controller: ' . $__rEx->getMessage());
+                            }
+                        }
+                    } catch (\Throwable $__rescheduleEx) {
+                        Log::error('Reschedule apply check failed: ' . $__rescheduleEx->getMessage());
+                    }
+
+                    // Update ride price (store nominal without admin fee) when booking found
+                    try {
+                        $amount = $payment->amount ?? null;
+
+                        // If this payment was created for a reschedule, prefer the reschedule's
+                        // `price_after` (which represents the total for seats) to determine
+                        // the per-seat price that should be shown on the new ride/booking.
+                        if (!empty($payment->reschedule_request_id) && $bookingFound) {
+                            try {
+                                $resReq = \App\Models\RescheduleRequest::find($payment->reschedule_request_id);
+                                if ($resReq) {
+                                    // Determine seats for the booking we found (bookingModel or bookingMobil etc.)
+                                    $seats = 1;
+                                    if (isset($bookingModel) && intval($bookingModel->seats ?? 0) > 0) {
+                                        $seats = intval($bookingModel->seats);
+                                    } elseif (isset($bookingMobil) && intval($bookingMobil->seats ?? 0) > 0) {
+                                        $seats = intval($bookingMobil->seats);
+                                    } elseif (isset($bookingBarang) && intval($bookingBarang->seats ?? 0) > 0) {
+                                        $seats = intval($bookingBarang->seats);
+                                    } elseif (isset($bookingTitip) && intval($bookingTitip->seats ?? 0) > 0) {
+                                        $seats = intval($bookingTitip->seats);
+                                    }
+
+                                    $priceAfterTotal = floatval($resReq->price_after ?? 0);
+                                    if ($priceAfterTotal > 0 && $seats > 0) {
+                                        // compute per-seat and round to integer
+                                        $amount = intval(round($priceAfterTotal / $seats));
+                                    }
+                                }
+                            } catch (\Throwable $__rPriceEx) {
+                                Log::warning('Failed to derive per-seat price from reschedule request: ' . $__rPriceEx->getMessage());
+                            }
+                        }
+
+                        if ($amount !== null && $bookingFound) {
+                            // motor booking -> bookingModel (Booking) -> ride (Ride)
+                            if (isset($bookingModel) && $bookingModel->ride) {
+                                try {
+                                    $bookingModel->ride->update(['price' => $amount]);
+                                    Log::info('Updated ride price (motor)', ['ride_id' => $bookingModel->ride->id, 'price' => $amount]);
+                                } catch (\Throwable $e) {
+                                    Log::warning('Failed to update ride price for motor: ' . $e->getMessage());
+                                }
+                            }
+
+                            // mobil booking -> bookingMobil->ride (CarRide)
+                            if (isset($bookingMobil) && $bookingMobil->ride) {
+                                try {
+                                    $bookingMobil->ride->update(['price' => $amount]);
+                                    Log::info('Updated ride price (mobil)', ['ride_id' => $bookingMobil->ride->id, 'price' => $amount]);
+                                } catch (\Throwable $e) {
+                                    Log::warning('Failed to update ride price for mobil: ' . $e->getMessage());
+                                }
+                            }
+
+                            // barang booking -> bookingBarang->ride
+                            if (isset($bookingBarang) && $bookingBarang->ride) {
+                                try {
+                                    $bookingBarang->ride->update(['price' => $amount]);
+                                    Log::info('Updated ride price (barang)', ['ride_id' => $bookingBarang->ride->id, 'price' => $amount]);
+                                } catch (\Throwable $e) {
+                                    Log::warning('Failed to update ride price for barang: ' . $e->getMessage());
+                                }
+                            }
+
+                            // titip booking -> bookingTitip->ride
+                            if (isset($bookingTitip) && $bookingTitip->ride) {
+                                try {
+                                    $bookingTitip->ride->update(['price' => $amount]);
+                                    Log::info('Updated ride price (titip)', ['ride_id' => $bookingTitip->ride->id, 'price' => $amount]);
+                                } catch (\Throwable $e) {
+                                    Log::warning('Failed to update ride price for titip: ' . $e->getMessage());
+                                }
+                            }
+
+                            // Fallback: payment->ride relation (may be present for motor rides)
+                            if (isset($payment) && $payment->ride) {
+                                try {
+                                    $payment->ride->update(['price' => $amount]);
+                                    Log::info('Updated ride price (payment->ride fallback)', ['ride_id' => $payment->ride->id, 'price' => $amount]);
+                                } catch (\Throwable $e) {
+                                    Log::warning('Failed to update ride price via payment->ride: ' . $e->getMessage());
+                                }
+                            }
+                        }
+                    } catch (\Exception $e) {
+                        Log::warning('Failed to update ride price: ' . $e->getMessage());
+                    }
+
                 // Kirim notifikasi push via FCM jika user memiliki token
                 try {
                     $user = $payment->user;
@@ -498,7 +644,7 @@ class PaymentService
         return $bankCodes[$paymentMethod] ?? null;
     }
 
-    public function createQRISPayment($rideId, $userId, $bookingNumber, $amount, $adminFee = 15000, $bookingId = null)
+    public function createQRISPayment($rideId, $userId, $bookingNumber, $chargeAmount, $adminFee = null, $bookingId = null, $bookingPrice = null, $rescheduleRequestId = null)
     {
         // support motor, mobil, barang rides, and tebengan titip barang
         $ride = Ride::find($rideId);
@@ -515,17 +661,46 @@ class PaymentService
             throw new \Exception('Ride not found');
         }
 
-        $totalAmount = $amount + $adminFee;
+        // Resolve admin fee from settings when not provided
+        if ($adminFee === null) {
+            try {
+                $adminFee = \App\Models\FinanceSetting::first()?->admin_fee ?? 15000;
+            } catch (\Exception $e) {
+                $adminFee = 15000;
+            }
+        }
+
+        $chargeAmount = floatval($chargeAmount);
+        $adminFee = floatval($adminFee ?: 0);
+        if ($bookingPrice !== null) {
+            $storeAmount = floatval($bookingPrice);
+            // Ensure total includes admin fee when bookingPrice is provided
+            $totalAmount = $storeAmount + $adminFee;
+        } else {
+            $storeAmount = $chargeAmount;
+            $totalAmount = $chargeAmount + $adminFee;
+        }
+
+        // Normalize rounding to integer rupiah values (nearest 1,000)
+        $roundToNearest = function ($v) {
+            // round to nearest 5,000 (kelipatan 5)
+            return intval(round(floatval($v) / 5000.0) * 5000);
+        };
+
+        $storeAmount = $roundToNearest($storeAmount);
+        $adminFee = $roundToNearest($adminFee);
+        $totalAmount = $roundToNearest($totalAmount);
         $externalId = 'QRIS-' . $bookingNumber . '-' . time();
 
-        Log::info('Creating QRIS payment', [
-            'ride_id' => $rideId,
-            'user_id' => $userId,
-            'booking_number' => $bookingNumber,
-            'external_id' => $externalId,
-            'amount' => $amount,
-            'admin_fee' => $adminFee,
-        ]);
+            Log::info('Creating QRIS payment', [
+                'ride_id' => $rideId,
+                'user_id' => $userId,
+                'booking_number' => $bookingNumber,
+                'external_id' => $externalId,
+                'charge_amount' => $chargeAmount,
+                'booking_price' => $bookingPrice,
+                'admin_fee' => $adminFee,
+            ]);
 
         // Set expiration time (1 hour from now)
         $expiresAt = Carbon::now()->addHour();
@@ -655,11 +830,12 @@ class PaymentService
             // Save payment to database
             $payment = Payment::create([
                 'booking_id' => $bookingId,
+                'reschedule_request_id' => $rescheduleRequestId,
                 'ride_id' => $rideIdToSave,
                 'user_id' => $userId,
                 'booking_number' => $bookingNumber,
                 'payment_method' => 'qris',
-                'amount' => $amount,
+                'amount' => $storeAmount,
                 'admin_fee' => $adminFee,
                 'total_amount' => $totalAmount,
                 'external_id' => $externalId,

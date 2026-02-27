@@ -78,6 +78,17 @@ const DetailMitra = () => {
   const [editAlamat, setEditAlamat] = useState("");
   const [editTanggalLahir, setEditTanggalLahir] = useState("");
   
+  // ✅ Edit form states untuk Informasi SIM
+  const [editNamaSIM, setEditNamaSIM] = useState("");
+  const [editNomorSIM, setEditNomorSIM] = useState("");
+  const [editJenisSIM, setEditJenisSIM] = useState("");
+  const [editMasaBerlakuSIM, setEditMasaBerlakuSIM] = useState("");
+
+  // ✅ Edit form states untuk Informasi SKCK
+  const [editNamaSKCK, setEditNamaSKCK] = useState("");
+  const [editNomorSKCK, setEditNomorSKCK] = useState("");
+  const [editMasaBerlakuSKCK, setEditMasaBerlakuSKCK] = useState("");
+  
   // Modal states
   const [showConfirmTolak, setShowConfirmTolak] = useState(false);
   const [showAlasanTolak, setShowAlasanTolak] = useState(false);
@@ -107,15 +118,7 @@ const DetailMitra = () => {
           setMitra(detail);
           setEditStatus(detail.status);
           // Set initial form values
-          setEditNama(detail.nama || "");
-          setEditEmail(detail.email || "");
-          setEditNoTlp(detail.no_tlp || "");
-          setEditJenisKelamin(detail.jenis_kelamin || "");
-          setEditTanggalLahirPribadi(detail.tanggal_lahir || detail.ktp_data?.tanggal_lahir || "");
-          setEditNamaKTP(detail.ktp_data?.nama_lengkap || "");
-          setEditNIK(detail.ktp_data?.nik || "");
-          setEditAlamat(detail.ktp_data?.alamat || "");
-          setEditTanggalLahir(detail.ktp_data?.tanggal_lahir || "");
+          updateFormFromMitra(detail);
         }
       } finally {
         setIsLoadingDetail(false);
@@ -124,6 +127,37 @@ const DetailMitra = () => {
 
     fetchDetail();
   }, [id, getMitraDetail]);
+
+  // Helper function to update form from mitra data (WITH SIM & SKCK)
+  const updateFormFromMitra = (mitraData: MitraDetailData) => {
+    setEditNama(mitraData.nama || "");
+    setEditEmail(mitraData.email || "");
+    setEditNoTlp(mitraData.no_tlp || "");
+    setEditJenisKelamin(mitraData.jenis_kelamin || "");
+    setEditTanggalLahirPribadi(mitraData.tanggal_lahir || mitraData.ktp_data?.tanggal_lahir || "");
+    setEditNamaKTP(mitraData.ktp_data?.nama_lengkap || "");
+    setEditNIK(mitraData.ktp_data?.nik || "");
+    setEditAlamat(mitraData.ktp_data?.alamat || "");
+    setEditTanggalLahir(mitraData.ktp_data?.tanggal_lahir || "");
+
+    // ✅ Set SIM data
+    setEditNamaSIM(mitraData.sim_data?.nama_lengkap || "");
+    setEditNomorSIM(mitraData.sim_data?.sim_number || "");
+    setEditJenisSIM(mitraData.sim_data?.sim_type || "");
+    setEditMasaBerlakuSIM(mitraData.sim_data?.sim_expiry_date || "");
+
+    // ✅ Set SKCK data
+    setEditNamaSKCK(mitraData.skck_data?.skck_name || "");
+    setEditNomorSKCK(mitraData.skck_data?.skck_number || "");
+    setEditMasaBerlakuSKCK(mitraData.skck_data?.skck_expiry_date || "");
+  };
+
+  // Update form whenever mitra data changes
+  useEffect(() => {
+    if (mitra && !isEditMode) {
+      updateFormFromMitra(mitra);
+    }
+  }, [mitra, isEditMode]);
 
   if (isLoadingDetail) {
     return (
@@ -145,21 +179,28 @@ const DetailMitra = () => {
   const handleEnterEditMode = () => {
     setIsEditMode(true);
     setEditStatus(currentStatus);
+    console.log('🔧 Entering edit mode with data:', {
+      editNama,
+      editEmail,
+      editNoTlp,
+      editJenisKelamin,
+      editTanggalLahirPribadi,
+      editNamaKTP,
+      editNIK,
+      editAlamat,
+      editTanggalLahir,
+      editNamaSIM,
+      editNomorSIM,
+      editJenisSIM,
+      editMasaBerlakuSIM
+    });
   };
 
   const handleCancelEdit = () => {
     setIsEditMode(false);
-    // Reset form values to original
+    // Reset form values to original mitra data
     if (mitra) {
-      setEditNama(mitra.nama || "");
-      setEditEmail(mitra.email || "");
-      setEditNoTlp(mitra.no_tlp || "");
-      setEditJenisKelamin(mitra.jenis_kelamin || "");
-      setEditTanggalLahirPribadi(mitra.tanggal_lahir || mitra.ktp_data?.tanggal_lahir || "");
-      setEditNamaKTP(mitra.ktp_data?.nama_lengkap || "");
-      setEditNIK(mitra.ktp_data?.nik || "");
-      setEditAlamat(mitra.ktp_data?.alamat || "");
-      setEditTanggalLahir(mitra.ktp_data?.tanggal_lahir || "");
+      updateFormFromMitra(mitra);
       setEditStatus(currentStatus);
     }
   };
@@ -168,17 +209,24 @@ const DetailMitra = () => {
     if (!id) return;
     
     try {
-      // Call API to update mitra data
+      // Call API to update mitra data (WITH SIM)
       const updateData = {
         nama: editNama,
         email: editEmail,
         noTlp: editNoTlp,
         jenisKelamin: editJenisKelamin,
+        tanggalLahir: editTanggalLahirPribadi,
         ktp: {
           nama_lengkap: editNamaKTP,
           nik: editNIK,
           alamat: editAlamat,
           tanggal_lahir: editTanggalLahir
+        },
+        sim: {
+          nama_lengkap: editNamaSIM,
+          sim_number: editNomorSIM,
+          sim_type: editJenisSIM,
+          sim_expiry_date: editMasaBerlakuSIM
         }
       };
       
@@ -188,7 +236,7 @@ const DetailMitra = () => {
       
       console.log("✅ Mitra data saved successfully");
       
-      // Update local state
+      // Update local state (WITH SIM)
       if (mitra) {
         setMitra({
           ...mitra,
@@ -203,7 +251,27 @@ const DetailMitra = () => {
             nik: editNIK,
             alamat: editAlamat,
             tanggal_lahir: editTanggalLahir
-          } : null
+          } : null,
+          sim_data: mitra.sim_data ? {
+            ...mitra.sim_data,
+            nama_lengkap: editNamaSIM,
+            sim_number: editNomorSIM,
+            sim_type: editJenisSIM as 'A' | 'B1' | 'B2' | 'C',
+            sim_expiry_date: editMasaBerlakuSIM
+          } : {
+            id: 0,
+            user_id: parseInt(id),
+            nama_lengkap: editNamaSIM,
+            sim_number: editNomorSIM,
+            sim_type: editJenisSIM as 'A' | 'B1' | 'B2' | 'C',
+            sim_expiry_date: editMasaBerlakuSIM,
+            sim_photo: null,
+            status: 'approved' as 'pending' | 'approved' | 'rejected',
+            rejection_reason: null,
+            verified_at: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }
         });
       }
       
@@ -230,6 +298,12 @@ const DetailMitra = () => {
       // Show success modal
       setShowSuccessEdit(true);
       setIsEditMode(false);
+      
+      // Refresh data from server
+      const updatedDetail = await getMitraDetail(id);
+      if (updatedDetail) {
+        setMitra(updatedDetail);
+      }
     } catch (error) {
       console.error("❌ Failed to save mitra data:", error);
       alert("Gagal menyimpan data. Silakan coba lagi.");
@@ -509,7 +583,7 @@ const DetailMitra = () => {
               </div>
               <div>
                 <label className="text-sm text-muted-foreground">Jenis Kelamin</label>
-                <Input value="-" readOnly className="mt-1 bg-muted/50" />
+                <Input value={mitra?.jenis_kelamin || "-"} readOnly className="mt-1 bg-muted/50" />
               </div>
               <div>
                 <label className="text-sm text-muted-foreground">Tanggal Lahir</label>
@@ -548,34 +622,157 @@ const DetailMitra = () => {
           </div>
         </div>
 
-        {/* Informasi SIM */}
+        {/* ✅ Informasi SIM - EDITABLE */}
         <div className="mt-8">
           <h3 className="text-lg font-semibold mb-4">Informasi SIM</h3>
           <div className="flex gap-6">
             <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm text-muted-foreground">Nama Lengkap</label>
-                <Input value="-" readOnly className="mt-1 bg-muted/50" />
+                {isEditMode ? (
+                  <Input
+                    value={editNamaSIM}
+                    onChange={(e) => setEditNamaSIM(e.target.value)}
+                    className="mt-1"
+                    placeholder="Masukkan nama sesuai SIM"
+                  />
+                ) : (
+                  <Input value={mitra?.sim_data?.nama_lengkap || "-"} readOnly className="mt-1 bg-muted/50" />
+                )}
               </div>
               <div>
                 <label className="text-sm text-muted-foreground">Nomor SIM</label>
-                <Input value="-" readOnly className="mt-1 bg-muted/50" />
+                {isEditMode ? (
+                  <Input
+                    value={editNomorSIM}
+                    onChange={(e) => setEditNomorSIM(e.target.value)}
+                    className="mt-1"
+                    placeholder="Masukkan nomor SIM"
+                  />
+                ) : (
+                  <Input value={mitra?.sim_data?.sim_number || "-"} readOnly className="mt-1 bg-muted/50" />
+                )}
               </div>
               <div>
-                <label className="text-sm text-muted-foreground">Jenis Kelamin</label>
-                <Input value="-" readOnly className="mt-1 bg-muted/50" />
+                <label className="text-sm text-muted-foreground">Jenis SIM</label>
+                {isEditMode ? (
+                  <Select value={editJenisSIM} onValueChange={setEditJenisSIM}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Pilih Jenis SIM" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="A">SIM A</SelectItem>
+                      <SelectItem value="B1">SIM B1</SelectItem>
+                      <SelectItem value="B2">SIM B2</SelectItem>
+                      <SelectItem value="C">SIM C</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input value={mitra?.sim_data?.sim_type ? `SIM ${mitra.sim_data.sim_type}` : "-"} readOnly className="mt-1 bg-muted/50" />
+                )}
               </div>
               <div>
-                <label className="text-sm text-muted-foreground">Tangal Lahir</label>
+                <label className="text-sm text-muted-foreground">Masa Berlaku</label>
                 <div className="relative mt-1">
-                  <Input value="-" readOnly className="bg-muted/50 pr-10" />
-                  <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                  {isEditMode ? (
+                    <Input
+                      type="date"
+                      value={editMasaBerlakuSIM}
+                      onChange={(e) => setEditMasaBerlakuSIM(e.target.value)}
+                      className="pr-10"
+                    />
+                  ) : (
+                    <>
+                      <Input value={formatDate(mitra?.sim_data?.sim_expiry_date)} readOnly className="bg-muted/50 pr-10" />
+                      <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                    </>
+                  )}
                 </div>
               </div>
             </div>
-            <div className="relative w-32 h-20 bg-muted rounded-lg flex items-center justify-center overflow-hidden border">
-              <span className="text-xs text-muted-foreground">No Image</span>
+            {mitra?.sim_data?.sim_photo ? (
+              <div
+                className="relative w-32 h-20 bg-muted rounded-lg flex items-center justify-center overflow-hidden border cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => setPreviewImage({ src: mitra?.sim_data?.sim_photo || "", title: "Foto SIM" })}
+              >
+                <img src={mitra.sim_data.sim_photo} alt="SIM" className="w-full h-full object-cover" />
+                <div className="absolute bottom-1 right-1 bg-primary/80 rounded-full p-1">
+                  <SearchIcon size={12} className="text-white" />
+                </div>
+              </div>
+            ) : (
+              <div className="relative w-32 h-20 bg-muted rounded-lg flex items-center justify-center overflow-hidden border">
+                <span className="text-xs text-muted-foreground">No Image</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ✅ Informasi SKCK - EDITABLE */}
+        <div className="mt-8">
+          <h3 className="text-lg font-semibold mb-4">Informasi SKCK</h3>
+          <div className="flex gap-6">
+            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm text-muted-foreground">Nama Lengkap</label>
+                {isEditMode ? (
+                  <Input
+                    value={editNamaSKCK}
+                    onChange={(e) => setEditNamaSKCK(e.target.value)}
+                    className="mt-1"
+                    placeholder="Masukkan nama sesuai SKCK"
+                  />
+                ) : (
+                  <Input value={mitra?.skck_data?.skck_name || "-"} readOnly className="mt-1 bg-muted/50" />
+                )}
+              </div>
+              <div>
+                <label className="text-sm text-muted-foreground">Nomor SKCK</label>
+                {isEditMode ? (
+                  <Input
+                    value={editNomorSKCK}
+                    onChange={(e) => setEditNomorSKCK(e.target.value)}
+                    className="mt-1"
+                    placeholder="Masukkan nomor SKCK"
+                  />
+                ) : (
+                  <Input value={mitra?.skck_data?.skck_number || "-"} readOnly className="mt-1 bg-muted/50" />
+                )}
+              </div>
+              <div>
+                <label className="text-sm text-muted-foreground">Masa Berlaku</label>
+                <div className="relative mt-1">
+                  {isEditMode ? (
+                    <Input
+                      type="date"
+                      value={editMasaBerlakuSKCK}
+                      onChange={(e) => setEditMasaBerlakuSKCK(e.target.value)}
+                      className="pr-10"
+                    />
+                  ) : (
+                    <>
+                      <Input value={formatDate(mitra?.skck_data?.skck_expiry_date)} readOnly className="bg-muted/50 pr-10" />
+                      <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
+            {mitra?.skck_data?.skck_photo ? (
+              <div
+                className="relative w-32 h-20 bg-muted rounded-lg flex items-center justify-center overflow-hidden border cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => setPreviewImage({ src: mitra?.skck_data?.skck_photo || "", title: "Foto SKCK" })}
+              >
+                <img src={mitra.skck_data.skck_photo} alt="SKCK" className="w-full h-full object-cover" />
+                <div className="absolute bottom-1 right-1 bg-primary/80 rounded-full p-1">
+                  <SearchIcon size={12} className="text-white" />
+                </div>
+              </div>
+            ) : (
+              <div className="relative w-32 h-20 bg-muted rounded-lg flex items-center justify-center overflow-hidden border">
+                <span className="text-xs text-muted-foreground">No Image</span>
+              </div>
+            )}
           </div>
         </div>
       </div>

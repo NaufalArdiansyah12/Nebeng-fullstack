@@ -31,7 +31,7 @@ const PosMitra = () => {
   const fetchPosMitra = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/users/pos-mitra");
+      const response = await api.get("/finance/users/pos-mitra");
       setPosMitraData(response.data);
     } catch (error) {
       console.error("Error fetching pos mitra:", error);

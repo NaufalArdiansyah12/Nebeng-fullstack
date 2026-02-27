@@ -16,7 +16,7 @@ import { useAdmin } from "@/contexts/AdminContext";
 import { toast } from "sonner";
 
 const Pengaturan = () => {
-  const { profile, updateProfile, loading } = useAdmin();
+  const { profile, updateProfile, updatePassword, loading } = useAdmin();
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isEditingPassword, setIsEditingPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -28,8 +28,6 @@ const Pengaturan = () => {
     namaLengkap: "",
     email: "",
     tempatLahir: "",
-    tanggalLahir: "",
-    jenisKelamin: "",
     noTlp: "",
   });
 
@@ -47,8 +45,6 @@ const Pengaturan = () => {
         namaLengkap: profile.namaLengkap || "",
         email: profile.email || "",
         tempatLahir: profile.tempatLahir || "",
-        tanggalLahir: profile.tanggalLahir || "",
-        jenisKelamin: profile.jenisKelamin || "",
         noTlp: profile.noTlp || "",
       });
     }
@@ -88,14 +84,16 @@ const Pengaturan = () => {
       namaLengkap: profile.namaLengkap || "",
       email: profile.email || "",
       tempatLahir: profile.tempatLahir || "",
-      tanggalLahir: profile.tanggalLahir || "",
-      jenisKelamin: profile.jenisKelamin || "",
       noTlp: profile.noTlp || "",
     });
     setIsEditingProfile(false);
   };
 
-  const handleSavePassword = () => {
+  const handleSavePassword = async () => {
+    if (!passwordData.newPassword) {
+      toast.error("Password baru harus diisi!");
+      return;
+    }
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       toast.error("Password baru dan konfirmasi password tidak cocok!");
       return;
@@ -104,15 +102,21 @@ const Pengaturan = () => {
       toast.error("Password minimal 6 karakter!");
       return;
     }
-    
-    // TODO: Implement password update API
-    toast.success("Password berhasil diperbarui!");
-    setIsEditingPassword(false);
-    setPasswordData({
-      currentPassword: "••••••••",
-      newPassword: "",
-      confirmPassword: "",
-    });
+
+    try {
+      // ✅ FIXED: Only pass newPassword (function only accepts one parameter)
+      await updatePassword(passwordData.newPassword);
+      toast.success("Password berhasil diperbarui!"); 
+      setIsEditingPassword(false);
+      setPasswordData({
+        currentPassword: "••••••••",
+        newPassword: "",
+        confirmPassword: "",
+      });
+    } catch (error) {
+      console.error('Error updating password:', error);
+      toast.error("Gagal memperbarui password!");
+    }
   };
 
   if (loading) {
@@ -214,35 +218,7 @@ const Pengaturan = () => {
                   placeholder="Masukkan tempat lahir"
                 />
               </div>
-              <div className="space-y-2">
-                <Label className="text-sm text-muted-foreground">Tanggal Lahir</Label>
-                <div className="relative">
-                  <Input
-                    type="date"
-                    value={formData.tanggalLahir}
-                    onChange={(e) => setFormData({ ...formData, tanggalLahir: e.target.value })}
-                    disabled={!isEditingProfile}
-                    className={`bg-muted/50 border-muted disabled:opacity-100 pr-10 ${isEditingProfile ? 'bg-white' : ''}`}
-                  />
-                  <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm text-muted-foreground">Jenis Kelamin</Label>
-                <Select
-                  value={formData.jenisKelamin}
-                  onValueChange={(value) => setFormData({ ...formData, jenisKelamin: value })}
-                  disabled={!isEditingProfile}
-                >
-                  <SelectTrigger className={`bg-muted/50 border-muted disabled:opacity-100 ${isEditingProfile ? 'bg-white' : ''}`}>
-                    <SelectValue placeholder="Pilih jenis kelamin" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Laki - Laki">Laki - Laki</SelectItem>
-                    <SelectItem value="Perempuan">Perempuan</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+
               <div className="space-y-2">
                 <Label className="text-sm text-muted-foreground">No. Tlp</Label>
                 <Input

@@ -320,7 +320,7 @@ class BookingController extends Controller
                     'date' => $payment ? date('d/m/Y', strtotime($payment->paid_at)) : '-',
                     'transaction_number' => $payment->transaction_id ?? 'INV/' . date('Ymd') . '/123456789',
                     'base_price' => (float) ($payment->amount ?? $tebengan->price ?? 50000),
-                    'admin_fee' => (float) ($payment->admin_fee ?? 15000),
+                    'admin_fee' => (float) ($payment->admin_fee ?? (\App\Models\FinanceSetting::first()?->admin_fee ?? 15000)),
                     'total' => (float) ($payment->total_amount ?? 65000),
                     'passengers' => (int) ($booking->seats ?? 2),
                 ],

@@ -276,7 +276,7 @@ class _BankVerificationPageState extends State<BankVerificationPage> {
           elevation: 0,
         ),
         child: const Text(
-          'Kirim Verifikasi',
+          'Simpan',
           style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w600,

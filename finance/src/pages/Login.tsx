@@ -28,7 +28,7 @@ const Login = () => {
 
     try {
       const response = await api.post(
-        "/users/login",
+        "/finance/users/login",
         { email, password }
       );
 

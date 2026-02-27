@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Services\PointRewardService;
 use App\Models\Ride;
 use App\Models\CarRide;
 use App\Models\BarangRide;
@@ -531,6 +532,10 @@ class QrController extends Controller
                     if ($booking) {
                         $booking->status = 'completed';
                         $booking->save();
+                        // Award points to customer
+                        if ($booking->user_id) {
+                            PointRewardService::awardPointsForBooking($booking->user_id, 'motor', $booking->id);
+                        }
                         $updated = true;
                     }
                     break;
@@ -540,6 +545,10 @@ class QrController extends Controller
                     if ($booking) {
                         $booking->status = 'completed';
                         $booking->save();
+                        // Award points to customer
+                        if ($booking->user_id) {
+                            PointRewardService::awardPointsForBooking($booking->user_id, 'mobil', $booking->id);
+                        }
                         $updated = true;
                     }
                     break;
@@ -549,6 +558,10 @@ class QrController extends Controller
                     if ($booking) {
                         $booking->status = 'completed';
                         $booking->save();
+                        // Award points to customer
+                        if ($booking->user_id) {
+                            PointRewardService::awardPointsForBooking($booking->user_id, 'barang', $booking->id);
+                        }
                         $updated = true;
                     }
                     break;
@@ -558,6 +571,10 @@ class QrController extends Controller
                     if ($booking) {
                         $booking->status = 'completed';
                         $booking->save();
+                        // Award points to customer
+                        if ($booking->user_id) {
+                            PointRewardService::awardPointsForBooking($booking->user_id, 'titip', $booking->id);
+                        }
                         $updated = true;
                     }
                     break;

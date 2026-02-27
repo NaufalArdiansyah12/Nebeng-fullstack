@@ -1,5 +1,6 @@
 import '../services/shared/chat_service.dart';
 import '../services/api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Helper untuk create conversation (untuk testing atau dipanggil dari booking flow)
 class ChatHelper {
@@ -29,20 +30,67 @@ class ChatHelper {
     required Map<String, dynamic> mitraData, // {id, name, photo, phone}
   }) async {
     try {
+      // Fetch fresh user photos from backend to ensure they're up-to-date
+      String? customerPhotoUrl = _getFullPhotoUrl(customerData['photo']);
+      String? mitraPhotoUrl = _getFullPhotoUrl(mitraData['photo']);
+
+      // Try to fetch from backend if photo is missing or incomplete
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final token = prefs.getString('api_token');
+
+        if (token != null) {
+          // Fetch customer photo from backend
+          if (customerPhotoUrl == null || customerPhotoUrl.isEmpty) {
+            try {
+              final customerFromApi =
+                  await ApiService.getUserById(customerData['id'], token);
+              final photoFromApi = customerFromApi['photo_url'] as String?;
+              if (photoFromApi != null && photoFromApi.isNotEmpty) {
+                customerPhotoUrl = _getFullPhotoUrl(photoFromApi);
+                print(
+                    '✅ Fetched customer photo from backend: $customerPhotoUrl');
+              }
+            } catch (e) {
+              print('⚠️ Could not fetch customer photo: $e');
+            }
+          }
+
+          // Fetch mitra photo from backend
+          if (mitraPhotoUrl == null || mitraPhotoUrl.isEmpty) {
+            try {
+              final mitraFromApi =
+                  await ApiService.getUserById(mitraData['id'], token);
+              final photoFromApi = mitraFromApi['photo_url'] as String?;
+              if (photoFromApi != null && photoFromApi.isNotEmpty) {
+                mitraPhotoUrl = _getFullPhotoUrl(photoFromApi);
+                print('✅ Fetched mitra photo from backend: $mitraPhotoUrl');
+              }
+            } catch (e) {
+              print('⚠️ Could not fetch mitra photo: $e');
+            }
+          }
+        }
+      } catch (e) {
+        print('⚠️ Error fetching photos from backend: $e');
+      }
+
       final conversationId = await _chatService.createConversation(
         rideId: rideId,
         bookingType: bookingType,
         customerId: customerData['id'],
         customerName: customerData['name'] ?? 'Customer',
-        customerPhoto: _getFullPhotoUrl(customerData['photo']),
+        customerPhoto: customerPhotoUrl,
         customerPhone: customerData['phone'],
         mitraId: mitraData['id'],
         mitraName: mitraData['name'] ?? 'Mitra',
-        mitraPhoto: _getFullPhotoUrl(mitraData['photo']),
+        mitraPhoto: mitraPhotoUrl,
         mitraPhone: mitraData['phone'],
       );
 
       print('✅ Conversation created: $conversationId');
+      print('   Customer photo: $customerPhotoUrl');
+      print('   Mitra photo: $mitraPhotoUrl');
       return conversationId;
     } catch (e) {
       print('❌ Error creating conversation: $e');

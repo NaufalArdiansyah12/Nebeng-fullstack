@@ -267,7 +267,49 @@ class _UbahJadwalDetailPageState extends State<UbahJadwalDetailPage> {
 
       final requestId = res['request_id'];
 
-      // Always go through payment flow, even if payment not required
+      // If backend indicates no payment required, the request is created and
+      // will be processed (approved) by admin/automatic flow — inform user
+      // that the reschedule request was submitted and do not attempt payment.
+      final paymentRequired = (res['payment_required'] ?? true) as bool;
+      if (!paymentRequired) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text(
+                    'Permintaan ubah jadwal terkirim. Menunggu konfirmasi.')),
+          );
+
+          // Show confirmation dialog giving user a choice to stay or go back
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Permintaan Terkirim'),
+              content: const Text(
+                  'Permintaan ubah jadwal telah dikirim dan menunggu konfirmasi dari pihak terkait.'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(ctx).pop(); // close dialog, stay on page
+                  },
+                  child: const Text('Tutup'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(ctx).pop(); // close dialog
+                    if (mounted)
+                      Navigator.of(context)
+                          .pop(true); // go back and indicate success
+                  },
+                  child: const Text('Kembali'),
+                ),
+              ],
+            ),
+          );
+        }
+        return;
+      }
+
+      // Proceed with payment flow when required
       final profile = await ApiService.getProfile(token: token);
       int userId = 0;
       if (profile['success'] == true && profile['data'] != null) {
@@ -286,8 +328,13 @@ class _UbahJadwalDetailPageState extends State<UbahJadwalDetailPage> {
       // Calculate reschedule fee
       // Use absolute value of price diff + admin fee
       // Or minimum reschedule fee if price goes down
-      final rescheduleAmount = priceDiff.abs(); // Always positive
-      final adminFee = 15000.0; // Always charge admin fee for reschedule
+      final double rescheduleFee = (res['reschedule_fee'] ?? 0).toDouble();
+      final double adminFee = (res['admin_fee'] ?? 0).toDouble();
+      final double passengerCharge = priceDiff > 0 ? priceDiff : 0.0;
+      // Backend PaymentService expects `amount` to be the nominal charge (excluding admin fee).
+      // Pass passengerCharge + rescheduleFee as `amount`, and pass `adminFee` separately.
+      final double amountWithoutAdmin = passengerCharge + rescheduleFee;
+      final double totalAmount = amountWithoutAdmin + adminFee;
 
       final payData = await ApiService.createPayment(
         rideId: targetId,
@@ -295,15 +342,53 @@ class _UbahJadwalDetailPageState extends State<UbahJadwalDetailPage> {
         bookingNumber: widget.booking['booking_number']?.toString() ?? '',
         bookingId: widget.booking['id'],
         paymentMethod: 'bri',
-        amount: rescheduleAmount,
+        amount: amountWithoutAdmin,
+        bookingPrice: passengerCharge,
+        rescheduleRequestId: requestId,
         adminFee: adminFee,
       );
 
-      final payment = payData['payment'] ?? {};
-      final va = payData['virtual_account_number'] ??
-          payment['virtual_account_number'];
-      final paymentId =
-          payment['id']?.toString() ?? payData['payment']['external_id'] ?? '';
+      // ApiService.createPayment may return either the inner data map
+      // or a wrapper { success: true, data: { ... } } depending on caller.
+      // Debug output to inspect API response shape when VA missing
+      try {
+        print('createPayment raw response: ' + payData.toString());
+      } catch (_) {}
+
+      final payload = (payData is Map &&
+              payData.containsKey('data') &&
+              payData['data'] is Map)
+          ? Map<String, dynamic>.from(payData['data'] as Map)
+          : (payData is Map
+              ? Map<String, dynamic>.from(payData)
+              : <String, dynamic>{});
+      try {
+        print('createPayment payload extracted: ' + payload.toString());
+      } catch (_) {}
+
+      final payment = payload['payment'] ?? payload['data'] ?? null;
+      final va = payload['virtual_account_number'] ??
+          (payment != null
+              ? (payment['virtual_account_number'] ??
+                  payment['virtualAccount'] ??
+                  null)
+              : null) ??
+          '';
+
+      String paymentId = '';
+      if (payment != null && payment is Map) {
+        if (payment['id'] != null) {
+          paymentId = payment['id'].toString();
+        } else if (payment['external_id'] != null) {
+          paymentId = payment['external_id'].toString();
+        } else if (payment['externalId'] != null) {
+          paymentId = payment['externalId'].toString();
+        }
+      } else if (payload['external_id'] != null) {
+        paymentId = payload['external_id'].toString();
+      } else if (payload['externalId'] != null) {
+        paymentId = payload['externalId'].toString();
+      }
 
       // Get total passengers from booking
       final totalPassengers = passengers.length;
@@ -314,11 +399,15 @@ class _UbahJadwalDetailPageState extends State<UbahJadwalDetailPage> {
             requestId: requestId,
             paymentTxnId: paymentId,
             virtualAccount: va ?? '',
-            bankCode: payData['bank_code'] ?? payment['bank_code'] ?? '',
+            bankCode: payData['bank_code'] ??
+                ((payment != null) ? payment['bank_code'] : null) ??
+                '',
             amount: payData['payment'] != null
-                ? (payData['payment']['total_amount'] ??
-                    (rescheduleAmount + adminFee))
-                : (rescheduleAmount + adminFee),
+                ? (payData['payment']['total_amount'] ?? totalAmount)
+                : totalAmount,
+            // Pass the actual payment object (extracted into `payment`) so
+            // the detail page can read `admin_fee` and `total_amount` directly.
+            serverPayment: payment,
             bookingData: widget.booking,
             newRideData: widget.selectedRide,
             priceBefore: priceBefore,
@@ -1001,37 +1090,42 @@ class _UbahJadwalDetailPageState extends State<UbahJadwalDetailPage> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Tambah Penumpang Button
-                        InkWell(
-                          onTap: _showAddPassengerDialog,
-                          borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.grey[300]!),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  'Tambah Penumpang',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.black87,
-                                    fontWeight: FontWeight.w500,
+                        // Tambah Penumpang Button (hide for motor bookings)
+                        if ((widget.booking['booking_type'] ?? '')
+                                .toString()
+                                .toLowerCase() !=
+                            'motor')
+                          InkWell(
+                            onTap: _showAddPassengerDialog,
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.grey[300]!),
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'Tambah Penumpang',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.black87,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
-                                ),
-                                Icon(
-                                  Icons.edit,
-                                  size: 20,
-                                  color: Colors.grey[600],
-                                ),
-                              ],
+                                  Icon(
+                                    Icons.edit,
+                                    size: 20,
+                                    color: Colors.grey[600],
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
 
                         const SizedBox(height: 100),
                       ],

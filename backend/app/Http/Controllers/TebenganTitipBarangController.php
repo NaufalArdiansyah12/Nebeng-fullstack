@@ -8,58 +8,81 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use App\Services\PriceCalculationService;
+use Illuminate\Support\Facades\Log;
 
 class TebenganTitipBarangController extends Controller
 {
-    /**
-     * Generate unique QR code data for a ride
-     * Format: RIDE-TITIP-{id}-{random}
-     */
     private function generateQrCode($rideId)
     {
         $random = Str::upper(Str::random(8));
         return "RIDE-TITIP-{$rideId}-{$random}";
     }
 
-    /**
-     * Get all tebengan titip barang (with filters)
-     */
     public function index(Request $request)
     {
         try {
             $query = TebenganTitipBarang::with(['user', 'originLocation', 'destinationLocation']);
 
-            // Filter by status
             if ($request->has('status')) {
                 $query->where('status', $request->status);
             }
 
-            // Filter by user (mitra)
             if ($request->has('user_id')) {
                 $query->where('user_id', $request->user_id);
             }
 
-            // Filter by origin location
             if ($request->has('origin_location_id')) {
                 $query->where('origin_location_id', $request->origin_location_id);
             }
 
-            // Filter by destination location
             if ($request->has('destination_location_id')) {
                 $query->where('destination_location_id', $request->destination_location_id);
             }
 
-            // Filter by date
             if ($request->has('departure_date')) {
                 $query->whereDate('departure_date', $request->departure_date);
             }
 
-            // Filter by transportation type
             if ($request->has('transportation_type')) {
                 $query->where('transportation_type', $request->transportation_type);
             }
 
             $tebengan = $query->orderBy('created_at', 'desc')->paginate(20);
+
+            // Compute calculated price for each tebengan item if possible
+            try {
+                $collection = $tebengan->getCollection();
+                $collection->transform(function ($item) {
+                    try {
+                        if (!empty($item->bagasi_capacity)) {
+                            $transportation = $item->transportation_type ?? null;
+                            $transportMap = [
+                                'bus' => 'titip-barang-bus',
+                                'kereta' => 'titip-barang-kereta',
+                                'pesawat' => 'titip-barang-pesawat',
+                            ];
+                            $transportSlug = $transportMap[$transportation] ?? 'titip-barang-bus';
+
+                            $serviceType = PriceCalculationService::determineServiceType('titip_barang', $item->service_type ?? 'tebengan');
+                            $numericWeight = floatval($item->bagasi_capacity);
+
+                            $calculator = app(\App\Services\PriceCalculator::class);
+                            $priceResult = $calculator->calculate($transportSlug, $numericWeight, $serviceType, 0.0);
+                            if (is_array($priceResult) && array_key_exists('total', $priceResult)) {
+                                $item->calculated_price = $priceResult['total'];
+                                $item->price_breakdown = $priceResult;
+                            }
+                        }
+                    } catch (\Throwable $e) {
+                        Log::warning('Failed to compute calculated_price for tebengan list', ['error' => $e->getMessage(), 'id' => $item->id]);
+                    }
+                    return $item;
+                });
+                $tebengan->setCollection($collection);
+            } catch (\Throwable $e) {
+                Log::warning('Failed to attach calculated prices to tebengan paginator', ['error' => $e->getMessage()]);
+            }
 
             return response()->json([
                 'success' => true,
@@ -74,14 +97,36 @@ class TebenganTitipBarangController extends Controller
         }
     }
 
-    /**
-     * Get single tebengan titip barang by ID
-     */
     public function show($id)
     {
         try {
             $tebengan = TebenganTitipBarang::with(['user', 'originLocation', 'destinationLocation'])
                 ->findOrFail($id);
+
+            // Try to compute calculated price for this tebengan if bagasi_capacity exists
+            try {
+                if (!empty($tebengan->bagasi_capacity)) {
+                    $transportation = $tebengan->transportation_type ?? null;
+                    $transportMap = [
+                        'bus' => 'titip-barang-bus',
+                        'kereta' => 'titip-barang-kereta',
+                        'pesawat' => 'titip-barang-pesawat',
+                    ];
+                    $transportSlug = $transportMap[$transportation] ?? 'titip-barang-bus';
+
+                    $serviceType = PriceCalculationService::determineServiceType('titip_barang', $tebengan->service_type ?? 'tebengan');
+                    $numericWeight = floatval($tebengan->bagasi_capacity);
+
+                    $calculator = app(\App\Services\PriceCalculator::class);
+                    $priceResult = $calculator->calculate($transportSlug, $numericWeight, $serviceType, 0.0);
+                    if (is_array($priceResult) && array_key_exists('total', $priceResult)) {
+                        $tebengan->calculated_price = $priceResult['total'];
+                        $tebengan->price_breakdown = $priceResult;
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Failed to compute calculated_price for tebengan show', ['error' => $e->getMessage(), 'id' => $tebengan->id]);
+            }
 
             return response()->json([
                 'success' => true,
@@ -96,13 +141,9 @@ class TebenganTitipBarangController extends Controller
         }
     }
 
-    /**
-     * Create new tebengan titip barang
-     */
     public function store(Request $request)
     {
         try {
-            // Extract Bearer token from Authorization header
             $bearer = $request->bearerToken();
             if (!$bearer) {
                 return response()->json([
@@ -111,7 +152,6 @@ class TebenganTitipBarangController extends Controller
                 ], 401);
             }
 
-            // Hash and find API token
             $hashed = hash('sha256', $bearer);
             $apiToken = \App\Models\ApiToken::where('token', $hashed)->first();
             
@@ -130,7 +170,7 @@ class TebenganTitipBarangController extends Controller
                 'transportation_type' => 'required|in:kereta,pesawat,bus',
                 'bagasi_capacity' => 'required|integer|in:5,10,20',
                 'jumlah_bagasi' => 'nullable|integer|min:0',
-                'price' => 'required|numeric|min:0',
+                'price' => 'nullable|numeric|min:0',
             ]);
 
             if ($validator->fails()) {
@@ -149,14 +189,13 @@ class TebenganTitipBarangController extends Controller
                 'departure_time' => $request->departure_time,
                 'transportation_type' => $request->transportation_type,
                 'bagasi_capacity' => $request->bagasi_capacity,
-                'price' => $request->price,
+                'price' => $request->price ?? null,
                 'status' => 'active',
-                'jumlah_bagasi' => $request->jumlah_bagasi ?? 0, // Always set default value
+                'jumlah_bagasi' => $request->jumlah_bagasi ?? 0,
             ];
 
             $tebengan = TebenganTitipBarang::create($data);
 
-            // Generate and save QR code
             $qrCode = $this->generateQrCode($tebengan->id);
             $tebengan->qr_code_data = $qrCode;
             $tebengan->save();
@@ -177,15 +216,11 @@ class TebenganTitipBarangController extends Controller
         }
     }
 
-    /**
-     * Update tebengan titip barang
-     */
     public function update(Request $request, $id)
     {
         try {
             $tebengan = TebenganTitipBarang::findOrFail($id);
 
-            // Check if user is the owner
             if ($tebengan->user_id !== Auth::id()) {
                 return response()->json([
                     'success' => false,
@@ -244,15 +279,11 @@ class TebenganTitipBarangController extends Controller
         }
     }
 
-    /**
-     * Delete tebengan titip barang
-     */
     public function destroy($id)
     {
         try {
             $tebengan = TebenganTitipBarang::findOrFail($id);
 
-            // Check if user is the owner
             if ($tebengan->user_id !== Auth::id()) {
                 return response()->json([
                     'success' => false,
@@ -275,16 +306,12 @@ class TebenganTitipBarangController extends Controller
         }
     }
 
-    /**
-     * Get mitra's own tebengan titip barang
-     */
     public function myTebengan(Request $request)
     {
         try {
             $query = TebenganTitipBarang::with(['originLocation', 'destinationLocation'])
                 ->where('user_id', Auth::id());
 
-            // Filter by status
             if ($request->has('status')) {
                 $query->where('status', $request->status);
             }

@@ -155,7 +155,6 @@ class VerifikasiSimController extends Controller
             ], 404);
         }
 
-
         $updateData = [
             'sim_number' => $request->sim_number,
             'nama_lengkap' => $request->nama_lengkap,
@@ -164,13 +163,11 @@ class VerifikasiSimController extends Controller
             'status' => 'pending',
         ];
 
-
         if ($request->hasFile('sim_photo')) {
             if ($verification->sim_photo) {
                 Storage::disk('public')->delete($verification->sim_photo);
             }
             $photoPath = $request->file('sim_photo')->store('verifikasi/sim', 'public');
-
             $updateData['sim_photo'] = $photoPath;
         }
 
@@ -182,16 +179,12 @@ class VerifikasiSimController extends Controller
             ['sim_verification_id' => $verification->id]
         );
 
-        $verification->sim_photo = $photoPath;
-
-
-        $verification->update([
-            'sim_number' => $request->sim_number,
-            'sim_type' => $request->sim_type,
-            'sim_expiry_date' => $request->sim_expiry_date,
-            'status' => 'pending',
-        ]);
-
+        // Reset user role to customer when documents are updated
+        $user = \App\Models\User::find($apiToken->user_id);
+        if ($user && $user->role === 'mitra') {
+            $user->role = 'customer';
+            $user->save();
+        }
 
         return response()->json([
             'success' => true,

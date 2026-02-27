@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
+use App\Services\PriceCalculationService;
+use App\Services\PriceCalculator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
@@ -40,6 +42,67 @@ class BookingMobilController extends Controller
         $seats = $request->seats ?? 1;
         $bagasiRequested = intval($request->jumlah_bagasi ?? 0);
 
+        // Auto-calculate price based on weight
+        $calculatedPrice = null;
+        $priceBreakdown = null;
+        $weight = $request->weight ?? null;
+
+        if ($weight) {
+            $serviceType = PriceCalculationService::determineServiceType('mobil', $ride->service_type ?? 'tebengan');
+            $bagasiCapacity = $ride->bagasi_capacity ?? null;
+
+            $priceResult = PriceCalculationService::calculatePrice(
+                $serviceType,
+                'mobil',
+                floatval($weight),
+                $bagasiCapacity
+            );
+
+            if ($priceResult['success']) {
+                $calculatedPrice = $priceResult['price'];
+                $priceBreakdown = $priceResult['breakdown'];
+                Log::info('Price auto-calculated for mobil booking', $priceBreakdown);
+            } else {
+                Log::warning('Price calculation failed for mobil booking', [
+                    'message' => $priceResult['message'],
+                    'weight' => $weight,
+                ]);
+            }
+        }
+
+            // If no weight-based calculation and ride has no explicit price, try distance-based calculation
+            if ($calculatedPrice === null && (floatval($ride->price ?? 0) <= 0)) {
+                try {
+                    $serviceType = PriceCalculationService::determineServiceType('mobil', $ride->service_type ?? 'tebengan');
+
+                    $origin = $ride->originLocation;
+                    $destination = $ride->destinationLocation;
+                    $distance = 0.0;
+                    if ($origin && $destination && $origin->latitude && $origin->longitude && $destination->latitude && $destination->longitude) {
+                        $lat1 = deg2rad(floatval($origin->latitude));
+                        $lon1 = deg2rad(floatval($origin->longitude));
+                        $lat2 = deg2rad(floatval($destination->latitude));
+                        $lon2 = deg2rad(floatval($destination->longitude));
+                        $dlat = $lat2 - $lat1;
+                        $dlon = $lon2 - $lon1;
+                        $a = pow(sin($dlat / 2), 2) + cos($lat1) * cos($lat2) * pow(sin($dlon / 2), 2);
+                        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+                        $earthRadiusKm = 6371.0;
+                        $distance = $earthRadiusKm * $c;
+                    }
+
+                    $calculator = app(PriceCalculator::class);
+                    $calc = $calculator->calculate('mobil', 0.0, $serviceType, $distance);
+                    if (isset($calc['total']) && $calc['total'] > 0) {
+                        $calculatedPrice = $calc['total'];
+                        $priceBreakdown = $calc;
+                        Log::info('Distance-based price calculated for mobil booking', ['distance' => $distance, 'breakdown' => $priceBreakdown]);
+                    }
+                } catch (\Throwable $__e) {
+                    Log::warning('Distance-based price calculation failed (mobil)', ['error' => $__e->getMessage()]);
+                }
+            }
+
         // Handle photo upload for barang
         $photoPath = null;
         if ($request->hasFile('photo')) {
@@ -62,7 +125,7 @@ class BookingMobilController extends Controller
             'booking_number' => $bookingNumber,
             'seats' => $seats,
             'status' => 'pending',
-            'meta' => null,
+            'meta' => $priceBreakdown ? json_encode(['price_breakdown' => $priceBreakdown]) : null,
             'photo' => $photoPath,
             'weight' => $request->weight ?? null,
             'description' => $request->description ?? null,
@@ -131,6 +194,17 @@ class BookingMobilController extends Controller
 
         $booking->load('ride.user');
 
-        return response()->json(['success' => true, 'data' => $booking], 201);
+        // Add calculated price to response
+        $response = [
+            'success' => true,
+            'data' => $booking,
+        ];
+
+        if ($calculatedPrice !== null) {
+            $response['calculated_price'] = $calculatedPrice;
+            $response['price_breakdown'] = $priceBreakdown;
+        }
+
+        return response()->json($response, 201);
     }
 }

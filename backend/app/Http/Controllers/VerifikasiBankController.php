@@ -151,7 +151,6 @@ class VerifikasiBankController extends Controller
             ], 404);
         }
 
-
         $updateData = [
             'bank_account_number' => $request->bank_account_number,
             'bank_account_name' => $request->bank_account_name,
@@ -164,7 +163,6 @@ class VerifikasiBankController extends Controller
                 Storage::disk('public')->delete($verification->bank_account_photo);
             }
             $photoPath = $request->file('bank_account_photo')->store('verifikasi/bank', 'public');
-
             $updateData['bank_account_photo'] = $photoPath;
         }
 
@@ -175,15 +173,13 @@ class VerifikasiBankController extends Controller
             ['user_id' => $apiToken->user_id],
             ['bank_verification_id' => $verification->id]
         );
-        $verification->bank_account_photo = $photoPath;
 
-
-        $verification->update([
-            'bank_account_number' => $request->bank_account_number,
-            'bank_account_name' => $request->bank_account_name,
-            'bank_name' => $request->bank_name,
-            'status' => 'pending',
-        ]);
+        // Reset user role to customer when documents are updated
+        $user = \App\Models\User::find($apiToken->user_id);
+        if ($user && $user->role === 'mitra') {
+            $user->role = 'customer';
+            $user->save();
+        }
 
         return response()->json([
             'success' => true,

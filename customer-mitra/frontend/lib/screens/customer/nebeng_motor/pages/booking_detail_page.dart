@@ -4,7 +4,9 @@ import '../models/trip_model.dart';
 import '../utils/theme.dart';
 import 'payment_selection_page.dart';
 import '../../../../services/api_service.dart';
+import '../../../../services/customer/booking_service.dart';
 import 'dart:io';
+import 'dart:math';
 import 'package:image_picker/image_picker.dart';
 import '../../nebeng_barang/widgets/ukuran_picker.dart';
 
@@ -29,12 +31,24 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
   final ImagePicker _picker = ImagePicker();
   bool _agreedToTerms = false;
   String bookingNumber = '';
+  int displayPrice = 0;
 
   @override
   void initState() {
     super.initState();
     _generateBookingNumber();
     _loadUserData();
+    // For barang/both service types, prefer Finance-calculated price based on weight
+    if (widget.trip.serviceType == 'barang' ||
+        widget.trip.serviceType == 'both') {
+      displayPrice = 0; // wait until user picks berat
+    } else {
+      if (widget.trip.price > 0) {
+        displayPrice = _roundNearest(widget.trip.price);
+      } else {
+        _fetchCalculatedPriceIfNeeded();
+      }
+    }
 
     // Add listeners to update button state when text changes
     _nameController.addListener(() {
@@ -218,13 +232,18 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
                     color: Colors.black87,
                   ),
                 ),
-                Text(
-                  'Rp ${_formatPrice(widget.trip.price)}',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black87,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      'Rp ${_formatPrice(displayPrice)}',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                 ),
               ],
             ),
@@ -330,6 +349,41 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
     );
   }
 
+  Widget _buildTripDateBox() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: NebengMotorTheme.primaryBlue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.calendar_month,
+              color: NebengMotorTheme.primaryBlue,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            widget.trip.date,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.black87,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildFormField({
     required String label,
     required TextEditingController controller,
@@ -394,7 +448,7 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
             ),
           ),
           Text(
-            'Rp ${_formatPrice(widget.trip.price)}',
+            'Rp ${_formatPrice(displayPrice)}',
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -404,6 +458,50 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
         ],
       ),
     );
+  }
+
+  Future<void> _fetchCalculatedPriceIfNeeded() async {
+    try {
+      double? distance;
+      if (widget.trip.originLat != null &&
+          widget.trip.originLon != null &&
+          widget.trip.destinationLat != null &&
+          widget.trip.destinationLon != null) {
+        final lat1 = widget.trip.originLat! * (3.141592653589793 / 180.0);
+        final lon1 = widget.trip.originLon! * (3.141592653589793 / 180.0);
+        final lat2 = widget.trip.destinationLat! * (3.141592653589793 / 180.0);
+        final lon2 = widget.trip.destinationLon! * (3.141592653589793 / 180.0);
+        final dlat = lat2 - lat1;
+        final dlon = lon2 - lon1;
+        final a = ((sin(dlat / 2) * sin(dlat / 2)) +
+            cos(lat1) * cos(lat2) * (sin(dlon / 2) * sin(dlon / 2)));
+        final c = 2 * atan2(sqrt(a), sqrt(1 - a));
+        final earthKm = 6371.0;
+        distance = earthKm * c;
+      }
+
+      final calc = await BookingService.calculatePrice(
+        transportMode: 'motor',
+        weight: 0.0,
+        serviceType: widget.trip.serviceType,
+        distance: distance,
+      );
+      int value = 0;
+      if (calc['final_price'] is num) {
+        value = (calc['final_price'] as num).toInt();
+      } else if (calc['total'] is num) {
+        value = (calc['total'] as num).toInt();
+      } else if (calc['price'] is num) {
+        value = (calc['price'] as num).toInt();
+      }
+      if (value > 0) {
+        setState(() {
+          displayPrice = _roundNearest(value);
+        });
+      }
+    } catch (e) {
+      // ignore, keep 0
+    }
   }
 
   Widget _buildTermsCheckbox() {
@@ -435,7 +533,7 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
                 color: Colors.grey[600],
                 height: 1.4,
               ),
-              children: const [
+              children: [
                 TextSpan(text: 'Saya telah membaca dan setuju terhadap '),
                 TextSpan(
                   text: 'Syarat dan ketentuan pembelian tiket',
@@ -449,42 +547,6 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
           ),
         ),
       ],
-    );
-  }
-
-  // Kotak tanggal dengan garis luar agar sesuai contoh
-  Widget _buildTripDateBox() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[300]!),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: NebengMotorTheme.primaryBlue.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(
-              Icons.calendar_month,
-              color: NebengMotorTheme.primaryBlue,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            widget.trip.date,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.black87,
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -545,7 +607,28 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
       context,
       MaterialPageRoute(
         builder: (context) => PaymentSelectionPage(
-          trip: widget.trip,
+          trip: TripModel(
+            id: widget.trip.id,
+            date: widget.trip.date,
+            time: widget.trip.time,
+            departureLocation: widget.trip.departureLocation,
+            departureAddress: widget.trip.departureAddress,
+            arrivalLocation: widget.trip.arrivalLocation,
+            arrivalAddress: widget.trip.arrivalAddress,
+            price: displayPrice,
+            vehicleName: widget.trip.vehicleName,
+            vehiclePlate: widget.trip.vehiclePlate,
+            vehicleBrand: widget.trip.vehicleBrand,
+            vehicleType: widget.trip.vehicleType,
+            availableSeats: widget.trip.availableSeats,
+            bagasiCapacity: widget.trip.bagasiCapacity,
+            jumlahBagasi: widget.trip.jumlahBagasi,
+            serviceType: widget.trip.serviceType,
+            originLat: widget.trip.originLat,
+            originLon: widget.trip.originLon,
+            destinationLat: widget.trip.destinationLat,
+            destinationLon: widget.trip.destinationLon,
+          ),
           bookingNumber: bookingNumber,
           passengerName: _nameController.text,
           phoneNumber: _phoneController.text,
@@ -564,6 +647,12 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (Match m) => '${m[1]}.',
         );
+  }
+
+  int _roundNearest(int value, [int nearest = 5000]) {
+    if (value == 0) return 0;
+    // Use ceiling to match mobil behavior: always round up to nearest chunk
+    return ((value + nearest - 1) ~/ nearest) * nearest;
   }
 
   Future<void> _pickImage() async {
@@ -772,10 +861,12 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
         const SizedBox(height: 8),
         GestureDetector(
           onTap: () {
-            UkuranPicker.show(context, (selected) {
+            UkuranPicker.show(context, (selected) async {
               setState(() {
                 _selectedWeight = selected;
               });
+              // Recalculate price when user picks weight
+              await _recalculatePriceForSelectedWeight();
             });
           },
           child: Container(
@@ -804,5 +895,69 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
         ),
       ],
     );
+  }
+
+  Future<void> _recalculatePriceForSelectedWeight() async {
+    if (_selectedWeight == null) return;
+
+    // Map label to numeric kg using same limits as backend enum
+    int numericKg = 0;
+    switch (_selectedWeight) {
+      case 'Kecil':
+        numericKg = 5;
+        break;
+      case 'Sedang':
+        numericKg = 10;
+        break;
+      case 'Besar':
+        numericKg = 20;
+        break;
+      default:
+        numericKg = int.tryParse(_selectedWeight ?? '0') ?? 0;
+    }
+
+    double? distance;
+    if (widget.trip.originLat != null &&
+        widget.trip.originLon != null &&
+        widget.trip.destinationLat != null &&
+        widget.trip.destinationLon != null) {
+      final lat1 = widget.trip.originLat! * (3.141592653589793 / 180.0);
+      final lon1 = widget.trip.originLon! * (3.141592653589793 / 180.0);
+      final lat2 = widget.trip.destinationLat! * (3.141592653589793 / 180.0);
+      final lon2 = widget.trip.destinationLon! * (3.141592653589793 / 180.0);
+      final dlat = lat2 - lat1;
+      final dlon = lon2 - lon1;
+      final a = ((sin(dlat / 2) * sin(dlat / 2)) +
+          cos(lat1) * cos(lat2) * (sin(dlon / 2) * sin(dlon / 2)));
+      final c = 2 * atan2(sqrt(a), sqrt(1 - a));
+      final earthKm = 6371.0;
+      distance = earthKm * c;
+    }
+
+    try {
+      final calc = await BookingService.calculatePrice(
+        transportMode: 'motor',
+        weight: numericKg.toDouble(),
+        serviceType: widget.trip.serviceType,
+        distance: distance,
+      );
+
+      int value = 0;
+      if (calc['final_price'] is num) {
+        value = (calc['final_price'] as num).toInt();
+      } else if (calc['total'] is num) {
+        value = (calc['total'] as num).toInt();
+      } else if (calc['price'] is num) {
+        value = (calc['price'] as num).toInt();
+      }
+
+      if (value > 0) {
+        setState(() {
+          displayPrice = _roundNearest(value);
+        });
+      }
+    } catch (e) {
+      // ignore
+    }
   }
 }

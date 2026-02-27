@@ -46,6 +46,37 @@ interface KendaraanData {
   updated_at: string;
 }
 
+// Interface untuk data SIM
+interface SimData {
+  id: number;
+  user_id: number;
+  nama_lengkap: string | null;
+  sim_number: string | null;
+  sim_type: 'A' | 'B1' | 'B2' | 'C' | null;
+  sim_expiry_date: string | null;
+  sim_photo: string | null;
+  status: 'pending' | 'approved' | 'rejected' | null;
+  rejection_reason: string | null;
+  verified_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Interface untuk data SKCK
+interface SkckData {
+  id: number;
+  user_id: number;
+  skck_number: string | null;
+  skck_name: string | null;
+  skck_expiry_date: string | null;
+  skck_photo: string | null;
+  status: 'pending' | 'approved' | 'rejected' | null;
+  rejection_reason: string | null;
+  verified_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface MitraDetailData {
   id: string;
   nama: string;
@@ -59,8 +90,10 @@ export interface MitraDetailData {
   kode: string;
   status: "PENGAJUAN" | "TERVERIFIKASI" | "DITOLAK" | "DIBLOCK";
   ktp_data: KtpData | null;
+  sim_data: SimData | null;
+  skck_data: SkckData | null;
   kendaraan: KendaraanData[];
-  
+
   // Backward compatibility
   informasiPribadi: {
     namaLengkap: string;
@@ -105,6 +138,22 @@ export const MitraProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Helper function to map status
+  const mapStatus = (status: string | null): "PENGAJUAN" | "TERVERIFIKASI" | "DITOLAK" | "DIBLOCK" => {
+    if (!status) return "PENGAJUAN";
+    
+    const statusMap: Record<string, "PENGAJUAN" | "TERVERIFIKASI" | "DITOLAK" | "DIBLOCK"> = {
+      'pending': 'PENGAJUAN',
+      'approved': 'TERVERIFIKASI',
+      'rejected': 'DITOLAK',
+      'suspended': 'DIBLOCK',
+      'inactive': 'DIBLOCK',
+      'blocked': 'DIBLOCK'
+    };
+    
+    return statusMap[status.toLowerCase()] || "PENGAJUAN";
+  };
+
   // Fetch all mitra on mount
   useEffect(() => {
     const fetchMitra = async () => {
@@ -120,7 +169,7 @@ export const MitraProvider = ({ children }: { children: ReactNode }) => {
           email: m.email,
           noTlp: m.no_tlp || m.noTlp || "",
           layanan: m.layanan,
-          status: m.status || "PENGAJUAN",
+          status: mapStatus(m.status),
           tanggal: new Date(m.tanggal_daftar || m.createdAt || new Date()),
           kode: m.kode || "",
         }));
@@ -136,21 +185,6 @@ export const MitraProvider = ({ children }: { children: ReactNode }) => {
 
     fetchMitra();
   }, []);
-
-  // Helper function to map status
-  const mapStatus = (status: string | null): "PENGAJUAN" | "TERVERIFIKASI" | "DITOLAK" | "DIBLOCK" => {
-    if (!status) return "PENGAJUAN";
-    
-    const statusMap: Record<string, "PENGAJUAN" | "TERVERIFIKASI" | "DITOLAK" | "DIBLOCK"> = {
-      'pending': 'PENGAJUAN',
-      'approved': 'TERVERIFIKASI',
-      'rejected': 'DITOLAK',
-      'suspended': 'DIBLOCK',
-      'inactive': 'DIBLOCK'
-    };
-    
-    return statusMap[status.toLowerCase()] || "PENGAJUAN";
-  };
 
   // Fetch detail mitra by ID
   const getMitraDetail = async (id: string): Promise<MitraDetailData | null> => {
@@ -182,6 +216,8 @@ export const MitraProvider = ({ children }: { children: ReactNode }) => {
         kode: `#${detail.id}`,
         status: mapStatus(detail.ktp_data?.status),
         ktp_data: detail.ktp_data || null,
+        sim_data: detail.sim_data || null,
+        skck_data: detail.skck_data || null,
         kendaraan: detail.kendaraan || [],
         
         // Backward compatibility

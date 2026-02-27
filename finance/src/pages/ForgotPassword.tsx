@@ -23,7 +23,7 @@ const ForgotPassword = () => {
     setIsLoading(true);
     
     try {
-      const response = await api.post("/users/forgot-password", { email });
+      const response = await api.post("/finance/users/forgot-password", { email });
       toast.success(response.data.message || "OTP telah dikirim ke email Anda");
       
       // Navigate to verify OTP page

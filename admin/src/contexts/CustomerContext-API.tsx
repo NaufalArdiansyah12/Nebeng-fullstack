@@ -1,126 +1,278 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { customerApi } from "@/services/api";
 
+// ==========================================
+// INTERFACE - Sesuai dengan Database Mapping
+// ==========================================
+
 export interface CustomerData {
   id: number;
-  kode: string;
-  nama: string;
-  email: string;
-  no_tlp: string;
-  status: string;
-  tanggal_daftar: Date;
-  nama_lengkap?: string;
-  tempat_lahir?: string;
-  tanggal_lahir?: string;
-  jenis_kelamin?: string;
-  nik?: string;
-  alamat?: string;
+  
+  // Data dari verifikasi_ktp_customers & users
+  nama: string;              // dari verifikasi_ktp_customers.nama_lengkap
+  email: string;             // dari users.email
+  no_tlp: string;            // dari users.phone
+  jenis_kelamin: string;     // dari users.gender
+  alamat: string;            // dari verifikasi_ktp_customers.alamat
+  tanggal_lahir: string;     // dari verifikasi_ktp_customers.tanggal_lahir
+  nik: string;               // dari verifikasi_ktp_customers.nik
+  status: string;            // dari verifikasi_ktp_customers.status (display format)
+  tanggal_daftar: Date;      // dari users.created_at
+  
+  // Additional fields dari detail
+  nama_lengkap_ktp?: string;      // dari verifikasi_ktp_customers.nama_lengkap
+  jenis_kelamin_ktp?: string;     // dari users.gender
+  photo_wajah?: string;           // dari verifikasi_ktp_customers.photo_wajah
+  photo_ktp?: string;             // dari verifikasi_ktp_customers.photo_ktp
+  verifikasi_id?: number;
 }
+
+// ==========================================
+// CONTEXT TYPE
+// ==========================================
 
 interface CustomerContextType {
   customers: CustomerData[];
   loading: boolean;
   error: string | null;
+  
+  // Read operations
   fetchCustomers: () => Promise<void>;
   getCustomer: (id: string) => Promise<CustomerData | undefined>;
+  
+  // Create operation
   createCustomer: (data: Partial<CustomerData>) => Promise<void>;
+  
+  // Update operations
   updateCustomer: (id: string, data: Partial<CustomerData>) => Promise<void>;
+  updateCustomerFields: (id: string, fields: any) => Promise<void>;
+  updateStatus: (id: string, status: string) => Promise<void>;
+  
+  // Delete operation
   deleteCustomer: (id: string) => Promise<void>;
+  
+  // Block/Unblock operations
   blockCustomer: (id: string) => Promise<void>;
   unblockCustomer: (id: string) => Promise<void>;
 }
 
+// ==========================================
+// CONTEXT CREATION
+// ==========================================
+
 const CustomerContext = createContext<CustomerContextType | undefined>(undefined);
+
+// ==========================================
+// PROVIDER COMPONENT
+// ==========================================
 
 export function CustomerProvider({ children }: { children: ReactNode }) {
   const [customers, setCustomers] = useState<CustomerData[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // ------------------------------------------------
+  // HELPER: Status mapping (database → display)
+  // ------------------------------------------------
+  const mapStatusToDisplay = (dbStatus: string | null): string => {
+    if (!dbStatus) return 'PENGAJUAN';
+    
+    const statusMap: Record<string, string> = {
+      'pending': 'PENGAJUAN',
+      'approved': 'TERVERIFIKASI',
+      'rejected': 'DITOLAK',
+      'suspended': 'DIBLOCK'
+    };
+    
+    return statusMap[dbStatus.toLowerCase()] || dbStatus.toUpperCase();
+  };
+
+  // ------------------------------------------------
+  // FETCH ALL CUSTOMERS
+  // ------------------------------------------------
   const fetchCustomers = async () => {
     setLoading(true);
     setError(null);
+    
     try {
       const response = await customerApi.getAll();
-      setCustomers(response.data);
+      
+      const transformedData = response.data.map((c: any) => ({
+        ...c,
+        id: Number(c.id),
+        status: mapStatusToDisplay(c.status),
+        tanggal_daftar: new Date(c.tanggal_daftar)
+      }));
+      
+      setCustomers(transformedData);
+      console.log('✅ Customers fetched:', transformedData.length);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch customers';
       setError(message);
-      console.error('Error fetching customers:', err);
+      console.error('❌ Error fetching customers:', err);
     } finally {
       setLoading(false);
     }
   };
 
+  // ------------------------------------------------
+  // GET SINGLE CUSTOMER
+  // ------------------------------------------------
   const getCustomer = async (id: string): Promise<CustomerData | undefined> => {
     try {
       const response = await customerApi.getById(id);
-      return response.data;
+      const customer = {
+        ...response.data,
+        id: Number(response.data.id),
+        status: mapStatusToDisplay(response.data.status),
+        tanggal_daftar: new Date(response.data.tanggal_daftar)
+      };
+      
+      console.log('✅ Customer detail fetched:', customer);
+      return customer;
     } catch (err) {
-      console.error('Error fetching customer:', err);
+      console.error('❌ Error fetching customer:', err);
       return undefined;
     }
   };
 
+  // ------------------------------------------------
+  // CREATE CUSTOMER
+  // ------------------------------------------------
   const createCustomer = async (data: Partial<CustomerData>) => {
     try {
       await customerApi.create(data);
       await fetchCustomers();
+      console.log('✅ Customer created');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to create customer';
       setError(message);
-      console.error('Error creating customer:', err);
+      console.error('❌ Error creating customer:', err);
+      throw err;
     }
   };
 
+  // ------------------------------------------------
+  // UPDATE CUSTOMER (Full Update)
+  // ------------------------------------------------
   const updateCustomer = async (id: string, data: Partial<CustomerData>) => {
     try {
-      await customerApi.update(id, data);
+      // Transform data ke format yang diharapkan backend
+      await customerApi.updateCustomer(id, {
+        nama: data.nama,
+        email: data.email,
+        noTlp: data.no_tlp,
+        jenisKelamin: data.jenis_kelamin,
+        tanggalLahir: data.tanggal_lahir,
+        alamat: data.alamat,
+        nik: data.nik,
+        namaLengkapKtp: data.nama_lengkap_ktp,
+        jenisKelaminKtp: data.jenis_kelamin_ktp,
+        photoWajah: data.photo_wajah,
+        photoKtp: data.photo_ktp,
+      });
+      
       await fetchCustomers();
+      console.log('✅ Customer updated');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to update customer';
       setError(message);
-      console.error('Error updating customer:', err);
+      console.error('❌ Error updating customer:', err);
+      throw err;
     }
   };
 
+  // ------------------------------------------------
+  // UPDATE CUSTOMER FIELDS (Partial Update)
+  // ------------------------------------------------
+  const updateCustomerFields = async (id: string, fields: any) => {
+    try {
+      await customerApi.updateFields(id, fields);
+      await fetchCustomers();
+      console.log('✅ Customer fields updated:', Object.keys(fields));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to update customer fields';
+      setError(message);
+      console.error('❌ Error updating customer fields:', err);
+      throw err;
+    }
+  };
+
+  // ------------------------------------------------
+  // DELETE CUSTOMER
+  // ------------------------------------------------
   const deleteCustomer = async (id: string) => {
     try {
       await customerApi.delete(id);
       await fetchCustomers();
+      console.log('✅ Customer deleted');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to delete customer';
       setError(message);
-      console.error('Error deleting customer:', err);
+      console.error('❌ Error deleting customer:', err);
+      throw err;
     }
   };
 
+  // ------------------------------------------------
+  // UPDATE STATUS
+  // ------------------------------------------------
+  const updateStatus = async (id: string, displayStatus: string) => {
+    try {
+      // Backend expects display format (PENGAJUAN, TERVERIFIKASI, etc.)
+      await customerApi.updateStatus(id, displayStatus);
+      await fetchCustomers();
+      console.log(`✅ Customer ${id} status updated to ${displayStatus}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to update status';
+      setError(message);
+      console.error('❌ Error updating status:', err);
+      throw err;
+    }
+  };
+
+  // ------------------------------------------------
+  // BLOCK CUSTOMER
+  // ------------------------------------------------
   const blockCustomer = async (id: string) => {
     try {
       await customerApi.block(id);
       await fetchCustomers();
+      console.log(`✅ Customer ${id} blocked`);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to block customer';
       setError(message);
-      console.error('Error blocking customer:', err);
+      console.error('❌ Error blocking customer:', err);
+      throw err;
     }
   };
 
+  // ------------------------------------------------
+  // UNBLOCK CUSTOMER
+  // ------------------------------------------------
   const unblockCustomer = async (id: string) => {
     try {
       await customerApi.unblock(id);
       await fetchCustomers();
+      console.log(`✅ Customer ${id} unblocked`);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to unblock customer';
       setError(message);
-      console.error('Error unblocking customer:', err);
+      console.error('❌ Error unblocking customer:', err);
+      throw err;
     }
   };
 
+  // ------------------------------------------------
+  // AUTO FETCH ON MOUNT
+  // ------------------------------------------------
   useEffect(() => {
-    // Fetch customers on mount - uncomment to enable
-    // fetchCustomers();
+    fetchCustomers();
   }, []);
+
+  // ==========================================
+  // PROVIDER VALUE
+  // ==========================================
 
   return (
     <CustomerContext.Provider
@@ -132,7 +284,9 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
         getCustomer,
         createCustomer,
         updateCustomer,
+        updateCustomerFields,
         deleteCustomer,
+        updateStatus,
         blockCustomer,
         unblockCustomer,
       }}
@@ -142,6 +296,10 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// ==========================================
+// CUSTOM HOOK
+// ==========================================
+
 export function useCustomer() {
   const context = useContext(CustomerContext);
   if (context === undefined) {
@@ -149,3 +307,41 @@ export function useCustomer() {
   }
   return context;
 }
+
+// ==========================================
+// USAGE EXAMPLES
+// ==========================================
+
+/*
+// 1. Get all customers
+const { customers, loading, error } = useCustomer();
+
+// 2. Get single customer
+const { getCustomer } = useCustomer();
+const customer = await getCustomer('123');
+
+// 3. Update full customer data
+const { updateCustomer } = useCustomer();
+await updateCustomer('123', {
+  nama: 'John Doe',
+  email: 'john@example.com',
+  no_tlp: '081234567890',
+  alamat: 'Jl. Contoh No. 123'
+});
+
+// 4. Update specific fields only
+const { updateCustomerFields } = useCustomer();
+await updateCustomerFields('123', {
+  email: 'newemail@example.com',
+  no_tlp: '089876543210'
+});
+
+// 5. Update status
+const { updateStatus } = useCustomer();
+await updateStatus('123', 'TERVERIFIKASI');
+
+// 6. Block/Unblock
+const { blockCustomer, unblockCustomer } = useCustomer();
+await blockCustomer('123');
+await unblockCustomer('123');
+*/

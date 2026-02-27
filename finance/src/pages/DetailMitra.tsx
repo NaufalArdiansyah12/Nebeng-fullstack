@@ -53,7 +53,7 @@ const DetailMitra = () => {
 
   const fetchMitraDetail = async () => {
     try {
-      const response = await api.get(`/users/mitra/${id}`);
+      const response = await api.get(`/finance/users/mitra/${id}`);
       setMitra(response.data);
     } catch (error) {
       console.error("Error fetching mitra:", error);

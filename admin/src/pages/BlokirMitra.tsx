@@ -35,8 +35,13 @@ const BlokirMitra = () => {
   const [showUnblockSuccess, setShowUnblockSuccess] = useState(false);
   const [selectedMitraId, setSelectedMitraId] = useState<string | null>(null);
 
-  // Filter only blocked mitra
+  // ✅ Filter HANYA mitra yang DIBLOCK
   const blockedMitra = useMemo(() => {
+    // ✅ Safety check
+    if (!mitraList || !Array.isArray(mitraList)) {
+      return [];
+    }
+    
     return mitraList.filter(mitra => mitra.status === "DIBLOCK");
   }, [mitraList]);
 
@@ -44,16 +49,16 @@ const BlokirMitra = () => {
   const filteredData = useMemo(() => {
     return blockedMitra.filter((mitra) => {
       const matchesSearch = searchQuery === "" || 
-        mitra.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        mitra.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        mitra.noTlp.includes(searchQuery) ||
-        mitra.id.includes(searchQuery) ||
-        mitra.layanan.toLowerCase().includes(searchQuery.toLowerCase());
+        mitra.nama?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        mitra.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        mitra.noTlp?.includes(searchQuery) ||
+        mitra.id?.includes(searchQuery) ||
+        mitra.layanan?.toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchesDate = !selectedDate || 
-        (mitra.tanggal.getFullYear() === selectedDate.getFullYear() &&
-         mitra.tanggal.getMonth() === selectedDate.getMonth() &&
-         mitra.tanggal.getDate() === selectedDate.getDate());
+        (mitra.tanggal?.getFullYear() === selectedDate.getFullYear() &&
+         mitra.tanggal?.getMonth() === selectedDate.getMonth() &&
+         mitra.tanggal?.getDate() === selectedDate.getDate());
 
       return matchesSearch && matchesDate;
     });
@@ -78,17 +83,23 @@ const BlokirMitra = () => {
     setCurrentPage(1);
   };
 
-  // Unblock handlers
+  // ✅ Unblock handlers dengan auto-close success modal
   const handleUnblockClick = (id: string) => {
     setSelectedMitraId(id);
     setShowUnblockConfirm(true);
   };
 
-  const handleConfirmUnblock = () => {
+  const handleConfirmUnblock = async () => {
     if (selectedMitraId) {
-      unblockMitra(selectedMitraId);
+      await unblockMitra(selectedMitraId);
       setShowUnblockConfirm(false);
       setShowUnblockSuccess(true);
+      
+      // ✅ Auto close success modal setelah 1.5 detik
+      setTimeout(() => {
+        setShowUnblockSuccess(false);
+        setSelectedMitraId(null);
+      }, 1500);
     }
   };
 
@@ -107,7 +118,7 @@ const BlokirMitra = () => {
       "NO. TLP": mitra.noTlp,
       "LAYANAN": mitra.layanan,
       "STATUS": mitra.status,
-      "TANGGAL": format(mitra.tanggal, "dd-MM-yyyy")
+      "TANGGAL": mitra.tanggal ? format(mitra.tanggal, "dd-MM-yyyy") : "-"
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(excelData);
@@ -145,6 +156,15 @@ const BlokirMitra = () => {
     }
     return pages;
   };
+
+  // ✅ Loading state
+  if (!mitraList) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <p className="text-muted-foreground">Memuat data mitra...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -244,6 +264,7 @@ const BlokirMitra = () => {
                             size="icon" 
                             className="h-8 w-8 bg-orange-500 hover:bg-orange-600"
                             onClick={() => handleUnblockClick(mitra.id)}
+                            title="Unblock Mitra"
                           >
                             <Trash2 size={18} className="text-white" />
                           </Button>

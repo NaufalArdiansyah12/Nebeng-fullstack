@@ -26,8 +26,8 @@ class _NebengMobilPageState extends State<NebengMobilPage> {
   DateTime? tanggalKeberangkatan;
   List<Map<String, String>> _addressHistory = [];
   bool _loadingHistory = false;
-
   @override
+
   void initState() {
     super.initState();
     _loadAddressHistory();

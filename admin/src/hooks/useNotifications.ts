@@ -32,7 +32,9 @@ const getRelativeTime = (date: Date): string => {
 export const useNotifications = () => {
   const { laporanList } = useLaporan();
   const { mitraList } = useMitra();
-  const { customerList } = useCustomer();
+  
+  // ✅ UPDATE: Gunakan 'customers' bukan 'customerList' sesuai Context baru
+  const { customers } = useCustomer();
 
   const notifications = useMemo(() => {
     const notifs: NotificationData[] = [];
@@ -80,9 +82,9 @@ export const useNotifications = () => {
         });
     }
 
-    // Add safety check for customerList
-    if (Array.isArray(customerList) && customerList.length > 0) {
-      customerList
+    // ✅ UPDATE: Gunakan 'customers' dan sesuaikan field names
+    if (Array.isArray(customers) && customers.length > 0) {
+      customers
         .filter((customer) => customer && customer.status === "PENGAJUAN")
         .slice(0, 5)
         .forEach((customer) => {
@@ -91,7 +93,8 @@ export const useNotifications = () => {
               id: `customer-${customer.id}`,
               title: `${customer.nama || "Customer"} mendaftar sebagai customer`,
               description: "Menunggu verifikasi dari admin",
-              time: getRelativeTime(customer.tanggal),
+              // ✅ UPDATE: Gunakan 'tanggal_daftar' bukan 'tanggal'
+              time: getRelativeTime(customer.tanggal_daftar),
               type: "customer",
               icon: UserPlus,
               bgColor: "bg-blue-100",
@@ -102,8 +105,24 @@ export const useNotifications = () => {
         });
     }
 
-    return notifs.slice(0, 10);
-  }, [laporanList, mitraList, customerList]);
+    // Sort notifications by time (newest first)
+    return notifs
+      .sort((a, b) => {
+        // Extract the time string and convert to comparable value
+        const getTimeValue = (timeStr: string): number => {
+          if (timeStr === "Baru saja") return 0;
+          const match = timeStr.match(/(\d+)/);
+          if (!match) return 999999;
+          const value = parseInt(match[1]);
+          if (timeStr.includes("jam")) return value;
+          if (timeStr.includes("hari")) return value * 24;
+          if (timeStr.includes("bulan")) return value * 24 * 30;
+          return 999999;
+        };
+        return getTimeValue(a.time) - getTimeValue(b.time);
+      })
+      .slice(0, 10);
+  }, [laporanList, mitraList, customers]); // ✅ UPDATE: dependency array
 
   const unreadCount = notifications.length;
 

@@ -7,7 +7,6 @@ import 'settings/edit_profile_page.dart';
 import 'settings/settings_page.dart';
 import '../help/help_center_page.dart';
 import '../../pin/create_pin_page.dart';
-import 'documents/documents_page.dart';
 import 'account_status_page.dart';
 import '../verification/verification_documents_page.dart';
 import '../../customer/profile/transaction_history_page.dart';
@@ -279,19 +278,6 @@ class _MitraProfilePageState extends State<MitraProfilePage> {
             title: 'PIN',
             onTap: () {
               _checkAndNavigateToPin();
-            },
-          ),
-          _buildDivider(),
-          _buildMenuItem(
-            icon: Icons.description_outlined,
-            title: 'Dokumen',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const DocumentsPage(),
-                ),
-              );
             },
           ),
           _buildDivider(),

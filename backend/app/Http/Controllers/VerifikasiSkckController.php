@@ -152,7 +152,6 @@ class VerifikasiSkckController extends Controller
             ], 404);
         }
 
-
         $updateData = [
             'skck_number' => $request->skck_number,
             'skck_name' => $request->skck_name,
@@ -160,13 +159,11 @@ class VerifikasiSkckController extends Controller
             'status' => 'pending',
         ];
 
-
         if ($request->hasFile('skck_photo')) {
             if ($verification->skck_photo) {
                 Storage::disk('public')->delete($verification->skck_photo);
             }
             $photoPath = $request->file('skck_photo')->store('verifikasi/skck', 'public');
-
             $updateData['skck_photo'] = $photoPath;
         }
 
@@ -178,16 +175,12 @@ class VerifikasiSkckController extends Controller
             ['skck_verification_id' => $verification->id]
         );
 
-        $verification->skck_photo = $photoPath;
-
-
-        $verification->update([
-            'skck_number' => $request->skck_number,
-            'skck_name' => $request->skck_name,
-            'skck_expiry_date' => $request->skck_expiry_date,
-            'status' => 'pending',
-        ]);
-
+        // Reset user role to customer when documents are updated
+        $user = \App\Models\User::find($apiToken->user_id);
+        if ($user && $user->role === 'mitra') {
+            $user->role = 'customer';
+            $user->save();
+        }
 
         return response()->json([
             'success' => true,

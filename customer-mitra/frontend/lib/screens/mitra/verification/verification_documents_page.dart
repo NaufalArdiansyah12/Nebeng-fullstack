@@ -8,6 +8,7 @@ import 'sim_verification_page.dart';
 import 'skck_verification_page.dart';
 import 'bank_verification_page.dart';
 import 'verification_success_page.dart';
+import 'edit_documents_page.dart';
 
 class VerificationDocumentsPage extends StatefulWidget {
   const VerificationDocumentsPage({Key? key}) : super(key: key);
@@ -200,6 +201,144 @@ class _VerificationDocumentsPageState extends State<VerificationDocumentsPage> {
     }
   }
 
+  void _showEditConfirmationDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Edit Dokumen',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: const Text(
+          'Anda akan mengedit dokumen verifikasi. Perubahan akan direview kembali oleh admin dan memerlukan persetujuan. Lanjutkan?',
+          style: TextStyle(fontSize: 14, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Batal',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _openEditDocumentsPage();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1A43BF),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text(
+              'Lanjutkan',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openEditDocumentsPage() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditDocumentsPage(
+          verificationData: _verificationData ?? {},
+        ),
+      ),
+    );
+
+    // Refresh status if changes were submitted
+    if (result == true) {
+      _checkVerificationStatus();
+    }
+  }
+
+  Future<void> _enterEditMode() async {
+    // Load current verified documents data
+    final data = _verificationData;
+
+    // Pre-populate saved data with current verified documents
+    if (data != null) {
+      final prefs = await SharedPreferences.getInstance();
+
+      // Load KTP data
+      if (data['ktp'] != null) {
+        final ktpMap = {
+          'ktp_number': data['ktp']['ktp_number'] ?? '',
+          'ktp_name': data['ktp']['ktp_name'] ?? '',
+          'ktp_birth_date': data['ktp']['ktp_birth_date'] ?? '',
+          'ktp_photo': data['ktp']['ktp_photo'] ?? '',
+        };
+        await prefs.setString('temp_ktp_data', jsonEncode(ktpMap));
+      }
+
+      // Load SIM data
+      if (data['sim'] != null) {
+        final simMap = {
+          'sim_number': data['sim']['sim_number'] ?? '',
+          'nama_lengkap': data['sim']['nama_lengkap'] ?? '',
+          'sim_type': data['sim']['sim_type'] ?? 'A',
+          'sim_expiry_date': data['sim']['sim_expiry_date'] ?? '',
+          'sim_photo': data['sim']['sim_photo'] ?? '',
+        };
+        await prefs.setString('temp_sim_data', jsonEncode(simMap));
+      }
+
+      // Load SKCK data
+      if (data['skck'] != null) {
+        final skckMap = {
+          'skck_number': data['skck']['skck_number'] ?? '',
+          'skck_name': data['skck']['skck_name'] ?? '',
+          'skck_expiry_date': data['skck']['skck_expiry_date'] ?? '',
+          'skck_photo': data['skck']['skck_photo'] ?? '',
+        };
+        await prefs.setString('temp_skck_data', jsonEncode(skckMap));
+      }
+
+      // Load Bank data
+      if (data['bank'] != null) {
+        final bankMap = {
+          'bank_account_number': data['bank']['bank_account_number'] ?? '',
+          'bank_account_name': data['bank']['bank_account_name'] ?? '',
+          'bank_name': data['bank']['bank_name'] ?? '',
+          'bank_account_photo': data['bank']['bank_account_photo'] ?? '',
+        };
+        await prefs.setString('temp_bank_data', jsonEncode(bankMap));
+      }
+    }
+
+    // Switch to edit mode
+    setState(() {
+      _verificationStatus = 'not_submitted';
+      _isLoading = true;
+    });
+
+    // Load the saved data
+    await _loadSavedData();
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Mode edit aktif. Silakan perbarui dokumen Anda.'),
+          backgroundColor: Color(0xFF1A43BF),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -339,6 +478,63 @@ class _VerificationDocumentsPageState extends State<VerificationDocumentsPage> {
           ),
 
           const SizedBox(height: 24),
+
+          // Edit Documents Button (only show when approved)
+          if (status == 'approved') ...[
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  _showEditConfirmationDialog();
+                },
+                icon: const Icon(Icons.edit, size: 20),
+                label: const Text(
+                  'Edit Dokumen',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1A43BF),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.amber[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.amber[200]!),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.info_outline, size: 18, color: Colors.amber[900]),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Perubahan dokumen akan direview kembali oleh admin dan memerlukan persetujuan.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.amber[900],
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 16),
 
           // Submission Info
           if (data?['submitted_at'] != null)

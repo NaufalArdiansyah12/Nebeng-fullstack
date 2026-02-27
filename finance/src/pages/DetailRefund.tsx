@@ -71,7 +71,7 @@ const DetailRefund = () => {
   const fetchRefundDetail = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/refunds/${id}`);
+      const response = await api.get(`/finance/refunds/${id}`);
       setRefund(response.data);
       setAdminFee(response.data.admin_fee.toString());
     } catch (error) {
@@ -87,7 +87,7 @@ const DetailRefund = () => {
     
     try {
       setActionLoading(true);
-      await api.post(`/refunds/${id}/approve`, {
+      await api.post(`/finance/refunds/${id}/approve`, {
         admin_fee: parseFloat(adminFee) || 0,
       });
       toast.success("Refund berhasil disetujui");
@@ -109,7 +109,7 @@ const DetailRefund = () => {
 
     try {
       setActionLoading(true);
-      await api.post(`/refunds/${id}/reject`, {
+      await api.post(`/finance/refunds/${id}/reject`, {
         rejection_reason: rejectionReason,
       });
       toast.success("Refund berhasil ditolak");
@@ -126,7 +126,7 @@ const DetailRefund = () => {
   const handleProcess = async () => {
     try {
       setActionLoading(true);
-      await api.post(`/refunds/${id}/process`);
+      await api.post(`/finance/refunds/${id}/process`);
       toast.success("Refund berhasil diproses");
       setProcessDialogOpen(false);
       fetchRefundDetail();
@@ -141,7 +141,7 @@ const DetailRefund = () => {
   const handleComplete = async () => {
     try {
       setActionLoading(true);
-      await api.post(`/refunds/${id}/complete`);
+      await api.post(`/finance/refunds/${id}/complete`);
       toast.success("Refund berhasil diselesaikan");
       fetchRefundDetail();
     } catch (error: any) {

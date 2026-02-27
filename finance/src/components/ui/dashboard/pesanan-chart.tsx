@@ -28,7 +28,7 @@ export function PesananChart({ availableMonths, currentMonthValue }: PesananChar
   const [selectedMonth, setSelectedMonth] = useState(currentMonthValue);
 
   useEffect(() => {
-    api.get(`/bookings/chart?month=${selectedMonth}`)
+    api.get(`/finance/bookings/chart?month=${selectedMonth}`)
       .then(res => setChartData(res.data))
       .catch(err => console.error("chart pesanan error:", err));
   }, [selectedMonth]);

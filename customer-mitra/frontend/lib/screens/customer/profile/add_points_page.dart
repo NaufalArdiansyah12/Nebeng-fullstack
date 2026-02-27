@@ -1,7 +1,37 @@
 import 'package:flutter/material.dart';
+import '../../../services/api_service.dart';
 
-class AddPointsPage extends StatelessWidget {
+class AddPointsPage extends StatefulWidget {
   const AddPointsPage({Key? key}) : super(key: key);
+
+  @override
+  State<AddPointsPage> createState() => _AddPointsPageState();
+}
+
+class _AddPointsPageState extends State<AddPointsPage> {
+  Map<String, dynamic> pointValues = {};
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPointValues();
+  }
+
+  Future<void> _loadPointValues() async {
+    try {
+      final data = await ApiService.getPointValues();
+      setState(() {
+        pointValues = data;
+        isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading point values: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -15,64 +45,67 @@ class AddPointsPage extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(24),
-        children: [
-          // Title
-          const Text(
-            'Tambah Point',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+              padding: const EdgeInsets.all(24),
+              children: [
+                // Title
+                const Text(
+                  'Tambah Point',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Point akan bertambah setiap transaksi',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
+                ),
+                const SizedBox(height: 40),
+
+                // Nebeng Motor
+                if (pointValues['motor'] != null)
+                  _buildPointItem(
+                    icon: Icons.motorcycle,
+                    title: pointValues['motor']['name'] ?? 'Nebeng Motor',
+                    description: pointValues['motor']['description'] ?? '',
+                  ),
+                if (pointValues['motor'] != null) const SizedBox(height: 32),
+
+                // Nebeng Mobil
+                if (pointValues['mobil'] != null)
+                  _buildPointItem(
+                    icon: Icons.directions_car,
+                    title: pointValues['mobil']['name'] ?? 'Nebeng Mobil',
+                    description: pointValues['mobil']['description'] ?? '',
+                  ),
+                if (pointValues['mobil'] != null) const SizedBox(height: 32),
+
+                // Nebeng Barang
+                if (pointValues['barang'] != null)
+                  _buildPointItem(
+                    icon: Icons.inventory_2_outlined,
+                    title: pointValues['barang']['name'] ?? 'Nebeng Barang',
+                    description: pointValues['barang']['description'] ?? '',
+                  ),
+                if (pointValues['barang'] != null) const SizedBox(height: 32),
+
+                // Titip Barang Transportasi Umum
+                if (pointValues['titip'] != null)
+                  _buildPointItem(
+                    icon: Icons.inventory_2_outlined,
+                    title: pointValues['titip']['name'] ??
+                        'Titip Barang Transportasi Umum',
+                    description: pointValues['titip']['description'] ?? '',
+                  ),
+              ],
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Point akan bertambah setiap transaksi',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 40),
-
-          // Nebeng Motor
-          _buildPointItem(
-            icon: Icons.motorcycle,
-            title: 'Nebeng Motor',
-            description:
-                'Setiap penggunaan fitur nebeng motor, point akan bertambah sebanyak 15 point',
-          ),
-          const SizedBox(height: 32),
-
-          // Nebeng Mobil
-          _buildPointItem(
-            icon: Icons.directions_car,
-            title: 'Nebeng Mobil',
-            description:
-                'Setiap penggunaan fitur nebeng mobil, point akan bertambah sebanyak 25 point',
-          ),
-          const SizedBox(height: 32),
-
-          // Nebeng Barang
-          _buildPointItem(
-            icon: Icons.inventory_2_outlined,
-            title: 'Nebeng Barang',
-            description:
-                'Setiap penggunaan fitur nebeng barang, point akan bertambah sebanyak 20 point',
-          ),
-          const SizedBox(height: 32),
-
-          // Titip Barang Transportasi Umum
-          _buildPointItem(
-            icon: Icons.inventory_2_outlined,
-            title: 'Titip Barang Transportasi Umum',
-            description:
-                'Setiap penggunaan fitur nebeng barang, point akan bertambah sebanyak 18 point',
-          ),
-        ],
-      ),
     );
   }
 

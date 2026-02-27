@@ -6,6 +6,7 @@ import { AccountInfoForm } from "@/components/ui/pengaturan/account-info-form";
 import { Button } from "@/components/ui/button";
 import api from "@/lib/api";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 // Get user ID from logged in user
 const getUserId = () => {
@@ -31,6 +32,7 @@ interface ProfileData {
 }
 
 const Pengaturan = () => {
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isEditProfile, setIsEditProfile] = useState(false);
@@ -64,7 +66,7 @@ const Pengaturan = () => {
 
     try {
       setLoading(true);
-      const res = await api.get(`/users/profile/${userId}`);
+      const res = await api.get(`/finance/users/profile/${userId}`);
       const data = res.data;
       setProfile(data);
       setProfileImage(data.profile_photo ? `http://localhost:8000/storage/${data.profile_photo}` : "");
@@ -114,7 +116,7 @@ const Pengaturan = () => {
       const formData = new FormData();
       formData.append('profile_image', file);
 
-      await api.post(`/users/profile/${userId}/upload-image`, formData, {
+      await api.post(`/finance/users/profile/${userId}/upload-image`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -150,7 +152,7 @@ const Pengaturan = () => {
     }
 
     try {
-      await api.put(`/users/profile/${userId}`, {
+      await api.put(`/finance/users/profile/${userId}`, {
         name: formData.nama_lengkap,
         email: formData.email,
         phone: formData.no_tlp,
@@ -184,7 +186,7 @@ const Pengaturan = () => {
     }
 
     try {
-      await api.put(`/users/account/${userId}`, {
+      await api.put(`/finance/users/account/${userId}`, {
         password: passwordData.new
       });
       
@@ -254,6 +256,13 @@ const Pengaturan = () => {
       />
 
       <div className="space-y-6">
+        <div className="bg-background p-6 border rounded-lg">
+          <h3 className="text-lg font-semibold mb-2">Pengaturan Biaya</h3>
+          <p className="text-sm text-muted-foreground mb-4">Atur biaya administrasi dan biaya ubah jadwal di sini.</p>
+          <div className="flex gap-3">
+            <Button onClick={() => navigate('/pengaturan/biaya')}>Kelola Biaya</Button>
+          </div>
+        </div>
         <PersonalInfoForm
           formData={formData}
           isEdit={isEditProfile}

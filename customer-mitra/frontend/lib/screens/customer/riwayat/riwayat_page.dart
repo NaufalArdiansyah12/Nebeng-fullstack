@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:easy_localization/easy_localization.dart';
 import '../main_page.dart';
 import '../../../services/api_service.dart';
@@ -87,6 +89,8 @@ class _RiwayatPageState extends State<RiwayatPage> with WidgetsBindingObserver {
         bookings = data;
         loading = false;
       });
+      // Enrich bookings that still have 0 price by fetching detail for more fields
+      _enrichBookingsWithPrices();
     } catch (e) {
       setState(() {
         error = e.toString();
@@ -109,8 +113,176 @@ class _RiwayatPageState extends State<RiwayatPage> with WidgetsBindingObserver {
       setState(() {
         bookings = data;
       });
+      // Keep prices up-to-date for entries returned without price
+      _enrichBookingsWithPrices();
     } catch (_) {
       // ignore polling errors silently
+    }
+  }
+
+  /// For bookings that still display Rp0, attempt to fetch full booking
+  /// details (which may include `calculated_price` or `price_breakdown`) and
+  /// merge them into the local `bookings` list so the UI updates.
+  Future<void> _enrichBookingsWithPrices() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('api_token');
+      if (token == null || token.isEmpty) return;
+
+      bool changed = false;
+      for (var i = 0; i < bookings.length; i++) {
+        final b = bookings[i];
+        // Determine current display price similar to _card logic
+        final ride = b['ride'] ?? {};
+        dynamic rawPrice = ride['price'] ?? b['price'] ?? b['total_price'] ?? 0;
+        if ((rawPrice == null || rawPrice == 0) &&
+            b.containsKey('calculated_price')) {
+          rawPrice = b['calculated_price'];
+        }
+        if ((rawPrice == null || rawPrice == 0) &&
+            b.containsKey('price_breakdown')) {
+          final pb = b['price_breakdown'];
+          if (pb is Map)
+            rawPrice =
+                pb['total'] ?? pb['final_price'] ?? pb['price'] ?? rawPrice;
+        }
+        if ((rawPrice == null || rawPrice == 0) && b.containsKey('meta')) {
+          final meta = b['meta'];
+          if (meta is Map) {
+            if (meta.containsKey('calculated_price'))
+              rawPrice = meta['calculated_price'];
+            if ((rawPrice == null || rawPrice == 0) &&
+                meta.containsKey('price_breakdown')) {
+              final mpb = meta['price_breakdown'];
+              if (mpb is Map)
+                rawPrice = mpb['total'] ??
+                    mpb['final_price'] ??
+                    mpb['price'] ??
+                    rawPrice;
+            }
+          }
+        }
+
+        final seats = (b['seats'] ?? 1).toString();
+        double unitPrice = double.tryParse((rawPrice ?? 0).toString()) ?? 0;
+        int seatsCount = int.tryParse(seats) ?? 1;
+        double displayAmount = unitPrice;
+        final bookingType = (b['booking_type'] ?? '').toString().toLowerCase();
+        if (bookingType == 'mobil')
+          displayAmount = unitPrice * seatsCount;
+        else if (b.containsKey('total_price'))
+          displayAmount =
+              double.tryParse(b['total_price']?.toString() ?? '0') ?? unitPrice;
+
+        // If still zero, try to fetch booking detail
+        if ((displayAmount == 0 || displayAmount == 0.0) &&
+            b.containsKey('id')) {
+          try {
+            final detail = await ApiService.fetchBooking(
+                bookingId: b['id'] as int, token: token);
+            if (detail.isNotEmpty) {
+              // Merge returned detail into bookings list so UI uses any calculated fields
+              bookings[i] = {...b, ...detail};
+              changed = true;
+            }
+          } catch (_) {
+            // ignore per-item fetch errors
+          }
+        }
+
+        // As an extra fallback, if ride exists and still no price, call tebengan show endpoint
+        try {
+          final rideObj = b['ride'];
+          if ((displayAmount == 0 || displayAmount == 0.0) &&
+              rideObj is Map &&
+              rideObj.containsKey('id')) {
+            final rideId = rideObj['id'];
+            final uri = Uri.parse(
+                '${ApiService.baseUrl}/api/v1/tebengan-titip-barang/$rideId');
+            final resp =
+                await http.get(uri, headers: {'Accept': 'application/json'});
+            if (resp.statusCode == 200) {
+              final body = json.decode(resp.body);
+              if (body is Map &&
+                  body['success'] == true &&
+                  body['data'] is Map) {
+                final rideData = Map<String, dynamic>.from(body['data']);
+                // Merge calculated fields from ride into booking/ride
+                bool merged = false;
+                if (rideData.containsKey('calculated_price')) {
+                  bookings[i] = {
+                    ...bookings[i],
+                    'calculated_price': rideData['calculated_price']
+                  };
+                  merged = true;
+                }
+                if (rideData.containsKey('price_breakdown')) {
+                  bookings[i] = {
+                    ...bookings[i],
+                    'price_breakdown': rideData['price_breakdown']
+                  };
+                  merged = true;
+                }
+                if (merged) changed = true;
+              }
+            }
+          }
+        } catch (_) {
+          // ignore
+        }
+
+        // Additional fallback for motor bookings: fetch ride show to get ride.price
+        try {
+          final bookingTypeLocal =
+              (b['booking_type'] ?? '').toString().toLowerCase();
+          final rideObj2 = b['ride'];
+          if ((displayAmount == 0 || displayAmount == 0.0) &&
+              bookingTypeLocal == 'motor' &&
+              rideObj2 is Map &&
+              rideObj2.containsKey('id')) {
+            final rideId = rideObj2['id'];
+            final uri = Uri.parse('${ApiService.baseUrl}/api/v1/rides/$rideId');
+            final resp =
+                await http.get(uri, headers: {'Accept': 'application/json'});
+            if (resp.statusCode == 200) {
+              final body = json.decode(resp.body);
+              if (body is Map &&
+                  body['success'] == true &&
+                  body['data'] is Map) {
+                final rideData = Map<String, dynamic>.from(body['data']);
+                bool merged = false;
+                // merge ride price into nested ride object
+                final existingRide =
+                    Map<String, dynamic>.from(bookings[i]['ride'] ?? {});
+                existingRide.addAll(rideData);
+                bookings[i] = {...bookings[i], 'ride': existingRide};
+                merged = true;
+
+                // if rideData exposes calculated_price or price_breakdown, set top-level as well
+                if (rideData.containsKey('calculated_price')) {
+                  bookings[i] = {
+                    ...bookings[i],
+                    'calculated_price': rideData['calculated_price']
+                  };
+                }
+                if (rideData.containsKey('price_breakdown')) {
+                  bookings[i] = {
+                    ...bookings[i],
+                    'price_breakdown': rideData['price_breakdown']
+                  };
+                }
+                if (merged) changed = true;
+              }
+            }
+          }
+        } catch (_) {
+          // ignore
+        }
+      }
+
+      if (changed) setState(() {});
+    } catch (_) {
+      // ignore
     }
   }
 
@@ -119,6 +291,27 @@ class _RiwayatPageState extends State<RiwayatPage> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     _stopPolling();
     super.dispose();
+  }
+
+  void _showBookingDebugDialog(Map<String, dynamic> booking) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Debug Booking'),
+          content: SingleChildScrollView(
+            child:
+                SelectableText(JsonEncoder.withIndent('  ').convert(booking)),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Widget _filterChips() {
@@ -283,8 +476,47 @@ class _RiwayatPageState extends State<RiwayatPage> with WidgetsBindingObserver {
 
     final seats = (b['seats'] ?? 1).toString();
 
-    // Price from ride
-    final rawPrice = ride['price'] ?? b['price'] ?? b['total_price'] ?? 0;
+    // Price from ride - prefer booking-level paid/calculated values when available.
+    dynamic rawPrice = ride['price'] ?? b['price'] ?? b['total_price'];
+
+    // 1) booking direct calculated_price
+    if ((rawPrice == null || rawPrice == 0) &&
+        b.containsKey('calculated_price')) {
+      rawPrice = b['calculated_price'];
+    }
+
+    // 2) booking direct price_breakdown
+    if ((rawPrice == null || rawPrice == 0) &&
+        b.containsKey('price_breakdown')) {
+      final pb = b['price_breakdown'];
+      if (pb is Map) {
+        rawPrice = pb['total'] ??
+            pb['final_price'] ??
+            pb['category_price'] ??
+            pb['price'] ??
+            rawPrice;
+      }
+    }
+
+    // 3) check meta (some booking types store breakdown inside meta.price_breakdown)
+    if ((rawPrice == null || rawPrice == 0) && b.containsKey('meta')) {
+      final meta = b['meta'];
+      if (meta is Map) {
+        if (meta.containsKey('calculated_price')) {
+          rawPrice = meta['calculated_price'];
+        }
+        if ((rawPrice == null || rawPrice == 0) &&
+            meta.containsKey('price_breakdown')) {
+          final mpb = meta['price_breakdown'];
+          if (mpb is Map) {
+            rawPrice =
+                mpb['total'] ?? mpb['final_price'] ?? mpb['price'] ?? rawPrice;
+          }
+        }
+      }
+    }
+
+    rawPrice = rawPrice ?? 0;
     // If booking is mobil, ride price is per-seat -> multiply by seats
     double unitPrice = double.tryParse(rawPrice.toString()) ?? 0;
     int seatsCount = int.tryParse(seats) ?? 1;
@@ -326,6 +558,9 @@ class _RiwayatPageState extends State<RiwayatPage> with WidgetsBindingObserver {
                 builder: (context) => BookingDetailRiwayatPage(booking: b),
               ),
             );
+          },
+          onLongPress: () {
+            _showBookingDebugDialog(b);
           },
           borderRadius: BorderRadius.circular(16),
           child: Padding(

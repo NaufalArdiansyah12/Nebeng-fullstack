@@ -20,6 +20,8 @@ use App\Models\PenumpangBookingMobil;
 use App\Models\Ride;
 use App\Models\BarangRide;
 use App\Models\TebenganTitipBarang;
+use App\Models\FinanceSetting;
+use App\Services\PriceCalculator;
 
 class RescheduleController extends Controller
 {
@@ -48,37 +50,106 @@ class RescheduleController extends Controller
             case 'motor':
                 $candidateQuery = Ride::where('origin_location_id', $ride->origin_location_id)
                     ->where('destination_location_id', $ride->destination_location_id)
-                    ->where('departure_date', $date);
-                    // Removed: ->where('id', '!=', $ride->id) to allow same trip selection
+                    ->whereDate('departure_date', $date)
+                    ->where('id', '!=', $ride->id);
                 break;
             case 'mobil':
                 $candidateQuery = CarRide::where('origin_location_id', $ride->origin_location_id)
                     ->where('destination_location_id', $ride->destination_location_id)
-                    ->where('departure_date', $date);
-                    // Removed: ->where('id', '!=', $ride->id) to allow same trip selection
+                    ->whereDate('departure_date', $date)
+                    ->where('id', '!=', $ride->id);
                 break;
             case 'barang':
                 $candidateQuery = BarangRide::where('origin_location_id', $ride->origin_location_id)
                     ->where('destination_location_id', $ride->destination_location_id)
-                    ->where('departure_date', $date);
-                    // Removed: ->where('id', '!=', $ride->id) to allow same trip selection
+                    ->whereDate('departure_date', $date)
+                    ->where('id', '!=', $ride->id);
                 break;
             case 'titip':
                 $candidateQuery = TebenganTitipBarang::where('origin_location_id', $ride->origin_location_id)
                     ->where('destination_location_id', $ride->destination_location_id)
-                    ->where('departure_date', $date);
-                    // Removed: ->where('id', '!=', $ride->id) to allow same trip selection
+                    ->whereDate('departure_date', $date)
+                    ->where('id', '!=', $ride->id);
                 break;
             default:
                 $candidateQuery = CarRide::where('origin_location_id', $ride->origin_location_id)
                     ->where('destination_location_id', $ride->destination_location_id)
-                    ->where('departure_date', $date);
-                    // Removed: ->where('id', '!=', $ride->id) to allow same trip selection
+                    ->whereDate('departure_date', $date)
+                    ->where('id', '!=', $ride->id);
         }
 
-        $candidates = $candidateQuery->with(['originLocation', 'destinationLocation'])->get();
+        // eager load ride relation where available so we can fallback to ride->price
+        // Only eager-load the 'ride' relation for models that define it
+        $with = ['originLocation', 'destinationLocation'];
+        if (!in_array(strtolower($bookingType), ['motor'])) {
+            $with[] = 'ride';
+        }
+        $candidates = $candidateQuery->with($with)->get();
 
-        $data = $candidates->map(function ($r) use ($booking) {
+        // Debug log to help diagnose empty results from frontend
+        try {
+            Log::info('availableRides request', [
+                'booking_id' => $booking->id ?? null,
+                'booking_type' => $bookingType ?? null,
+                'date' => $date,
+                'candidates_count' => count($candidates),
+            ]);
+        } catch (\Throwable $e) {
+            // ignore logging errors
+        }
+
+        $data = $candidates->map(function ($r) use ($booking, $bookingType) {
+            // Determine price: prefer direct model price, fallback to related ride price
+            $rawPrice = null;
+            if (isset($r->price) && $r->price !== null && floatval($r->price) > 0) {
+                $rawPrice = $r->price;
+            } elseif (strtolower($bookingType) === 'motor') {
+                // For motor rides, attempt to calculate price if not present using PriceCalculator
+                try {
+                    $serviceRaw = $r->service_type ?? ($r->ride->service_type ?? null);
+                    $serviceTypeMap = [
+                        'tebengan' => 'hanya_tebengan',
+                        'barang' => 'hanya_barang',
+                        'both' => 'tebengan_dan_barang',
+                    ];
+                    $serviceType = $serviceTypeMap[$serviceRaw] ?? $serviceRaw;
+
+                    $origin = $r->originLocation ?? ($r->ride->originLocation ?? null);
+                    $destination = $r->destinationLocation ?? ($r->ride->destinationLocation ?? null);
+                    $distance = 0.0;
+                    if ($origin && $destination && $origin->latitude && $origin->longitude && $destination->latitude && $destination->longitude) {
+                        $lat1 = deg2rad(floatval($origin->latitude));
+                        $lon1 = deg2rad(floatval($origin->longitude));
+                        $lat2 = deg2rad(floatval($destination->latitude));
+                        $lon2 = deg2rad(floatval($destination->longitude));
+                        $dlat = $lat2 - $lat1;
+                        $dlon = $lon2 - $lon1;
+                        $a = pow(sin($dlat / 2), 2) + cos($lat1) * cos($lat2) * pow(sin($dlon / 2), 2);
+                        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+                        $earthRadiusKm = 6371.0;
+                        $distance = $earthRadiusKm * $c;
+                    }
+
+                    $calculator = app(PriceCalculator::class);
+                    $calc = $calculator->calculate('motor', 0.0, $serviceType, $distance);
+                    if (is_array($calc) && isset($calc['total'])) {
+                        $rawPrice = $calc['total'];
+                    }
+                } catch (\Throwable $e) {
+                    // fallback to related ride price below
+                }
+            }
+
+            if ($rawPrice === null) {
+                if (isset($r->ride) && isset($r->ride->price) && floatval($r->ride->price) > 0) {
+                    $rawPrice = $r->ride->price;
+                } else {
+                    $rawPrice = 0;
+                }
+            }
+            // Round per-seat price to nearest 5,000 (kelipatan 5)
+            $intPrice = intval(round(floatval($rawPrice) / 5000.0) * 5000);
+
             return [
                 'id' => $r->id,
                 'ride_id' => $r->id,
@@ -86,8 +157,8 @@ class RescheduleController extends Controller
                 'departure_time' => $r->departure_time ?? null,
                 'arrival_time' => $r->arrival_time ?? null,
                 'available_seats' => $r->available_seats ?? 0,
-                'price' => (int) ($r->price ?? 0),
-                'price_per_seat' => (int) ($r->price ?? 0),
+                'price' => $intPrice,
+                'price_per_seat' => $intPrice,
                 'origin_location' => $r->originLocation ? [
                     'id' => $r->originLocation->id,
                     'name' => $r->originLocation->name,
@@ -105,6 +176,42 @@ class RescheduleController extends Controller
                 'meta' => [],
             ];
         })->toArray();
+
+        // If caller requested debug info, include query and raw candidates
+        if ($request->query('debug') == '1') {
+            $raw = $candidates->map(function ($r) use ($booking) {
+                // Log candidate-level values for diagnostics (safe variables only)
+                try {
+                    Log::info('RescheduleController: candidate debug', [
+                        'booking_id' => $booking->id ?? null,
+                        'candidate_id' => $r->id ?? null,
+                        'candidate_price' => $r->price ?? null,
+                        'candidate_available_seats' => $r->available_seats ?? null,
+                    ]);
+                } catch (\Throwable $__logEx) {
+                    // ignore logging errors
+                }
+
+                return [
+                    'id' => $r->id,
+                    'departure_date' => (string) ($r->departure_date ?? null),
+                    'available_seats' => $r->available_seats ?? null,
+                    'price' => isset($r->price) ? (string) $r->price : null,
+                ];
+            })->toArray();
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+                'debug' => [
+                    'query_date' => $date,
+                    'booking_type' => $bookingType,
+                    'booking_ride_id' => $booking->ride_id ?? null,
+                    'candidates_count' => count($candidates),
+                    'candidates_raw' => $raw,
+                ],
+            ]);
+        }
 
         return response()->json(['success' => true, 'data' => $data]);
     }
@@ -177,12 +284,87 @@ class RescheduleController extends Controller
                     return response()->json(['success' => false, 'message' => 'Not enough seats/capacity on requested target'], 409);
                 }
 
+                // Compute price_before and price_after with same fallback logic as booking controllers
                 $priceBefore = 0;
-                if ($booking->ride && isset($booking->ride->price)) {
-                    $priceBefore = intval(round($booking->ride->price * $seats));
+                $priceAfter = 0;
+                try {
+                    // Helper to compute per-seat price for a target/model
+                    $computePerSeat = function ($model, $type) {
+                        // Prefer explicit price on model
+                        if (isset($model->price) && floatval($model->price) > 0) {
+                            return floatval($model->price);
+                        }
+
+                        // For motor, attempt PriceCalculator distance-based fallback
+                        if (strtolower($type) === 'motor') {
+                            try {
+                                $serviceRaw = $model->service_type ?? ($model->ride->service_type ?? null);
+                                $serviceTypeMap = [
+                                    'tebengan' => 'hanya_tebengan',
+                                    'barang' => 'hanya_barang',
+                                    'both' => 'tebengan_dan_barang',
+                                ];
+                                $serviceType = $serviceTypeMap[$serviceRaw] ?? $serviceRaw;
+
+                                $origin = $model->originLocation ?? ($model->ride->originLocation ?? null);
+                                $destination = $model->destinationLocation ?? ($model->ride->destinationLocation ?? null);
+                                $distance = 0.0;
+                                if ($origin && $destination && $origin->latitude && $origin->longitude && $destination->latitude && $destination->longitude) {
+                                    $lat1 = deg2rad(floatval($origin->latitude));
+                                    $lon1 = deg2rad(floatval($origin->longitude));
+                                    $lat2 = deg2rad(floatval($destination->latitude));
+                                    $lon2 = deg2rad(floatval($destination->longitude));
+                                    $dlat = $lat2 - $lat1;
+                                    $dlon = $lon2 - $lon1;
+                                    $a = pow(sin($dlat / 2), 2) + cos($lat1) * cos($lat2) * pow(sin($dlon / 2), 2);
+                                    $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+                                    $earthRadiusKm = 6371.0;
+                                    $distance = $earthRadiusKm * $c;
+                                }
+
+                                $calculator = app(PriceCalculator::class);
+                                $calc = $calculator->calculate('motor', 0.0, $serviceType, $distance);
+                                if (is_array($calc) && isset($calc['total'])) {
+                                    return floatval($calc['total']);
+                                }
+                            } catch (\Throwable $__e) {
+                                // ignore and fallthrough to zero
+                            }
+                        }
+
+                        // fallback zero
+                        return 0.0;
+                    };
+
+                    // price before: booking's current ride
+                    if (!empty($booking->ride)) {
+                        $perSeatBefore = $computePerSeat($booking->ride, $bookingType);
+                        $priceBefore = intval(round(($perSeatBefore * $seats) / 5000.0) * 5000);
+                    }
+
+                    // price after: requested target
+                    $perSeatAfter = $computePerSeat($requestedTarget, $bookingType);
+                    $priceAfter = intval(round(($perSeatAfter * $seats) / 5000.0) * 5000);
+                } catch (\Throwable $__e) {
+                    Log::warning('Failed to compute reschedule prices: ' . $__e->getMessage());
+                    // default to zero values
+                    $priceBefore = intval(round(((isset($booking->ride->price) ? $booking->ride->price * $seats : 0)) / 5000.0) * 5000);
+                    $priceAfter = intval(round(((isset($requestedTarget->price) ? $requestedTarget->price * $seats : 0)) / 5000.0) * 5000);
                 }
-                $priceAfter = intval(round((isset($requestedTarget->price) ? $requestedTarget->price : 0) * $seats));
+
                 $priceDiff = $priceAfter - $priceBefore;
+
+                // Read finance settings to determine admin/reschedule fees
+                $finance = FinanceSetting::first();
+                $adminFee = 0;
+                $rescheduleFee = 0;
+                if ($finance) {
+                    $adminFee = floatval($finance->admin_fee ?? 0);
+                    $rescheduleFee = floatval($finance->reschedule_fee ?? 0);
+                }
+
+                // Payment required when customer owes more OR when system-level fees exist
+                $paymentRequired = ($priceDiff > 0) || ( ($adminFee + $rescheduleFee) > 0 );
 
                 $requestRow = RescheduleRequest::create([
                     'booking_id' => $booking->id,
@@ -190,7 +372,7 @@ class RescheduleController extends Controller
                     'requested_target_type' => $targetType,
                     'requested_target_id' => $requestedTarget->id,
                     'requested_by' => $user->id,
-                    'status' => $priceDiff > 0 ? 'awaiting_payment' : 'pending',
+                    'status' => $paymentRequired ? 'awaiting_payment' : 'pending',
                     'price_before' => $priceBefore,
                     'price_after' => $priceAfter,
                     'price_diff' => $priceDiff,
@@ -204,7 +386,9 @@ class RescheduleController extends Controller
                     'price_before' => $priceBefore,
                     'price_after' => $priceAfter,
                     'price_diff' => $priceDiff,
-                    'payment_required' => $priceDiff > 0,
+                    'payment_required' => $paymentRequired,
+                    'admin_fee' => $adminFee,
+                    'reschedule_fee' => $rescheduleFee,
                 ];
             });
 
@@ -344,21 +528,36 @@ class RescheduleController extends Controller
                             throw new \Exception('No seats/capacity available on requested target');
                         }
                         $requestedTarget->available_seats = max(0, intval($requestedTarget->available_seats) - $diff);
-                        // ensure status reflects availability
-                        $requestedTarget->status = intval($requestedTarget->available_seats) > 0 ? 'active' : 'inactive';
-                        $requestedTarget->save();
+                        // ensure status reflects availability (store as string)
+                        $requestedTarget->status = (intval($requestedTarget->available_seats) > 0) ? 'active' : 'full';
+                        try {
+                            $requestedTarget->save();
+                        } catch (\Throwable $__saveEx) {
+                            Log::error('Failed to save requestedTarget (same-ride adjust): ' . $__saveEx->getMessage());
+                            throw new \Exception('Failed to apply reschedule (save error)');
+                        }
                     } else if ($diff < 0) {
                         // release seats back to same ride
                         $requestedTarget->available_seats = intval($requestedTarget->available_seats ?? 0) + abs($diff);
-                        $requestedTarget->status = intval($requestedTarget->available_seats) > 0 ? 'active' : 'inactive';
-                        $requestedTarget->save();
+                        $requestedTarget->status = (intval($requestedTarget->available_seats) > 0) ? 'active' : 'full';
+                        try {
+                            $requestedTarget->save();
+                        } catch (\Throwable $__saveEx) {
+                            Log::error('Failed to save requestedTarget (same-ride release): ' . $__saveEx->getMessage());
+                            throw new \Exception('Failed to apply reschedule (save error)');
+                        }
                     }
                 } else {
                     // Different rides: release old seats (if we have oldRide) then decrement new ride
                     if ($oldRide) {
                         $oldRide->available_seats = intval($oldRide->available_seats ?? 0) + $oldSeats;
-                        $oldRide->status = intval($oldRide->available_seats) > 0 ? 'active' : 'inactive';
-                        $oldRide->save();
+                        $oldRide->status = (intval($oldRide->available_seats) > 0) ? 'active' : 'full';
+                        try {
+                            $oldRide->save();
+                        } catch (\Throwable $__saveEx) {
+                            Log::error('Failed to save oldRide (release seats): ' . $__saveEx->getMessage());
+                            throw new \Exception('Failed to apply reschedule (save error)');
+                        }
                     }
 
                     // Check capacity now using the updated seats count
@@ -369,8 +568,13 @@ class RescheduleController extends Controller
                     // Decrement available seats on requested target by the updated seats count
                     if (isset($requestedTarget->available_seats)) {
                         $requestedTarget->available_seats = max(0, intval($requestedTarget->available_seats) - $seatsToOccupy);
-                        $requestedTarget->status = intval($requestedTarget->available_seats) > 0 ? 'active' : 'inactive';
-                        $requestedTarget->save();
+                        $requestedTarget->status = (intval($requestedTarget->available_seats) > 0) ? 'active' : 'full';
+                        try {
+                            $requestedTarget->save();
+                        } catch (\Throwable $__saveEx) {
+                            Log::error('Failed to save requestedTarget (decrement new ride): ' . $__saveEx->getMessage());
+                            throw new \Exception('Failed to apply reschedule (save error)');
+                        }
                     }
                 }
 
@@ -387,6 +591,56 @@ class RescheduleController extends Controller
                 try {
                     $requestedTarget->refresh();
                     $newRideData = $requestedTarget->toArray();
+                    // Ensure returned new_ride includes a usable price (per-seat) for frontend
+                    try {
+                        $perSeat = null;
+                        if (isset($requestedTarget->price) && floatval($requestedTarget->price) > 0) {
+                            $perSeat = floatval($requestedTarget->price);
+                        } else {
+                            // attempt PriceCalculator fallback for motor-type reschedules
+                            $bt = strtolower($req->booking_type ?? 'mobil');
+                            if ($bt === 'motor') {
+                                try {
+                                    $serviceRaw = $requestedTarget->service_type ?? ($requestedTarget->ride->service_type ?? null);
+                                    $serviceTypeMap = [
+                                        'tebengan' => 'hanya_tebengan',
+                                        'barang' => 'hanya_barang',
+                                        'both' => 'tebengan_dan_barang',
+                                    ];
+                                    $serviceType = $serviceTypeMap[$serviceRaw] ?? $serviceRaw;
+                                    $origin = $requestedTarget->originLocation ?? ($requestedTarget->ride->originLocation ?? null);
+                                    $destination = $requestedTarget->destinationLocation ?? ($requestedTarget->ride->destinationLocation ?? null);
+                                    $distance = 0.0;
+                                    if ($origin && $destination && $origin->latitude && $origin->longitude && $destination->latitude && $destination->longitude) {
+                                        $lat1 = deg2rad(floatval($origin->latitude));
+                                        $lon1 = deg2rad(floatval($origin->longitude));
+                                        $lat2 = deg2rad(floatval($destination->latitude));
+                                        $lon2 = deg2rad(floatval($destination->longitude));
+                                        $dlat = $lat2 - $lat1;
+                                        $dlon = $lon2 - $lon1;
+                                        $a = pow(sin($dlat / 2), 2) + cos($lat1) * cos($lat2) * pow(sin($dlon / 2), 2);
+                                        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+                                        $earthRadiusKm = 6371.0;
+                                        $distance = $earthRadiusKm * $c;
+                                    }
+                                    $calculator = app(PriceCalculator::class);
+                                    $calc = $calculator->calculate('motor', 0.0, $serviceType, $distance);
+                                    if (is_array($calc) && isset($calc['total'])) {
+                                        $perSeat = floatval($calc['total']);
+                                    }
+                                } catch (\Throwable $__e) {
+                                    // ignore
+                                }
+                            }
+                        }
+
+                        if ($perSeat !== null) {
+                            $newRideData['price'] = intval(round($perSeat));
+                            $newRideData['price_per_seat'] = intval(round($perSeat));
+                        }
+                    } catch (\Throwable $e) {
+                        // ignore price population errors
+                    }
                 } catch (\Throwable $e) {
                     Log::warning('Failed to refresh requestedTarget: ' . $e->getMessage());
                 }
@@ -417,8 +671,14 @@ class RescheduleController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('confirmPayment error: ' . $e->getMessage());
-            $code = method_exists($e, 'getCode') && intval($e->getCode()) >= 400 ? intval($e->getCode()) : 500;
-            return response()->json(['success' => false, 'message' => $e->getMessage()], $code);
+            $rawCode = method_exists($e, 'getCode') ? intval($e->getCode()) : 0;
+            // Ensure HTTP status is a valid code (100-599); otherwise fallback to 500
+            if ($rawCode < 100 || $rawCode > 599) {
+                $httpCode = 500;
+            } else {
+                $httpCode = $rawCode;
+            }
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $httpCode);
         }
     }
 

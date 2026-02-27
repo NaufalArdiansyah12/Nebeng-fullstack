@@ -30,7 +30,6 @@ class _CreateRidePageState extends State<CreateRidePage> {
   final _vehicleBrandController = TextEditingController();
   final _vehicleTypeController = TextEditingController();
   final _vehicleColorController = TextEditingController();
-  final _priceController = TextEditingController();
   final _seatsController = TextEditingController(text: '1');
   int? _selectedKendaraanMitraId;
 
@@ -41,7 +40,6 @@ class _CreateRidePageState extends State<CreateRidePage> {
     _vehicleBrandController.dispose();
     _vehicleTypeController.dispose();
     _vehicleColorController.dispose();
-    _priceController.dispose();
     _seatsController.dispose();
     super.dispose();
   }
@@ -598,11 +596,9 @@ class _CreateRidePageState extends State<CreateRidePage> {
         _vehiclePlateController.text.isEmpty ||
         _vehicleBrandController.text.isEmpty ||
         _vehicleTypeController.text.isEmpty ||
-        _vehicleColorController.text.isEmpty ||
-        _priceController.text.isEmpty) {
+        _vehicleColorController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Mohon lengkapi detail kendaraan dan tarif')),
+        const SnackBar(content: Text('Mohon lengkapi detail kendaraan')),
       );
       return;
     }
@@ -625,7 +621,6 @@ class _CreateRidePageState extends State<CreateRidePage> {
           vehicleType: _vehicleTypeController.text,
           vehicleColor: _vehicleColorController.text,
           kendaraanMitraId: _selectedKendaraanMitraId,
-          price: double.tryParse(_priceController.text) ?? 0,
           availableSeats: int.tryParse(_seatsController.text) ?? 1,
           bagasiCapacity: _selectedBagasiCapacity,
           jumlahBagasi: _jumlahBagasi,
@@ -873,87 +868,6 @@ class _CreateRidePageState extends State<CreateRidePage> {
 
   // Seats selection removed for motor: seats fixed to 1
 
-  Widget _buildPriceField() {
-    return InkWell(
-      onTap: () {},
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: Colors.black26,
-            width: 1.2,
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E40AF),
-                shape: BoxShape.circle,
-              ),
-              child:
-                  const Icon(Icons.attach_money, color: Colors.white, size: 20),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Nominal (Rp)',
-                      style: TextStyle(
-                          fontSize: 15,
-                          color: Colors.black87,
-                          fontWeight: FontWeight.w500)),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Text(
-                          'Rp',
-                          style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _priceController,
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly
-                          ],
-                          decoration: const InputDecoration(
-                            hintText: 'Masukkan nominal',
-                            border: InputBorder.none,
-                            isDense: true,
-                            contentPadding: EdgeInsets.symmetric(
-                                horizontal: 0, vertical: 8),
-                          ),
-                          style: const TextStyle(fontSize: 14),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1099,8 +1013,6 @@ class _CreateRidePageState extends State<CreateRidePage> {
               const SizedBox(height: 12),
             ],
             _buildVehicleCard(),
-            const SizedBox(height: 12),
-            _buildPriceField(),
             const SizedBox(height: 24),
 
             // Button Selanjutnya - Fixed at bottom

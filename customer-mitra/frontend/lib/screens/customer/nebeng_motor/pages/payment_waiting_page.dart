@@ -20,6 +20,7 @@ class PaymentWaitingPage extends StatefulWidget {
   final int paymentId;
   final double amount;
   final double adminFee;
+  final double? totalAmount;
 
   const PaymentWaitingPage({
     Key? key,
@@ -35,6 +36,7 @@ class PaymentWaitingPage extends StatefulWidget {
     required this.paymentId,
     required this.amount,
     required this.adminFee,
+    this.totalAmount,
   }) : super(key: key);
 
   @override
@@ -461,14 +463,19 @@ class _PaymentWaitingPageState extends State<PaymentWaitingPage> {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            'Rp ${_formatPrice((widget.amount + widget.adminFee).toInt())}',
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
+          Builder(builder: (context) {
+            final displayTotal =
+                (widget.totalAmount ?? (widget.amount + widget.adminFee))
+                    .toInt();
+            return Text(
+              'Rp ${_formatPrice(displayTotal)}',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            );
+          }),
         ],
       ),
     );

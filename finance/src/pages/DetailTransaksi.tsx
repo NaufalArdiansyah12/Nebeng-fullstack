@@ -84,7 +84,7 @@ export default function DetailTransaksi() {
 
     const fetchTransactionDetail = async () => {
         try {
-            const response = await api.get(`/bookings/transactions/${id}`);
+            const response = await api.get(`/finance/bookings/transactions/${id}`);
             setTransaction(response.data);
         } catch (error) {
             console.error("Error fetching transaction:", error);

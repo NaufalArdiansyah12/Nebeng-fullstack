@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Calendar as CalendarIcon, Download, Eye, Lock, LockOpen } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -51,35 +51,44 @@ const DaftarMitra = () => {
   const [unblockSuccessOpen, setUnblockSuccessOpen] = useState(false);
   const [selectedMitraId, setSelectedMitraId] = useState<string | null>(null);
 
-  // Filter data based on search, date, and status filter
+  // ✅ Filter data - HANYA tampilkan mitra yang TIDAK DIBLOCK
   const filteredData = useMemo(() => {
+    // ✅ Safety check
+    if (!mitraList || !Array.isArray(mitraList)) {
+      return [];
+    }
+
     return mitraList.filter((mitra) => {
+      // ✅ PENTING: Exclude mitra yang DIBLOCK dari daftar ini
+      if (mitra.status === "DIBLOCK") {
+        return false;
+      }
+
       const matchesSearch = searchQuery === "" || 
-        mitra.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        mitra.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        mitra.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        mitra.noTlp.includes(searchQuery) ||
-        mitra.layanan.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        mitra.status.toLowerCase().includes(searchQuery.toLowerCase());
+        mitra.nama?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        mitra.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        mitra.id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        mitra.noTlp?.includes(searchQuery) ||
+        mitra.layanan?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        mitra.status?.toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchesDate = !selectedDate || 
-        (mitra.tanggal.getFullYear() === selectedDate.getFullYear() &&
-         mitra.tanggal.getMonth() === selectedDate.getMonth() &&
-         mitra.tanggal.getDate() === selectedDate.getDate());
+        (mitra.tanggal?.getFullYear() === selectedDate.getFullYear() &&
+         mitra.tanggal?.getMonth() === selectedDate.getMonth() &&
+         mitra.tanggal?.getDate() === selectedDate.getDate());
 
       const matchesStatus = 
         statusFilter === "SEMUA" ||
-        (statusFilter === "AKTIF" && mitra.status !== "DIBLOCK") ||
-        (statusFilter === "DIBLOCK" && mitra.status === "DIBLOCK");
+        (statusFilter === "AKTIF" && mitra.status !== "DIBLOCK");
 
       return matchesSearch && matchesDate && matchesStatus;
     });
   }, [mitraList, searchQuery, selectedDate, statusFilter]);
 
-  // Pagination
-  const itemsPerPage = parseInt(entriesPerPage);
+  // Pagination - safe parsing with fallback
+  const itemsPerPage = parseInt(entriesPerPage) || 10;
   const totalEntries = filteredData.length;
-  const totalPages = Math.ceil(totalEntries / itemsPerPage);
+  const totalPages = Math.ceil(totalEntries / itemsPerPage) || 1;
   const paginatedData = filteredData.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
@@ -96,7 +105,7 @@ const DaftarMitra = () => {
     setCurrentPage(1);
   };
 
-  // Download Excel function with auto column width
+  // Download Excel function
   const handleDownload = () => {
     const dataToExport = filteredData;
     
@@ -111,7 +120,7 @@ const DaftarMitra = () => {
       "NO. TLP": mitra.noTlp,
       "LAYANAN": mitra.layanan,
       "STATUS": mitra.status,
-      "TANGGAL": format(mitra.tanggal, "dd-MM-yyyy")
+      "TANGGAL": mitra.tanggal ? format(mitra.tanggal, "dd-MM-yyyy") : "-"
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(excelData);
@@ -133,32 +142,44 @@ const DaftarMitra = () => {
     XLSX.writeFile(workbook, `daftar-mitra-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
   };
 
-  // Handle block mitra
+  // ✅ Handle block mitra dengan auto-close success modal
   const handleBlockClick = (mitraId: string) => {
     setSelectedMitraId(mitraId);
     setBlockPopupOpen(true);
   };
 
-  const handleBlockConfirm = () => {
+  const handleBlockConfirm = async () => {
     setBlockPopupOpen(false);
     if (selectedMitraId) {
-      blockMitra(selectedMitraId);
+      await blockMitra(selectedMitraId);
     }
     setBlockSuccessOpen(true);
+    
+    // ✅ Auto close success modal setelah 1.5 detik
+    setTimeout(() => {
+      setBlockSuccessOpen(false);
+      setSelectedMitraId(null);
+    }, 1500);
   };
 
-  // Handle unblock mitra
+  // ✅ Handle unblock mitra dengan auto-close success modal
   const handleUnblockClick = (mitraId: string) => {
     setSelectedMitraId(mitraId);
     setUnblockPopupOpen(true);
   };
 
-  const handleUnblockConfirm = () => {
+  const handleUnblockConfirm = async () => {
     setUnblockPopupOpen(false);
     if (selectedMitraId) {
-      unblockMitra(selectedMitraId);
+      await unblockMitra(selectedMitraId);
     }
     setUnblockSuccessOpen(true);
+    
+    // ✅ Auto close success modal setelah 1.5 detik
+    setTimeout(() => {
+      setUnblockSuccessOpen(false);
+      setSelectedMitraId(null);
+    }, 1500);
   };
 
   // Handle status filter change
@@ -184,6 +205,15 @@ const DaftarMitra = () => {
     return pages;
   };
 
+  // ✅ Loading state
+  if (!mitraList) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <p className="text-muted-foreground">Memuat data mitra...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <Card className="shadow-sm">
@@ -203,14 +233,13 @@ const DaftarMitra = () => {
               />
             </div>
             <div className="flex items-center gap-3">
-              {/* Status Filter */}
+              {/* Status Filter - Hide DIBLOCK option */}
               <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
                 <SelectTrigger className="w-40 h-10">
                   <SelectValue placeholder="Filter Status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="AKTIF">Mitra Aktif</SelectItem>
-                  <SelectItem value="DIBLOCK">Mitra Diblock</SelectItem>
                   <SelectItem value="SEMUA">Semua Mitra</SelectItem>
                 </SelectContent>
               </Select>
@@ -287,25 +316,15 @@ const DaftarMitra = () => {
                           >
                             <Eye size={18} className="text-white" />
                           </Button>
-                          {mitra.status === "DIBLOCK" ? (
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-8 w-8 bg-green-600 hover:bg-green-700"
-                              onClick={() => handleUnblockClick(mitra.id)}
-                            >
-                              <LockOpen size={18} className="text-white" />
-                            </Button>
-                          ) : (
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-8 w-8 bg-red-600 hover:bg-red-700"
-                              onClick={() => handleBlockClick(mitra.id)}
-                            >
-                              <Lock size={18} className="text-white" />
-                            </Button>
-                          )}
+                          {/* ✅ Hanya tampilkan tombol Block (tidak ada Unblock di halaman ini) */}
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 bg-red-600 hover:bg-red-700"
+                            onClick={() => handleBlockClick(mitra.id)}
+                          >
+                            <Lock size={18} className="text-white" />
+                          </Button>
                         </div>
                       </td>
                     </tr>

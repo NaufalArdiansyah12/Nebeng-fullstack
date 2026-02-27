@@ -5,6 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Models\VerifikasiKtpMitra;
+use App\Models\VerifikasiSimMitra;
+use App\Models\VerifikasiSkckMitra;
+use App\Models\VerifikasiBankMitra;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -67,22 +71,35 @@ class MitraController extends Controller
         // Get vehicles
         $vehicles = Vehicle::where('user_id', $id)->get();
 
+        // Get verification data
+        $ktpData = \App\Models\VerifikasiKtpMitra::where('mitra_id', $id)->first();
+        $simData = \App\Models\VerifikasiSimMitra::where('user_id', $id)->first();
+        $skckData = \App\Models\VerifikasiSkckMitra::where('user_id', $id)->first();
+        $bankData = \App\Models\VerifikasiBankMitra::where('user_id', $id)->first();
+
         return response()->json([
             'success' => true,
             'data' => [
                 'id' => $mitra->id,
-                'name' => $mitra->name,
+                'nama' => $mitra->name,
                 'email' => $mitra->email,
-                'phone' => $mitra->phone,
-                'address' => $mitra->address,
+                'no_tlp' => $mitra->phone,
+                'alamat' => $mitra->address,
+                'jenis_kelamin' => $mitra->jenis_kelamin,
+                'tempat_lahir' => $mitra->tempat_lahir,
+                'tanggal_lahir' => $mitra->tanggal_lahir,
+                'tanggal_daftar' => $mitra->created_at,
                 'status' => $mitra->status,
                 'blocked_reason' => $mitra->blocked_reason,
                 'blocked_at' => $mitra->blocked_at,
-                'profile_photo' => $mitra->profile_photo ? url('storage/' . $mitra->profile_photo) : null,
+                'profile_photo' => $mitra->profile_photo,
                 'balance' => $mitra->balance,
                 'reward_points' => $mitra->reward_points,
-                'created_at' => $mitra->created_at->format('d M Y H:i'),
-                'vehicles' => $vehicles
+                'ktp_data' => $ktpData,
+                'sim_data' => $simData,
+                'skck_data' => $skckData,
+                'bank_data' => $bankData,
+                'kendaraan' => $vehicles
             ]
         ], 200);
     }

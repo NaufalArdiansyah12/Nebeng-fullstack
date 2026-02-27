@@ -34,7 +34,6 @@ class _CreateCarRidePageState extends State<CreateCarRidePage> {
   final _vehicleBrandController = TextEditingController();
   final _vehicleTypeController = TextEditingController();
   final _vehicleColorController = TextEditingController();
-  final _priceController = TextEditingController();
   final _seatsController = TextEditingController(text: '4');
   int? _selectedKendaraanMitraId;
 
@@ -45,7 +44,6 @@ class _CreateCarRidePageState extends State<CreateCarRidePage> {
     _vehicleBrandController.dispose();
     _vehicleTypeController.dispose();
     _vehicleColorController.dispose();
-    _priceController.dispose();
     _seatsController.dispose();
     super.dispose();
   }
@@ -573,11 +571,9 @@ class _CreateCarRidePageState extends State<CreateCarRidePage> {
         _vehiclePlateController.text.isEmpty ||
         _vehicleBrandController.text.isEmpty ||
         _vehicleTypeController.text.isEmpty ||
-        _vehicleColorController.text.isEmpty ||
-        _priceController.text.isEmpty) {
+        _vehicleColorController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Mohon lengkapi detail kendaraan dan tarif')),
+        const SnackBar(content: Text('Mohon lengkapi detail kendaraan')),
       );
       return;
     }
@@ -600,7 +596,6 @@ class _CreateCarRidePageState extends State<CreateCarRidePage> {
           vehicleType: _vehicleTypeController.text,
           vehicleColor: _vehicleColorController.text,
           kendaraanMitraId: _selectedKendaraanMitraId,
-          price: double.tryParse(_priceController.text) ?? 0,
           availableSeats: int.tryParse(_seatsController.text) ?? 4,
           bagasiCapacity: _selectedBagasiCapacity,
           jumlahBagasi: _jumlahBagasi,
@@ -689,8 +684,6 @@ class _CreateCarRidePageState extends State<CreateCarRidePage> {
               vehiclePlate: _vehiclePlateController.text,
               onTap: _showVehicleDetailsDialog,
             ),
-            const SizedBox(height: 12),
-            MobilPriceField(controller: _priceController),
             const SizedBox(height: 24),
           ],
         ),

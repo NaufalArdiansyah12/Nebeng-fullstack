@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
+use App\Services\PriceCalculationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
@@ -40,6 +41,34 @@ class BookingBarangController extends Controller
         $seats = $request->seats ?? 1;
         $bagasiRequested = intval($request->jumlah_bagasi ?? 0);
 
+        // Auto-calculate price based on weight
+        $calculatedPrice = null;
+        $priceBreakdown = null;
+        $weight = $request->weight ?? null;
+
+        if ($weight) {
+            $serviceType = PriceCalculationService::determineServiceType('barang', $ride->service_type ?? 'tebengan');
+            $bagasiCapacity = $ride->bagasi_capacity ?? null;
+
+            $priceResult = PriceCalculationService::calculatePrice(
+                $serviceType,
+                'barang',
+                floatval($weight),
+                $bagasiCapacity
+            );
+
+            if ($priceResult['success']) {
+                $calculatedPrice = $priceResult['price'];
+                $priceBreakdown = $priceResult['breakdown'];
+                Log::info('Price auto-calculated for barang booking', $priceBreakdown);
+            } else {
+                Log::warning('Price calculation failed for barang booking', [
+                    'message' => $priceResult['message'],
+                    'weight' => $weight,
+                ]);
+            }
+        }
+
         // Handle photo upload for barang bookings
         $photoPath = null;
         if ($request->hasFile('photo')) {
@@ -57,7 +86,7 @@ class BookingBarangController extends Controller
             'booking_number' => $bookingNumber,
             'seats' => $seats,
             'status' => 'pending',
-            'meta' => null,
+            'meta' => $priceBreakdown ? json_encode(['price_breakdown' => $priceBreakdown]) : null,
             'photo' => $photoPath,
             'weight' => $request->weight,
             'description' => $request->description,
@@ -93,6 +122,17 @@ class BookingBarangController extends Controller
 
         $booking->load('ride.user');
 
-        return response()->json(['success' => true, 'data' => $booking], 201);
+        // Add calculated price to response
+        $response = [
+            'success' => true,
+            'data' => $booking,
+        ];
+
+        if ($calculatedPrice !== null) {
+            $response['calculated_price'] = $calculatedPrice;
+            $response['price_breakdown'] = $priceBreakdown;
+        }
+
+        return response()->json($response, 201);
     }
 }

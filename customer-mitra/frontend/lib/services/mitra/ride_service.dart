@@ -92,7 +92,7 @@ class RideService {
     required String departureTime,
     required String rideType,
     required String serviceType,
-    required double price,
+    double? price,
     int? kendaraanMitraId,
     int? bagasiCapacity,
     int? jumlahBagasi,
@@ -121,7 +121,7 @@ class RideService {
       request.fields['departure_time'] = departureTime;
       request.fields['ride_type'] = rideType;
       request.fields['service_type'] = serviceType;
-      request.fields['price'] = price.toString();
+      if (price != null) request.fields['price'] = price.toString();
       if (kendaraanMitraId != null)
         request.fields['kendaraan_mitra_id'] = kendaraanMitraId.toString();
       if (availableSeats != null)

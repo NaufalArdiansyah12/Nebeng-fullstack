@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,6 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { loginSchema } from "@/lib/validations";
 import FormError from "@/components/FormError";
-import { adminApi } from "@/services/api";
 
 const Index = () => {
   const [email, setEmail] = useState("");
@@ -17,15 +16,6 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const navigate = useNavigate();
-
-  // Check if user already logged in
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      console.log('✅ User already logged in, redirecting to dashboard...');
-      navigate('/dashboard', { replace: true });
-    }
-  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,9 +36,26 @@ const Index = () => {
     setIsLoading(true);
     
     try {
-      // ✅ UPDATE: Gunakan adminApi.login
-      const response = await adminApi.login(email, password);
-      const data = response.data;
+      // Coba fetch tanpa abort signal dulu
+      const response = await fetch('http://localhost:3001/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email,
+          password: password,
+        }),
+      });
+
+      // Cek apakah response OK
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Server response error:', errorText);
+        throw new Error(`Server error: ${response.status}`);
+      }
+
+      const data = await response.json();
 
       if (data.success) {
         // Cek apakah role adalah admin (sudah dicek di backend tapi double check)
@@ -88,13 +95,13 @@ const Index = () => {
     } catch (error: any) {
       console.error('Login error:', error);
       
-      // ✅ UPDATE: Handle error dari Laravel backend
-      if (error.response?.data?.message) {
-        toast.error(error.response.data.message);
-      } else if (error.message.includes('Failed to fetch') || error.message.includes('Network Error')) {
-        toast.error("Tidak dapat terhubung ke server. Pastikan backend Laravel berjalan di http://localhost:8000");
+      // Cek jenis error
+      if (error.message.includes('Failed to fetch')) {
+        toast.error("Tidak dapat terhubung ke server. Pastikan backend berjalan di http://localhost:3001");
       } else if (error.name === 'AbortError') {
         toast.error("Request timeout. Server terlalu lama merespon.");
+      } else if (error.message.includes('Server error')) {
+        toast.error("Server mengalami masalah. Cek console untuk detail.");
       } else {
         toast.error("Terjadi kesalahan saat login: " + error.message);
       }

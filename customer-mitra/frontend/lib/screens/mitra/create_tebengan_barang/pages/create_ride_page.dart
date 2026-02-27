@@ -34,7 +34,6 @@ class _CreateBarangRidePageState extends State<CreateBarangRidePage> {
   final _vehicleBrandController = TextEditingController();
   final _vehicleTypeController = TextEditingController();
   final _vehicleColorController = TextEditingController();
-  final _priceController = TextEditingController();
   final _seatsController = TextEditingController(text: '0');
   int? _selectedKendaraanMitraId;
   int? _selectedBagasiCapacity;
@@ -48,7 +47,6 @@ class _CreateBarangRidePageState extends State<CreateBarangRidePage> {
     _vehicleBrandController.dispose();
     _vehicleTypeController.dispose();
     _vehicleColorController.dispose();
-    _priceController.dispose();
     _seatsController.dispose();
     super.dispose();
   }
@@ -472,11 +470,9 @@ class _CreateBarangRidePageState extends State<CreateBarangRidePage> {
         _vehiclePlateController.text.isEmpty ||
         _vehicleBrandController.text.isEmpty ||
         _vehicleTypeController.text.isEmpty ||
-        _vehicleColorController.text.isEmpty ||
-        _priceController.text.isEmpty) {
+        _vehicleColorController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Mohon lengkapi detail kendaraan dan tarif')),
+        const SnackBar(content: Text('Mohon lengkapi detail kendaraan')),
       );
       return;
     }
@@ -506,7 +502,6 @@ class _CreateBarangRidePageState extends State<CreateBarangRidePage> {
           vehicleType: _vehicleTypeController.text,
           vehicleColor: _vehicleColorController.text,
           kendaraanMitraId: _selectedKendaraanMitraId,
-          price: double.tryParse(_priceController.text) ?? 0,
           availableSeats: 0,
           bagasiCapacity: _selectedBagasiCapacity,
           jumlahBagasi: _jumlahBagasi,
@@ -581,8 +576,6 @@ class _CreateBarangRidePageState extends State<CreateBarangRidePage> {
               vehiclePlate: _vehiclePlateController.text,
               onTap: _showVehicleDetailsDialog,
             ),
-            const SizedBox(height: 12),
-            BarangPriceField(controller: _priceController),
             const SizedBox(height: 24),
           ],
         ),

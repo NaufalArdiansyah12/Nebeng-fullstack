@@ -25,7 +25,7 @@ const Transaksi = () => {
 
   useEffect(() => {
     api
-      .get("/bookings/transactions")
+      .get("/finance/bookings/transactions")
       .then((res) => setTransactions(res.data))
       .catch((err) =>
         console.error("gagal ambil transaksi:", err.response?.data || err)

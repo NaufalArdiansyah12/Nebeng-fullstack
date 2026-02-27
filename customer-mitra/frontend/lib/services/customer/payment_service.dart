@@ -15,23 +15,31 @@ class PaymentService {
     required String paymentMethod,
     required double amount,
     double? adminFee,
+    double? bookingPrice,
+    int? rescheduleRequestId,
   }) async {
     try {
+      final uri = Uri.parse('$baseUrl/payments');
+      final payload = {
+        'ride_id': rideId,
+        'user_id': userId,
+        'booking_number': bookingNumber,
+        if (bookingId != null) 'booking_id': bookingId,
+        'payment_method': paymentMethod,
+        'amount': amount,
+        if (bookingPrice != null) 'booking_price': bookingPrice,
+        if (rescheduleRequestId != null)
+          'reschedule_request_id': rescheduleRequestId,
+      };
+      if (adminFee != null) payload['admin_fee'] = adminFee;
+
       final response = await http.post(
-        Uri.parse('$baseUrl/payments'),
+        uri,
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: jsonEncode({
-          'ride_id': rideId,
-          'user_id': userId,
-          'booking_number': bookingNumber,
-          if (bookingId != null) 'booking_id': bookingId,
-          'payment_method': paymentMethod,
-          'amount': amount,
-          'admin_fee': adminFee ?? 15000,
-        }),
+        body: jsonEncode(payload),
       );
 
       if (response.statusCode == 201) {

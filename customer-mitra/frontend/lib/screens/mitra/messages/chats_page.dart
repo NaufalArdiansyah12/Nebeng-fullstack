@@ -21,14 +21,13 @@ class _MitraChatsPageState extends State<MitraChatsPage>
   int? _userId;
   String _userRole = 'mitra';
   String _searchQuery = '';
-  bool _hasFixedUrls = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _loadUserData();
-    _fixConversationUrls();
+    _loadProfilePhotos();
     _searchController.addListener(() {
       setState(() {
         _searchQuery = _searchController.text.toLowerCase();
@@ -56,19 +55,13 @@ class _MitraChatsPageState extends State<MitraChatsPage>
     }
   }
 
-  Future<void> _fixConversationUrls() async {
-    if (_hasFixedUrls) return;
-
-    final prefs = await SharedPreferences.getInstance();
-    final hasFixedBefore =
-        prefs.getBool('has_fixed_conversation_urls_mitra') ?? false;
-
-    if (!hasFixedBefore) {
+  Future<void> _loadProfilePhotos() async {
+    // Always update profile photos from backend on page load
+    try {
+      await UpdateConversationPhotos.updateAllConversations();
       await UpdateConversationPhotos.fixLocalhostUrls();
-      await prefs.setBool('has_fixed_conversation_urls_mitra', true);
-      setState(() {
-        _hasFixedUrls = true;
-      });
+    } catch (e) {
+      print('Error loading profile photos: $e');
     }
   }
 
@@ -140,26 +133,6 @@ class _MitraChatsPageState extends State<MitraChatsPage>
           // Tab 2: Pos Mitra Conversations
           _buildChatList(filterRole: 'posmitra'),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Memperbarui foto profil...')),
-          );
-          // Try to update missing photos by fetching from backend
-          await UpdateConversationPhotos.updateAllConversations();
-          // Also attempt to fix any localhost URLs as a fallback
-          await UpdateConversationPhotos.fixLocalhostUrls();
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                  content: Text('Selesai! Foto akan muncul sebentar lagi.')),
-            );
-          }
-        },
-        child: Icon(Icons.refresh),
-        backgroundColor: Color(0xFF0F4AA3),
-        tooltip: 'Fix Foto Profil',
       ),
     );
   }
