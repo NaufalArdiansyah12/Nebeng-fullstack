@@ -1023,6 +1023,29 @@ class ApiService {
     }
     throw Exception('Failed to get point values: ${resp.statusCode}');
   }
+
+  // ========== Banners ==========
+  static Future<List<Map<String, dynamic>>> fetchBanners(
+      {String position = 'home'}) async {
+    final uri =
+        Uri.parse('${ApiConfig.baseUrl}/api/v1/banners?position=$position');
+
+    final resp = await http.get(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+      },
+    );
+
+    if (resp.statusCode == 200) {
+      final body = jsonDecode(resp.body);
+      if (body is Map && body['success'] == true && body['data'] is List) {
+        return List<Map<String, dynamic>>.from(body['data']);
+      }
+      return [];
+    }
+    return [];
+  }
 }
 
 // Note: For direct PaymentService usage (non-static methods):

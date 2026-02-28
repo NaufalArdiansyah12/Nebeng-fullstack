@@ -63,6 +63,7 @@ const mainMenuItems: MenuItem[] = [
     ],
   },
   { title: "Pesanan", icon: ShoppingCart, path: "/dashboard/pesanan" },
+  { title: "Banner", icon: Gift, path: "/dashboard/banners" },
   { title: "Refund", icon: RotateCcw, path: "/dashboard/refund" },
   { title: "Laporan", icon: BarChart3, path: "/dashboard/laporan" },
   { title: "Reward", icon: Gift, path: "/dashboard/reward" },

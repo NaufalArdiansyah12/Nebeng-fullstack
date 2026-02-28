@@ -11,6 +11,7 @@ const pageTitles: Record<string, string> = {
   "/dashboard/costumer": "Daftar Costumer",
   "/dashboard/pesanan": "Pesanan",
   "/dashboard/refund": "Refund",
+  "/dashboard/banners": "Banner",
   "/dashboard/laporan": "Laporan",
   "/dashboard/pengaturan": "Pengaturan",
 };

@@ -37,7 +37,8 @@ const Index = () => {
     
     try {
       // Coba fetch tanpa abort signal dulu
-      const response = await fetch('http://localhost:3001/api/auth/login', {
+      const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const response = await fetch(`${apiBase.replace(/\/$/, '')}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

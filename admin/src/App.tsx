@@ -9,6 +9,7 @@ import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import DashboardLayout from "./layouts/DashboardLayout";
 import Dashboard from "./pages/Dashboard";
+import Banners from "./pages/Banners";
 import VerifikasiMitra from "./pages/VerifikasiMitra";
 import DetailMitra from "./pages/DetailMitra";
 import DaftarMitra from "./pages/DaftarMitra";
@@ -32,6 +33,7 @@ import PosMitraByLocation from "./pages/PosMitraByLocation";
 import DetailPosMitra from "./pages/DetailPosMitra";
 import Reward from "./pages/reward";
 import DetailReward from "./pages/DetailReward";
+// Banners temporarily disabled due to build error
 import { MitraProvider } from "./contexts/MitraContext";
 import { CustomerProvider } from "./contexts/CustomerContext";
 import { PesananProvider } from "./contexts/PesananContext";
@@ -92,6 +94,7 @@ const App = () => (
                               <Route path="pos-mitra/:id" element={<DetailPosMitra />} />
                               <Route path="reward" element={<Reward />} />
                               <Route path="reward/:id" element={<DetailReward />} />
+                              <Route path="banners" element={<Banners />} />
                             </Route>
                             
                             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

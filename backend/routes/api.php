@@ -52,6 +52,7 @@ use App\Http\Controllers\Customer\BookingTitipBarangLocationController;
 use App\Http\Controllers\Customer\BookingTitipBarangTrackingController;
 use App\Http\Controllers\Customer\RefundController as CustomerRefundController;
 use App\Http\Controllers\Customer\PointController;
+use App\Http\Controllers\Api\BannerController;
 
 // Admin Controllers
 use App\Http\Controllers\Admin\AuthController as AdminAuthController;
@@ -370,6 +371,13 @@ Route::prefix('api/v1')->group(function () {
     // Point routes
     Route::get('/points', [PointController::class, 'index']);
     Route::get('/points/values', [PointController::class, 'getPointValues']);
+
+    // Banners (public)
+    Route::get('/banners', [BannerController::class, 'index']);
+    Route::post('/banners', [BannerController::class, 'store']);
+    Route::put('/banners/{id}', [BannerController::class, 'update']);
+    Route::delete('/banners/{id}', [BannerController::class, 'destroy']);
+
 
     // =====================================================
     // CUSTOMER - RATINGS & REVIEWS

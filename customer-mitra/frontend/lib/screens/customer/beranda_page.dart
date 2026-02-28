@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -31,6 +32,11 @@ class BerandaPage extends StatefulWidget {
 class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
   late User currentUser;
   int _currentCarouselIndex = 0;
+  List<Map<String, dynamic>> _banners = [];
+  bool _loadingBanners = true;
+  late PageController _pageController;
+  Timer? _carouselTimer;
+  Timer? _resumeTimer;
   String _verificationStatus = 'not_verified';
   Timer? _statusCheckTimer;
   String _previousStatus = '';
@@ -70,6 +76,7 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _pageController = PageController();
     currentUser = User(
       id: 1,
       name: 'Ailsa',
@@ -81,13 +88,18 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
     _loadVerificationStatus();
     _startStatusPolling();
     _loadUpcomingTebengan();
+    _loadBanners();
     _loadProfile();
+    _startCarousel();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _statusCheckTimer?.cancel();
+    _carouselTimer?.cancel();
+    _pageController.dispose();
+    _resumeTimer?.cancel();
     super.dispose();
   }
 
@@ -261,6 +273,59 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
     } catch (e) {
       // ignore errors silently; keep default points
     }
+  }
+
+  Future<void> _loadBanners() async {
+    setState(() {
+      _loadingBanners = true;
+    });
+    try {
+      final banners = await ApiService.fetchBanners(position: 'home');
+      if (!mounted) return;
+      setState(() {
+        _banners = banners;
+        _loadingBanners = false;
+      });
+      _restartCarousel();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _banners = [];
+        _loadingBanners = false;
+      });
+      _restartCarousel();
+    }
+  }
+
+  int _carouselItemCount() => (_banners.isEmpty ? 3 : _banners.length);
+
+  void _startCarousel() {
+    _carouselTimer?.cancel();
+    _carouselTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      final itemCount = _carouselItemCount();
+      if (itemCount <= 0) return;
+      final next = (_currentCarouselIndex + 1) % itemCount;
+      if (!_pageController.hasClients) return;
+      _pageController.animateToPage(
+        next,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+      setState(() {
+        _currentCarouselIndex = next;
+      });
+    });
+  }
+
+  void _stopCarousel() {
+    _carouselTimer?.cancel();
+    _carouselTimer = null;
+    _resumeTimer?.cancel();
+  }
+
+  void _restartCarousel() {
+    _stopCarousel();
+    _startCarousel();
   }
 
   void _showStatusChangeNotification(String status) {
@@ -758,23 +823,53 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
           const SizedBox(height: 16),
           SizedBox(
             height: 180,
-            child: PageView.builder(
-              onPageChanged: (index) {
-                setState(() {
-                  _currentCarouselIndex = index;
-                });
-              },
-              itemBuilder: (context, index) {
-                return _buildPromoCard(index);
-              },
-              itemCount: 3,
-            ),
+            child: _loadingBanners
+                ? Center(
+                    child: CircularProgressIndicator(
+                      color: Color(0xFF1E40AF),
+                    ),
+                  )
+                : NotificationListener<ScrollNotification>(
+                    onNotification: (notification) {
+                      if (notification is ScrollStartNotification) {
+                        // User started interacting -> pause auto carousel
+                        _stopCarousel();
+                      } else if (notification is ScrollEndNotification) {
+                        // User finished interacting -> resume after short delay
+                        _resumeTimer?.cancel();
+                        _resumeTimer = Timer(const Duration(seconds: 3), () {
+                          if (mounted) _startCarousel();
+                        });
+                      } else if (notification is UserScrollNotification) {
+                        // User scroll event - schedule resume after idle
+                        _resumeTimer?.cancel();
+                        _resumeTimer = Timer(const Duration(seconds: 3), () {
+                          if (mounted) _startCarousel();
+                        });
+                      }
+                      return false;
+                    },
+                    child: PageView.builder(
+                      controller: _pageController,
+                      onPageChanged: (index) {
+                        setState(() {
+                          _currentCarouselIndex = index;
+                        });
+                      },
+                      itemBuilder: (context, index) {
+                        if (_banners.isEmpty) return _buildPromoCard(index);
+                        final b = _banners[index % _banners.length];
+                        return _buildBannerCard(b);
+                      },
+                      itemCount: _carouselItemCount(),
+                    ),
+                  ),
           ),
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(
-              3,
+              (_banners.isEmpty ? 3 : _banners.length),
               (index) => Container(
                 height: 8,
                 width: _currentCarouselIndex == index ? 24 : 8,
@@ -789,6 +884,67 @@ class _BerandaPageState extends State<BerandaPage> with WidgetsBindingObserver {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildBannerCard(Map<String, dynamic> b) {
+    final imageUrl = (b['image_url'] ?? '').toString();
+    final title = (b['title'] ?? '').toString();
+    final link = (b['link_url'] ?? '').toString();
+
+    return GestureDetector(
+      onTap: () {
+        if (link.isNotEmpty) {
+          // Open link if desired - left as TODO (depends on url launcher)
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(16),
+          image: imageUrl.isNotEmpty
+              ? DecorationImage(
+                  image: NetworkImage(imageUrl),
+                  fit: BoxFit.cover,
+                )
+              : null,
+        ),
+        child: Stack(
+          children: [
+            if (imageUrl.isEmpty)
+              Positioned.fill(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        title.isNotEmpty ? title : 'nebeng_motor_promo'.tr(),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'nebeng_motor_desc'.tr(),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            // Motor icon overlay removed — banner image will display without overlay
+          ],
+        ),
       ),
     );
   }

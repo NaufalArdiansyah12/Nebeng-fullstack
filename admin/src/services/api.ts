@@ -260,4 +260,13 @@ export const rewardApi = {
   getAllRewards: () => api.get('/reward/rewards/all'),
 };
 
+// Banners API
+export const bannersApi = {
+  getAll: () => api.get('/v1/banners'),
+  getById: (id: string) => api.get(`/v1/banners/${id}`),
+  create: (data: any) => api.post('/v1/banners', data),
+  update: (id: string, data: any) => api.put(`/v1/banners/${id}`, data),
+  delete: (id: string) => api.delete(`/v1/banners/${id}`),
+};
+
 export default api;
