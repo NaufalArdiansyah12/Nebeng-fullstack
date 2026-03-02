@@ -31,8 +31,13 @@ import PengaturanEdit from "./pages/PengaturanEdit";
 import PosMitra from "./pages/PosMitra";
 import PosMitraByLocation from "./pages/PosMitraByLocation";
 import DetailPosMitra from "./pages/DetailPosMitra";
+import CreatePosMitra from "./pages/CreatePosMitra";
+import CreateLocation from "./pages/CreateLocation";
+import EditLocation from "./pages/EditLocation";
 import Reward from "./pages/reward";
 import DetailReward from "./pages/DetailReward";
+import RewardCatalog from "./pages/rewardCatalog";
+import RewardForm from "./pages/RewardForm";
 // Banners temporarily disabled due to build error
 import { MitraProvider } from "./contexts/MitraContext";
 import { CustomerProvider } from "./contexts/CustomerContext";
@@ -90,10 +95,16 @@ const App = () => (
                               <Route path="pengaturan" element={<Pengaturan />} />
                               <Route path="pengaturan/edit" element={<PengaturanEdit />} />
                               <Route path="pos-mitra" element={<PosMitra />} />
+                              <Route path="pos-mitra/create" element={<CreatePosMitra />} />
                               <Route path="pos-mitra-by-location" element={<PosMitraByLocation />} />
+                              <Route path="pos-mitra-by-location/create" element={<CreateLocation />} />
+                              <Route path="pos-mitra-by-location/edit/:id" element={<EditLocation />} />
                               <Route path="pos-mitra/:id" element={<DetailPosMitra />} />
                               <Route path="reward" element={<Reward />} />
                               <Route path="reward/:id" element={<DetailReward />} />
+                              <Route path="reward/catalog" element={<RewardCatalog />} />
+                              <Route path="reward/catalog/create" element={<RewardForm />} />
+                              <Route path="reward/catalog/:id/edit" element={<RewardForm />} />
                               <Route path="banners" element={<Banners />} />
                             </Route>
                             

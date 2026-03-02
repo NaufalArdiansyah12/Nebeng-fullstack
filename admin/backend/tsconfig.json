@@ -5,11 +5,12 @@
     "moduleResolution": "bundler",
 
     "allowImportingTsExtensions": true,
-    "noEmit": true,
+    "noEmit": false,
+    "outDir": "dist",
 
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*"]
+  "include": ["server.ts", "src/**/*"]
 }

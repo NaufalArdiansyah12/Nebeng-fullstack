@@ -67,6 +67,7 @@ const menuItems = [
   { icon: Settings, label: "Tarif per Kg", path: "/tarif-per-kg" },
   { icon: Settings, label: "Pengaturan Biaya", path: "/pengaturan/biaya" },
   { icon: Wallet, label: "Pencairan Dana", path: "/withdrawals" },
+  { icon: RefreshCcw, label: "Refund", path: "/refund" },
 ];
 
 const helpItems = [

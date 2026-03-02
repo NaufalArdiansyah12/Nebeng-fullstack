@@ -6,6 +6,8 @@ export interface RefundData {
   noOrder: string;
   namaCustomer: string;
   namaDriver: string;
+  bookingType?: string;
+  refundReason?: string;
   tanggal: Date;
   noTransaksi: string;
   jumlahRefund: number;
@@ -17,6 +19,8 @@ export interface RefundDetail {
   noOrder: string;
   namaCustomer: string;
   namaDriver: string;
+  bookingType?: string;
+  refundReason?: string;
   tanggal: Date;
   noTransaksi: string;
   jumlahRefund: number;
@@ -60,12 +64,14 @@ export function RefundProvider({ children }: { children: ReactNode }) {
         // Transform API response
         const transformedRefund = refund.map((r: any) => ({
           id: String(r.id),
-          noOrder: r.no_order,
-          namaCustomer: r.namaCustomer || r.customerName,
-          namaDriver: r.namaDriver || r.driverName,
-          tanggal: new Date(r.tanggal_refund || new Date()),
-          noTransaksi: r.no_transaksi,
-          jumlahRefund: r.jumlah_refund,
+          noOrder: String(r.no_order || r.booking_number || r.booking_id || ''),
+          namaCustomer: r.namaCustomer || r.customerName || '',
+          namaDriver: r.namaDriver || r.driverName || r.nama_driver || '',
+          bookingType: r.booking_type || r.tipe || r.bookingType || '-',
+          refundReason: r.refund_reason || r.alasan || r.reason || '-',
+          tanggal: new Date(r.tanggal || r.submitted_at || r.tanggal_refund || r.created_at || new Date()),
+          noTransaksi: r.no_transaksi || r.external_id || r.transaction_id || '',
+          jumlahRefund: r.jumlah_refund ?? r.refund_amount ?? r.amount ?? 0,
           status: r.status,
         }));
         

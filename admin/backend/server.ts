@@ -34,6 +34,7 @@ import locationsRoutes from './src/routes/locations.routes.ts';
 import posmitraRoutes from './src/routes/posmitra.routes.ts';
 import posmitraUsersRoutes from './src/routes/posmitra-users.routes.ts';
 import bannersRoutes from './src/routes/banners.routes.ts';
+import rewardRoutes from './src/routes/reward.routes.tsx';
 
 // Import database connection
 import { pool } from './src/db.ts';
@@ -52,6 +53,7 @@ app.use('/api/locations', locationsRoutes);
 app.use('/api/posmitra', posmitraRoutes);
 app.use('/api/posmitra-users', posmitraUsersRoutes);
 app.use('/api/v1/banners', bannersRoutes);
+app.use('/api/reward', rewardRoutes);
 
 // Serve uploaded files
 app.use('/uploads', express.static(path.join(process.cwd(), 'public', 'uploads')));
@@ -64,6 +66,16 @@ app.use('/uploads', express.static(path.join(process.cwd(), 'public', 'uploads')
   } catch (err: any) {
     // If table/column doesn't exist yet, just log and continue
     console.warn('⚠️ Could not alter banners.image_url:', err.message);
+  }
+})();
+
+// Ensure rewards.image_url can store large base64 payloads (for admin uploads)
+(async function ensureRewardsColumn() {
+  try {
+    await pool.execute("ALTER TABLE rewards MODIFY image_url MEDIUMTEXT NULL;");
+    console.log('✅ Ensured rewards.image_url is MEDIUMTEXT');
+  } catch (err: any) {
+    console.warn('⚠️ Could not alter rewards.image_url:', err.message);
   }
 })();
 

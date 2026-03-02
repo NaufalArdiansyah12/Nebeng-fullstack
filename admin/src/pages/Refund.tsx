@@ -23,11 +23,11 @@ import { useRefund } from "@/contexts/RefundContext";
 const getStatusBadge = (status: string) => {
   switch (status) {
     case "SELESAI":
-      return <Badge className="bg-green-500 hover:bg-green-600 text-white text-xs px-3 py-1 rounded-full">SELESAI</Badge>;
+      return <Badge className="bg-green-500 hover:bg-green-600 text-white text-xs px-3 py-1 rounded-full">Selesai</Badge>;
     case "BATAL":
-      return <Badge className="bg-orange-500 hover:bg-orange-600 text-white text-xs px-3 py-1 rounded-full">BATAL</Badge>;
+      return <Badge className="bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1 rounded-full">Ditolak</Badge>;
     case "PROSES":
-      return <Badge className="bg-yellow-500 hover:bg-yellow-600 text-white text-xs px-3 py-1 rounded-full">PROSES</Badge>;
+      return <Badge className="bg-yellow-500 hover:bg-yellow-600 text-white text-xs px-3 py-1 rounded-full">Proses</Badge>;
     default:
       return <Badge className="bg-gray-500 text-white text-xs px-3 py-1 rounded-full">{status}</Badge>;
   }
@@ -106,6 +106,8 @@ const Refund = () => {
       "NO. ORDER": refund.noOrder,
       "NAMA COSTUMER": refund.namaCustomer,
       "NAMA DRIVER": refund.namaDriver,
+      "TIPE": refund.bookingType || '-',
+      "ALASAN": refund.refundReason || '-',
       "TANGGAL": format(refund.tanggal, "EEEE, dd MMM yyyy", { locale: localeId }),
       "NO. TRANSAKSI": refund.noTransaksi,
       "JUMLAH REFUND": formatCurrency(refund.jumlahRefund),
@@ -118,6 +120,8 @@ const Refund = () => {
       { wch: 12 },
       { wch: 20 },
       { wch: 20 },
+      { wch: 14 },
+      { wch: 24 },
       { wch: 20 },
       { wch: 18 },
       { wch: 15 },
@@ -221,40 +225,42 @@ const Refund = () => {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-[#1e3a5f] text-white">
-                  <th className="text-left py-3 px-4 font-medium rounded-tl-lg">NO. ORDER</th>
-                  <th className="text-left py-3 px-4 font-medium">NAMA COSTUMER</th>
-                  <th className="text-left py-3 px-4 font-medium">NAMA DRIVER</th>
-                  <th className="text-left py-3 px-4 font-medium">TANGGAL</th>
-                  <th className="text-left py-3 px-4 font-medium">NO. TRANSAKSI</th>
-                  <th className="text-left py-3 px-4 font-medium">JUMLAH REFUND</th>
-                  <th className="text-center py-3 px-4 font-medium">STATUS</th>
-                  <th className="text-center py-3 px-4 font-medium rounded-tr-lg">AKSI</th>
+                  <th className="px-5 py-3 text-left font-medium rounded-tl-lg">ID</th>
+                  <th className="px-5 py-3 text-left font-medium">CUSTOMER</th>
+                  <th className="px-5 py-3 text-left font-medium">BOOKING ID</th>
+                  <th className="px-5 py-3 text-left font-medium">TIPE</th>
+                  <th className="px-5 py-3 text-left font-medium">ALASAN</th>
+                  <th className="px-5 py-3 text-left font-medium">JUMLAH REFUND</th>
+                  <th className="px-5 py-3 text-left font-medium">STATUS</th>
+                  <th className="px-5 py-3 text-left font-medium">TANGGAL</th>
+                  <th className="px-5 py-3 text-left font-medium rounded-tr-lg">AKSI</th>
                 </tr>
               </thead>
               <tbody>
                 {paginatedData.length > 0 ? (
                   paginatedData.map((refund, index) => (
                     <tr key={index} className="border-b border-border/50 hover:bg-muted/30">
-                      <td className="py-4 px-4">{refund.noOrder}</td>
-                      <td className="py-4 px-4">{refund.namaCustomer}</td>
-                      <td className="py-4 px-4">{refund.namaDriver}</td>
-                      <td className="py-4 px-4">
-                        {format(refund.tanggal, "EEEE, dd MMM yyyy", { locale: localeId })}
+                      <td className="px-5 py-4">#{refund.id}</td>
+                      <td className="px-5 py-4">
+                        <div>
+                          <p className="font-medium">{refund.namaCustomer}</p>
+                        </div>
                       </td>
-                      <td className="py-4 px-4">{refund.noTransaksi}</td>x
-                      <td className="py-4 px-4">{formatCurrency(refund.jumlahRefund)}</td>
-                      <td className="py-4 px-4 text-center">
-                        {getStatusBadge(refund.status)}
-                      </td>
-                      <td className="py-4 px-4">
+                      <td className="px-5 py-4">{refund.noOrder}</td>
+                      <td className="px-5 py-4">{refund.bookingType || '-'}</td>
+                      <td className="px-5 py-4 max-w-xs truncate">{refund.refundReason || '-'}</td>
+                      <td className="px-5 py-4 font-medium">{formatCurrency(refund.jumlahRefund)}</td>
+                      <td className="px-5 py-4">{getStatusBadge(refund.status)}</td>
+                      <td className="px-5 py-4 text-sm text-muted-foreground">{format(refund.tanggal, "dd MMM yyyy", { locale: localeId })}</td>
+                      <td className="px-5 py-4">
                         <div className="flex items-center justify-center">
                           <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 bg-[#1e3a5f] hover:bg-[#152a45] rounded-full"
+                            size="icon"
+                            variant="ghost"
+                            className="text-muted-foreground hover:bg-primary hover:text-white"
                             onClick={() => navigate(`/dashboard/refund/${refund.id}`)}
                           >
-                            <Eye size={16} className="text-white" />
+                            <Eye size={16} />
                           </Button>
                         </div>
                       </td>

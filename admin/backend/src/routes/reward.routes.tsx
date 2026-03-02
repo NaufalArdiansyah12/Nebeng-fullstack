@@ -1,8 +1,37 @@
 import express from 'express';
 import type { Request, Response } from 'express';
 import { pool } from '../db.ts';
+import fs from 'fs';
+import path from 'path';
 
 const router = express.Router();
+
+// Helpers for saving base64 images to disk to avoid storing huge blobs in DB
+const ensureDir = (dir: string) => {
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+};
+
+const saveBase64Image = async (dataUrl: string, subfolder = 'rewards') => {
+  try {
+    const m = dataUrl.match(/^data:(image\/[^;]+);base64,(.+)$/);
+    if (!m) return null;
+    const mime = m[1];
+    const base64 = m[2];
+    const ext = mime.split('/')[1] || 'png';
+    const filename = `reward_${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
+    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', subfolder);
+    ensureDir(uploadsDir);
+    const filePath = path.join(uploadsDir, filename);
+    await fs.promises.writeFile(filePath, Buffer.from(base64, 'base64'));
+    // Public URL served by express static at /uploads
+    const publicBase = process.env.PUBLIC_BASE_URL || `http://localhost:${process.env.PORT || 3001}`;
+    const publicPath = `${publicBase}/uploads/${subfolder}/${filename}`;
+    return publicPath;
+  } catch (err) {
+    console.error('Failed to save base64 image:', err);
+    return null;
+  }
+};
 
 // Get all reward redemptions
 router.get('/', async (req: Request, res: Response) => {
@@ -88,6 +117,82 @@ router.get('/:id', async (req: Request, res: Response) => {
       connection.release();
     }
     res.status(500).json({ error: 'Failed to fetch reward redemption', message: error instanceof Error ? error.message : '' });
+  }
+});
+
+// --- Reward catalog CRUD (rewards table) ---
+// Create reward
+router.post('/rewards', async (req: Request, res: Response) => {
+  const { title, description, points_cost, image_url, stock } = req.body;
+
+  if (!title || typeof points_cost === 'undefined') {
+    return res.status(400).json({ error: 'title and points_cost are required' });
+  }
+
+  try {
+    // If image is a base64 data URL, save it to disk and store public URL instead
+    let imgUrl = image_url || null;
+    if (typeof imgUrl === 'string' && imgUrl.startsWith('data:')) {
+      const saved = await saveBase64Image(imgUrl, 'rewards');
+      if (saved) imgUrl = saved;
+    }
+
+    const connection = await pool.getConnection();
+    const [result]: any = await connection.execute(
+      `INSERT INTO rewards (title, description, points_cost, image_url, stock, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, NOW(), NOW())`,
+      [title, description || null, points_cost, imgUrl || null, stock || 0]
+    );
+    const insertId = result?.insertId;
+    // return created row
+    const [rows] = await connection.query('SELECT * FROM rewards WHERE id = ?', [insertId]);
+    connection.release();
+    res.status(201).json({ message: 'Reward created', data: Array.isArray(rows) ? rows[0] : null });
+  } catch (error) {
+    console.error('❌ POST /api/reward/rewards error:', error);
+    res.status(500).json({ error: 'Failed to create reward', message: error instanceof Error ? error.message : '' });
+  }
+});
+
+// Update reward
+router.put('/rewards/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { title, description, points_cost, image_url, stock } = req.body;
+
+  try {
+    console.log('🔁 PUT /api/reward/rewards/:id called', { id, body: req.body });
+    // If image is base64, save to disk and replace with public URL
+    let imgUrl = image_url || null;
+    if (typeof imgUrl === 'string' && imgUrl.startsWith('data:')) {
+      const saved = await saveBase64Image(imgUrl, 'rewards');
+      if (saved) imgUrl = saved;
+    }
+
+    const connection = await pool.getConnection();
+    await connection.execute(
+      `UPDATE rewards SET title = ?, description = ?, points_cost = ?, image_url = ?, stock = ?, updated_at = NOW() WHERE id = ?`,
+      [title, description || null, points_cost || 0, imgUrl || null, stock || 0, id]
+    );
+    const [rows] = await connection.query('SELECT * FROM rewards WHERE id = ?', [id]);
+    connection.release();
+    res.json({ message: 'Reward updated', data: Array.isArray(rows) ? rows[0] : null });
+  } catch (error) {
+    console.error('❌ PUT /api/reward/rewards/:id error:', error instanceof Error ? error.message : error, error instanceof Error ? error.stack : 'no-stack');
+    res.status(500).json({ error: 'Failed to update reward', message: error instanceof Error ? error.message : String(error) });
+  }
+});
+
+// Delete reward
+router.delete('/rewards/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const connection = await pool.getConnection();
+    await connection.execute('DELETE FROM rewards WHERE id = ?', [id]);
+    connection.release();
+    res.json({ message: 'Reward deleted' });
+  } catch (error) {
+    console.error('❌ DELETE /api/reward/rewards/:id error:', error);
+    res.status(500).json({ error: 'Failed to delete reward', message: error instanceof Error ? error.message : '' });
   }
 });
 

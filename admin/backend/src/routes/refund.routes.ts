@@ -3,53 +3,57 @@ import type { Request, Response } from 'express';
 import { pool } from '../db.ts';
 
 const router = express.Router();
-// Get all refund
+// Get all refund (from refunds table)
 router.get('/', async (req: Request, res: Response) => {
   try {
     const connection = await pool.getConnection();
-    const [rows] = await connection.query(
-      `SELECT p.id, p.booking_number as no_order, u.name as namaCustomer, u2.name as namaDriver,
-              p.created_at as tanggal, p.external_id as no_transaksi, p.amount as jumlah_refund,
-              CASE
-                WHEN p.status = 'paid' THEN 'SELESAI'
-                WHEN p.status = 'pending' THEN 'PROSES'
-                WHEN p.status = 'expired' THEN 'BATAL'
-                ELSE p.status
-              END as status
-       FROM payments p
-       LEFT JOIN users u ON p.user_id = u.id
-       LEFT JOIN users u2 ON p.ride_id = u2.id
-       WHERE p.status IN ('paid', 'pending', 'expired')
-       ORDER BY p.created_at DESC`
-    );
-    connection.release();
 
+    const [rows] = await connection.query(
+      `SELECT
+         r.id,
+        r.booking_type as booking_type,
+        r.refund_reason as refund_reason,
+         r.booking_id as no_order,
+         u.name as namaCustomer,
+         '' as namaDriver,
+         COALESCE(r.submitted_at, r.created_at) as tanggal,
+         r.id as no_transaksi,
+         r.refund_amount as jumlah_refund,
+         CASE
+           WHEN r.status = 'completed' THEN 'SELESAI'
+           WHEN r.status IN ('pending','approved','processing') THEN 'PROSES'
+           WHEN r.status = 'rejected' THEN 'BATAL'
+           ELSE r.status
+         END as status
+       FROM refunds r
+       LEFT JOIN users u ON r.user_id = u.id
+       ORDER BY COALESCE(r.submitted_at, r.created_at) DESC`
+    );
+
+    connection.release();
     res.json(rows);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch refund', message: error instanceof Error ? error.message : '' });
   }
 });
 
-// Get refund by ID
+// Get refund by ID (from refunds table)
 router.get('/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
 
   try {
     const connection = await pool.getConnection();
     const [rows] = await connection.query(
-      `SELECT p.id, p.booking_number as no_order, p.external_id as no_transaksi,
-              p.amount as jumlah_refund, p.payment_method as metodeRefund,
-              p.admin_fee, p.total_amount as total, p.status,
-              p.created_at as tanggal_refund, p.paid_at,
-              u.name as customerName, u2.name as driverName,
-              p.booking_id as idPesanan, 'Nebeng' as layananNebeng,
-              p.amount as biaya_penumpang, p.admin_fee as biaya_admin
-       FROM payments p
-       LEFT JOIN users u ON p.user_id = u.id
-       LEFT JOIN users u2 ON p.ride_id = u2.id
-       WHERE p.id = ? AND p.status IN ('paid', 'pending', 'expired')`,
+            `SELECT r.*,
+              u.name as customerName,
+              u.email as customerEmail,
+              u.phone as customerPhone
+             FROM refunds r
+             LEFT JOIN users u ON r.user_id = u.id
+             WHERE r.id = ?`,
       [id]
     );
+
     connection.release();
 
     if (Array.isArray(rows) && rows.length > 0) {
@@ -62,16 +66,16 @@ router.get('/:id', async (req: Request, res: Response) => {
   }
 });
 
-// Create refund
+// Create refund (insert into refunds table)
 router.post('/', async (req: Request, res: Response) => {
-  const { pesananId, noOrder, noTransaksi, jumlahRefund, metodeRefund } = req.body;
+  const { bookingId, bookingNumber, totalAmount, refundAmount, userId } = req.body;
 
   try {
     const connection = await pool.getConnection();
     const [result] = await connection.execute(
-      `INSERT INTO payments (booking_id, booking_number, external_id, amount, payment_method, total_amount, status)
-       VALUES (?, ?, ?, ?, ?, ?, 'pending')`,
-      [pesananId, noOrder, noTransaksi, jumlahRefund, metodeRefund, jumlahRefund]
+      `INSERT INTO refunds (booking_id, booking_number, total_amount, refund_amount, user_id, status, created_at)
+       VALUES (?, ?, ?, ?, ?, 'pending', NOW())`,
+      [bookingId, bookingNumber, totalAmount, refundAmount, userId]
     );
     connection.release();
 
@@ -86,15 +90,15 @@ router.patch('/:id/status', async (req: Request, res: Response) => {
   const { id } = req.params;
   const { status } = req.body;
 
-  // Map frontend status to payment status
-  let paymentStatus = status;
-  if (status === 'SELESAI') paymentStatus = 'paid';
-  else if (status === 'PROSES') paymentStatus = 'pending';
-  else if (status === 'BATAL') paymentStatus = 'expired';
+  // Map frontend status to refunds.status
+  let refundStatus = status;
+  if (status === 'SELESAI') refundStatus = 'completed';
+  else if (status === 'PROSES') refundStatus = 'processing';
+  else if (status === 'BATAL') refundStatus = 'rejected';
 
   try {
     const connection = await pool.getConnection();
-    await connection.execute('UPDATE payments SET status = ? WHERE id = ?', [paymentStatus, id]);
+    await connection.execute('UPDATE refunds SET status = ? WHERE id = ?', [refundStatus, id]);
     connection.release();
 
     res.json({ message: 'Refund status updated successfully' });
@@ -109,7 +113,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
 
   try {
     const connection = await pool.getConnection();
-    await connection.execute('DELETE FROM payments WHERE id = ?', [id]);
+    await connection.execute('DELETE FROM refunds WHERE id = ?', [id]);
     connection.release();
 
     res.json({ message: 'Refund deleted successfully' });

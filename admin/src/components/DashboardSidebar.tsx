@@ -66,7 +66,14 @@ const mainMenuItems: MenuItem[] = [
   { title: "Banner", icon: Gift, path: "/dashboard/banners" },
   { title: "Refund", icon: RotateCcw, path: "/dashboard/refund" },
   { title: "Laporan", icon: BarChart3, path: "/dashboard/laporan" },
-  { title: "Reward", icon: Gift, path: "/dashboard/reward" },
+  {
+    title: "Reward",
+    icon: Gift,
+    children: [
+      { title: "Daftar Penukaran", path: "/dashboard/reward" },
+      { title: "Katalog Reward", path: "/dashboard/reward/catalog" },
+    ],
+  },
 
 ];
 
@@ -173,7 +180,7 @@ const DashboardSidebar = () => {
   };
 
   return (
-    <aside className="w-64 min-h-screen bg-[#1e3a5f] flex flex-col">
+    <aside className="w-64 fixed left-0 top-0 h-full bg-[#1e3a5f] flex flex-col z-40 overflow-y-auto">
       {/* Logo */}
       <div className="p-6">
         <h1 className="text-2xl font-bold text-white">NEBENG</h1>

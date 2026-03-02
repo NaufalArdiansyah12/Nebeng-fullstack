@@ -14,6 +14,9 @@ const pageTitles: Record<string, string> = {
   "/dashboard/banners": "Banner",
   "/dashboard/laporan": "Laporan",
   "/dashboard/pengaturan": "Pengaturan",
+  "/dashboard/reward": "Penukaran Reward",
+  "/dashboard/reward/catalog": "Katalog Reward",
+  "/dashboard/reward/catalog/create": "Buat Reward",
 };
 
 const DashboardLayout = () => {
@@ -24,7 +27,7 @@ const DashboardLayout = () => {
   return (
     <div className="flex min-h-screen w-full">
       <DashboardSidebar />
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col ml-64">
         <DashboardHeader 
           pageTitle={pageTitle}
           showWelcome={isWelcomePage}

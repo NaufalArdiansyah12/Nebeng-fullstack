@@ -1,5 +1,6 @@
 import express from 'express';
 import type { Request, Response } from 'express';
+import bcrypt from 'bcrypt';
 import { pool } from '../db.ts';
 
 const router = express.Router();
@@ -87,7 +88,7 @@ router.post('/', async (req: Request, res: Response) => {
   console.log('🟢 POST /posmitra-users received');
   console.log('📦 Request body:', JSON.stringify(req.body, null, 2));
 
-  const { name, email, phone, location_id } = req.body;
+  const { name, email, phone, location_id, password } = req.body;
 
   // Validasi required fields
   if (!name || !email || !phone || !location_id) {
@@ -125,12 +126,20 @@ router.post('/', async (req: Request, res: Response) => {
     console.log('✅ Location ID valid');
 
     // Insert data
-    console.log('📝 Inserting data:', { name, email, phone, location_id });
+    console.log('📝 Inserting data:', { name, email, phone, location_id, hasPassword: !!password });
+
+    // Determine raw password: use provided one if present, otherwise generate a temporary one
+    let tempPassword: string | null = null;
+    const rawPassword = password && String(password).length > 0
+      ? String(password)
+      : (tempPassword = Math.random().toString(36).slice(-8));
+
+    const hashedPassword = await bcrypt.hash(rawPassword, 10);
 
     const [result] = await connection.query(
-      `INSERT INTO posmitra_users (name, email, phone, location_id)
-       VALUES (?, ?, ?, ?)`,
-      [name, email, phone, location_id]
+      `INSERT INTO posmitra_users (name, email, phone, location_id, password)
+       VALUES (?, ?, ?, ?, ?)`,
+      [name, email, phone, location_id, hashedPassword]
     );
 
     connection.release();
@@ -140,11 +149,18 @@ router.post('/', async (req: Request, res: Response) => {
     console.log('   insertId:', insertResult.insertId);
     console.log('   affectedRows:', insertResult.affectedRows);
 
-    res.status(201).json({
+    const responseBody: any = {
       success: true,
       id: insertResult.insertId,
       message: 'Posmitra user created successfully'
-    });
+    };
+
+    if (tempPassword) {
+      // Return the temporary password so admin can communicate it to the user
+      responseBody.tempPassword = tempPassword;
+    }
+
+    res.status(201).json(responseBody);
   } catch (error) {
     console.error('❌ POST /api/posmitra-users error:', error);
     if (connection) connection.release();

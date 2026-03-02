@@ -3,6 +3,8 @@ import { Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useRefund } from "@/contexts/RefundContext";
+import { refundApi } from "@/services/api";
+import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 
@@ -20,8 +22,42 @@ const DetailRefund = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { getRefundDetail } = useRefund();
-  
-  const refund = id ? getRefundDetail(id) : undefined;
+  const [refund, setRefund] = useState<any | undefined>(undefined);
+
+  useEffect(() => {
+    const fetchDetail = async () => {
+      if (!id) return;
+      try {
+        const res = await refundApi.getById(id);
+        const data = res.data;
+
+        // normalize fields for the UI
+        const normalized = {
+          id: String(data.id),
+          tanggal: new Date(data.submitted_at || data.created_at || new Date()),
+          jumlahRefund: data.refund_amount ?? data.jumlah_refund ?? data.amount ?? 0,
+          status: (data.status && (data.status === 'pending' ? 'PROSES' : (data.status === 'completed' ? 'SELESAI' : (data.status === 'rejected' ? 'BATAL' : data.status)))) || 'PROSES',
+          idPesanan: data.booking_id || data.booking_number || '-',
+          noTransaksi: data.external_id || data.no_transaksi || '-',
+          metodeRefund: data.payment_method || data.metodeRefund || 'Transfer BRIVA',
+          layananNebeng: data.booking_type || data.layananNebeng || 'Nebeng',
+          biayaPenumpang: { quantity: 1, price: data.total_amount ?? data.total ?? 0 },
+          biayaAdmin: data.admin_fee ?? 0,
+          totalRefund: data.refund_amount ?? data.total_amount ?? 0,
+          titikJemput: { lokasi: '-', waktu: '-', alamat: '-' },
+          tujuan: { lokasi: '-', waktu: '-', alamat: '-' },
+        };
+
+        setRefund(normalized);
+      } catch (err) {
+        // fallback to context detail if API fails
+        const ctx = id ? getRefundDetail(id) : undefined;
+        setRefund(ctx);
+      }
+    };
+
+    fetchDetail();
+  }, [id]);
 
   if (!refund) {
     return (

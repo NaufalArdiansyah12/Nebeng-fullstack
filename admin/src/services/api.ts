@@ -226,10 +226,10 @@ export const verifikasiApi = {
 // Locations API
 export const locationsApi = {
   getAll: () => api.get('/locations'),
-  getById: (id: string) => api.get(`/locations/${id}`),
+  getById: (id: number | string) => api.get(`/locations/${id}`),
   create: (data: any) => api.post('/locations', data),
-  update: (id: string, data: any) => api.put(`/locations/${id}`, data),
-  delete: (id: string) => api.delete(`/locations/${id}`),
+  update: (id: number | string, data: any) => api.put(`/locations/${id}`, data),
+  delete: (id: number | string) => api.delete(`/locations/${id}`),
 };
 
 // Posmitra API
@@ -258,6 +258,10 @@ export const rewardApi = {
   updateStatus: (id: string, status: string) => api.patch(`/reward/${id}/status`, { status }),
   delete: (id: string) => api.delete(`/reward/${id}`),
   getAllRewards: () => api.get('/reward/rewards/all'),
+  // Catalog reward endpoints (create/update/delete) — use admin reward router prefix
+  createReward: (data: any) => api.post('/reward/rewards', data),
+  updateReward: (id: string, data: any) => api.put(`/reward/rewards/${id}`, data),
+  deleteReward: (id: string) => api.delete(`/reward/rewards/${id}`),
 };
 
 // Banners API

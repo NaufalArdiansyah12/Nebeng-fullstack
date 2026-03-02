@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../services/api_service.dart';
 import 'reward_detail_page.dart';
@@ -285,48 +287,48 @@ class _RewardPageState extends State<RewardPage> {
                     ),
                     const SizedBox(height: 12),
                     // Category pill
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF1E3A8A),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Text(
-                            'Merchandise',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                      ),
-                    ),
+                    // Padding(
+                    //   padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    //   child: Align(
+                    //     alignment: Alignment.centerLeft,
+                    //     child: Container(
+                    //       padding: const EdgeInsets.symmetric(
+                    //           horizontal: 12, vertical: 8),
+                    //       decoration: BoxDecoration(
+                    //         color: const Color(0xFF1E3A8A),
+                    //         borderRadius: BorderRadius.circular(20),
+                    //       ),
+                    //       child: const Text(
+                    //         'Merchandise',
+                    //         style: TextStyle(color: Colors.white),
+                    //       ),
+                    //     ),
+                    //   ),
+                    // ),
                     const SizedBox(height: 16),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Spesial Diskon Buat Kamu',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF111827),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () {},
-                            child: const Text(
-                              'Lihat semua >',
-                              style: TextStyle(color: Color(0xFFEF4444)),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    // Padding(
+                    //   padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    //   child: Row(
+                    //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    //     children: [
+                    //       const Text(
+                    //         'Spesial Diskon Buat Kamu',
+                    //         style: TextStyle(
+                    //           fontSize: 16,
+                    //           fontWeight: FontWeight.w700,
+                    //           color: Color(0xFF111827),
+                    //         ),
+                    //       ),
+                    //       // TextButton(
+                    //       //   onPressed: () {},
+                    //       //   child: const Text(
+                    //       //     'Lihat semua >',
+                    //       //     style: TextStyle(color: Color(0xFFEF4444)),
+                    //       //   ),
+                    //       // ),
+                    //     ],
+                    //   ),
+                    // ),
                     const SizedBox(height: 12),
                     // Rewards List
                     _filteredRewards.isEmpty
@@ -408,27 +410,7 @@ class _RewardPageState extends State<RewardPage> {
                   height: 120,
                   width: double.infinity,
                   color: Colors.grey[200],
-                  child: r['image_url'] != null
-                      ? Image.network(
-                          r['image_url'],
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Center(
-                              child: Icon(
-                                Icons.card_giftcard,
-                                size: 48,
-                                color: Colors.grey[400],
-                              ),
-                            );
-                          },
-                        )
-                      : Center(
-                          child: Icon(
-                            Icons.card_giftcard,
-                            size: 48,
-                            color: Colors.grey[400],
-                          ),
-                        ),
+                  child: _buildRewardImage(r['image_url']),
                 ),
               ),
               if (!canRedeem)
@@ -528,6 +510,111 @@ class _RewardPageState extends State<RewardPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildRewardImage(dynamic imageUrl) {
+    if (imageUrl == null) {
+      return Center(
+        child: Icon(
+          Icons.card_giftcard,
+          size: 48,
+          color: Colors.grey[400],
+        ),
+      );
+    }
+
+    // If it's a data URL (base64), decode and render as memory image
+    if (imageUrl is String && imageUrl.startsWith('data:')) {
+      final m =
+          RegExp(r'data:(?:image/[^;]+);base64,(.+)').firstMatch(imageUrl);
+      if (m != null) {
+        try {
+          final bytes = base64Decode(m.group(1)!);
+          return Image.memory(
+            Uint8List.fromList(bytes),
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: 120,
+            errorBuilder: (context, error, stackTrace) => Center(
+              child: Icon(
+                Icons.card_giftcard,
+                size: 48,
+                color: Colors.grey[400],
+              ),
+            ),
+          );
+        } catch (_) {
+          return Center(
+            child: Icon(
+              Icons.card_giftcard,
+              size: 48,
+              color: Colors.grey[400],
+            ),
+          );
+        }
+      }
+    }
+
+    // If server stored relative uploads path like '/uploads/..', prefix admin origin
+    if (imageUrl is String && imageUrl.startsWith('/uploads')) {
+      try {
+        final base = ApiService
+            .baseUrl; // e.g. http://10.0.2.2:8000 or http://localhost:8000
+        final parsed = Uri.parse(base);
+        final origin = Uri(scheme: parsed.scheme, host: parsed.host, port: 3001)
+            .toString();
+        final full = origin + imageUrl;
+        return Image.network(
+          full,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: 120,
+          errorBuilder: (context, error, stackTrace) => Center(
+            child: Icon(
+              Icons.card_giftcard,
+              size: 48,
+              color: Colors.grey[400],
+            ),
+          ),
+        );
+      } catch (_) {
+        // fallback to placeholder
+        return Center(
+          child: Icon(
+            Icons.card_giftcard,
+            size: 48,
+            color: Colors.grey[400],
+          ),
+        );
+      }
+    }
+
+    // Otherwise assume it's an absolute URL
+    if (imageUrl is String &&
+        (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {
+      return Image.network(
+        imageUrl,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: 120,
+        errorBuilder: (context, error, stackTrace) => Center(
+          child: Icon(
+            Icons.card_giftcard,
+            size: 48,
+            color: Colors.grey[400],
+          ),
+        ),
+      );
+    }
+
+    // Default placeholder
+    return Center(
+      child: Icon(
+        Icons.card_giftcard,
+        size: 48,
+        color: Colors.grey[400],
       ),
     );
   }

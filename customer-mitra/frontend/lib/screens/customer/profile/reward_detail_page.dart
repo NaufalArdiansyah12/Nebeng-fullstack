@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'dart:typed_data';
+import '../../../services/api_service.dart';
 import 'reward_address_page.dart';
 
 class RewardDetailPage extends StatefulWidget {
@@ -45,14 +48,7 @@ class _RewardDetailPageState extends State<RewardDetailPage> {
         children: [
           // Image
           if (r['image_url'] != null)
-            Image.network(
-              r['image_url'],
-              height: 200,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) =>
-                  Container(height: 200, color: Colors.grey[200]),
-            )
+            _buildDetailImage(r['image_url'])
           else
             Container(height: 200, color: Colors.grey[200]),
           Expanded(
@@ -138,5 +134,67 @@ class _RewardDetailPageState extends State<RewardDetailPage> {
         ),
       ),
     );
+  }
+
+  Widget _buildDetailImage(dynamic imageUrl) {
+    if (imageUrl == null)
+      return Container(height: 200, color: Colors.grey[200]);
+
+    // data URL (base64)
+    if (imageUrl is String && imageUrl.startsWith('data:')) {
+      final m =
+          RegExp(r'data:(?:image/[^;]+);base64,(.+)').firstMatch(imageUrl);
+      if (m != null) {
+        try {
+          final bytes = base64Decode(m.group(1)!);
+          return Image.memory(
+            Uint8List.fromList(bytes),
+            height: 200,
+            width: double.infinity,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) =>
+                Container(height: 200, color: Colors.grey[200]),
+          );
+        } catch (_) {
+          return Container(height: 200, color: Colors.grey[200]);
+        }
+      }
+    }
+
+    // Relative uploads path - prefix admin origin (port 3001)
+    if (imageUrl is String && imageUrl.startsWith('/uploads')) {
+      try {
+        final base = ApiService.baseUrl; // e.g. http://10.0.2.2:8000
+        final parsed = Uri.parse(base);
+        final origin = Uri(scheme: parsed.scheme, host: parsed.host, port: 3001)
+            .toString();
+        final full = origin + imageUrl;
+        return Image.network(
+          full,
+          height: 200,
+          width: double.infinity,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) =>
+              Container(height: 200, color: Colors.grey[200]),
+        );
+      } catch (_) {
+        return Container(height: 200, color: Colors.grey[200]);
+      }
+    }
+
+    // absolute URL
+    if (imageUrl is String &&
+        (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {
+      return Image.network(
+        imageUrl,
+        height: 200,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) =>
+            Container(height: 200, color: Colors.grey[200]),
+      );
+    }
+
+    return Container(height: 200, color: Colors.grey[200]);
   }
 }

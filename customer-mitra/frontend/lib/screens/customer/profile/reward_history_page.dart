@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../services/api_service.dart';
 import 'package:intl/intl.dart';
@@ -165,6 +167,109 @@ class _RewardHistoryPageState extends State<RewardHistoryPage> {
     );
   }
 
+  Widget _buildHistoryImage(dynamic imageUrl) {
+    if (imageUrl == null) {
+      return Center(
+        child: Icon(
+          Icons.card_giftcard,
+          size: 32,
+          color: Colors.grey[400],
+        ),
+      );
+    }
+
+    // data URL (base64)
+    if (imageUrl is String && imageUrl.startsWith('data:')) {
+      final m =
+          RegExp(r'data:(?:image/[^;]+);base64,(.+)').firstMatch(imageUrl);
+      if (m != null) {
+        try {
+          final bytes = base64Decode(m.group(1)!);
+          return Image.memory(
+            Uint8List.fromList(bytes),
+            fit: BoxFit.cover,
+            width: 80,
+            height: 80,
+            errorBuilder: (context, error, stackTrace) => Center(
+              child: Icon(
+                Icons.card_giftcard,
+                size: 32,
+                color: Colors.grey[400],
+              ),
+            ),
+          );
+        } catch (_) {
+          return Center(
+            child: Icon(
+              Icons.card_giftcard,
+              size: 32,
+              color: Colors.grey[400],
+            ),
+          );
+        }
+      }
+    }
+
+    // relative uploads path - prefix with admin origin (port 3001)
+    if (imageUrl is String && imageUrl.startsWith('/uploads')) {
+      try {
+        final base = ApiService
+            .baseUrl; // e.g. http://10.0.2.2:8000 or http://localhost:8000
+        final parsed = Uri.parse(base);
+        final origin = Uri(scheme: parsed.scheme, host: parsed.host, port: 3001)
+            .toString();
+        final full = origin + imageUrl;
+        return Image.network(
+          full,
+          fit: BoxFit.cover,
+          width: 80,
+          height: 80,
+          errorBuilder: (context, error, stackTrace) => Center(
+            child: Icon(
+              Icons.card_giftcard,
+              size: 32,
+              color: Colors.grey[400],
+            ),
+          ),
+        );
+      } catch (_) {
+        return Center(
+          child: Icon(
+            Icons.card_giftcard,
+            size: 32,
+            color: Colors.grey[400],
+          ),
+        );
+      }
+    }
+
+    // absolute URL
+    if (imageUrl is String &&
+        (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {
+      return Image.network(
+        imageUrl,
+        fit: BoxFit.cover,
+        width: 80,
+        height: 80,
+        errorBuilder: (context, error, stackTrace) => Center(
+          child: Icon(
+            Icons.card_giftcard,
+            size: 32,
+            color: Colors.grey[400],
+          ),
+        ),
+      );
+    }
+
+    return Center(
+      child: Icon(
+        Icons.card_giftcard,
+        size: 32,
+        color: Colors.grey[400],
+      ),
+    );
+  }
+
   Widget _buildRedemptionCard(Map<String, dynamic> redemption) {
     final reward = redemption['reward'] ?? {};
     final title = reward['title'] ?? redemption['reward_title'] ?? 'Reward';
@@ -209,27 +314,7 @@ class _RewardHistoryPageState extends State<RewardHistoryPage> {
                     width: 80,
                     height: 80,
                     color: Colors.grey[200],
-                    child: imageUrl != null
-                        ? Image.network(
-                            imageUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Center(
-                                child: Icon(
-                                  Icons.card_giftcard,
-                                  size: 32,
-                                  color: Colors.grey[400],
-                                ),
-                              );
-                            },
-                          )
-                        : Center(
-                            child: Icon(
-                              Icons.card_giftcard,
-                              size: 32,
-                              color: Colors.grey[400],
-                            ),
-                          ),
+                    child: _buildHistoryImage(imageUrl),
                   ),
                 ),
                 const SizedBox(width: 12),
