@@ -33,7 +33,7 @@ class BerandaController extends Controller
 
     /**
      * Get upcoming rides (tebengan akan datang)
-     * ✅ DIPERBAIKI: Tidak mengambil data kendaraan untuk menghindari error
+     * ✅ DIPERBAIKI: Mengambil data kendaraan dari tabel kendaraan_mitra
      */
     public function upcomingRides(Request $request)
     {
@@ -63,12 +63,24 @@ class BerandaController extends Controller
                 'success' => true,
                 'message' => 'Pos mitra belum memiliki lokasi yang ditugaskan',
                 'data' => [],
+                'debug' => [
+                    'user_id' => $user->id,
+                    'user_location_id' => $user->location_id,
+                    'note' => 'PosMitra tidak memiliki location_id'
+                ],
             ]);
         }
 
-        // ✅ Motor rides - TANPA JOIN ke kendaraan_mitra
+        // Debug: Log query yang akan dijalankan
+        Log::info('PosMitra upcomingRides - Query params', [
+            'destination_location_id' => $user->location_id,
+            'today' => now()->toDateString(),
+        ]);
+
+        // ✅ Motor rides - DENGAN JOIN ke kendaraan_mitra DAN passengers
         $motorRides = DB::table('tebengan_motor as tm')
             ->leftJoin('users as u', 'tm.user_id', '=', 'u.id')
+            ->leftJoin('kendaraan_mitra as km', 'tm.kendaraan_mitra_id', '=', 'km.id')
             ->leftJoin('locations as origin', 'tm.origin_location_id', '=', 'origin.id')
             ->leftJoin('locations as dest', 'tm.destination_location_id', '=', 'dest.id')
             ->where('tm.destination_location_id', $user->location_id)
@@ -85,6 +97,13 @@ class BerandaController extends Controller
                 'tm.status',
                 'tm.service_type',
                 'tm.ride_type',
+                // Vehicle from kendaraan_mitra
+                'km.name as vehicle_name',
+                'km.plate_number as vehicle_plate',
+                'km.brand as vehicle_brand',
+                'km.model as vehicle_model',
+                'km.color as vehicle_color',
+                'km.vehicle_type as vehicle_type',
                 // Origin
                 'origin.id as origin_id',
                 'origin.name as origin_name',
@@ -101,6 +120,29 @@ class BerandaController extends Controller
             )
             ->get()
             ->map(function ($ride) {
+                // Ambil data passengers dari tabel booking_motor (tanpa filter status)
+                $passengers = DB::table('booking_motor as bmot')
+                    ->join('users as passenger', 'bmot.user_id', '=', 'passenger.id')
+                    ->where('bmot.ride_id', $ride->id)
+                    ->select(
+                        'passenger.id',
+                        'passenger.name',
+                        'passenger.phone',
+                        'bmot.seats'
+                    )
+                    ->get()
+                    ->map(function ($p) {
+                        return [
+                            'id' => $p->id,
+                            'name' => $p->name ?? 'Unknown',
+                            'nik' => '',
+                            'phone' => $p->phone ?? '',
+                            'gender' => '',
+                            'seats' => $p->seats ?? 1,
+                        ];
+                    })
+                    ->toArray();
+
                 return [
                     'id' => $ride->id,
                     'ride_type' => $ride->ride_type ?? 'motor',
@@ -119,11 +161,12 @@ class BerandaController extends Controller
                     ],
                     'price' => (float) $ride->price,
                     'vehicle' => [
-                        'name' => '',
-                        'plate' => '',
-                        'brand' => '',
-                        'type' => 'Motor',
-                        'color' => '',
+                        'name' => $ride->vehicle_name ?? '',
+                        'plate' => $ride->vehicle_plate ?? '',
+                        'brand' => $ride->vehicle_brand ?? '',
+                        'type' => $ride->vehicle_type ?? 'Motor',
+                        'color' => $ride->vehicle_color ?? '',
+                        'model' => $ride->vehicle_model ?? '',
                     ],
                     'available_seats' => $ride->available_seats,
                     'status' => $ride->status,
@@ -133,12 +176,13 @@ class BerandaController extends Controller
                         'phone' => $ride->driver_phone ?? '',
                         'photo' => $ride->driver_photo ?? null,
                     ],
+                    'passengers' => $passengers,
                 ];
             });
-
-        // ✅ Mobil rides - TANPA JOIN ke kendaraan_mitra
+        // ✅ Mobil rides - DENGAN JOIN ke kendaraan_mitra DAN passenger
         $mobilRides = DB::table('tebengan_mobil as tmb')
             ->leftJoin('users as u', 'tmb.user_id', '=', 'u.id')
+            ->leftJoin('kendaraan_mitra as km', 'tmb.kendaraan_mitra_id', '=', 'km.id')
             ->leftJoin('locations as origin', 'tmb.origin_location_id', '=', 'origin.id')
             ->leftJoin('locations as dest', 'tmb.destination_location_id', '=', 'dest.id')
             ->where('tmb.destination_location_id', $user->location_id)
@@ -155,6 +199,13 @@ class BerandaController extends Controller
                 'tmb.status',
                 'tmb.ride_type',
                 'tmb.service_type',
+                // Vehicle from kendaraan_mitra
+                'km.name as vehicle_name',
+                'km.plate_number as vehicle_plate',
+                'km.brand as vehicle_brand',
+                'km.model as vehicle_model',
+                'km.color as vehicle_color',
+                'km.vehicle_type as vehicle_type',
                 // Origin
                 'origin.id as origin_id',
                 'origin.name as origin_name',
@@ -171,10 +222,102 @@ class BerandaController extends Controller
             )
             ->get()
             ->map(function ($ride) {
+                // Ambil data passengers dari tabel penumpang_booking_mobil
+                $passengers = DB::table('penumpang_booking_mobil as pbm')
+                    ->join('booking_mobil as bm', 'pbm.booking_mobil_id', '=', 'bm.id')
+                    ->where('bm.ride_id', $ride->id)
+                    ->whereIn('bm.status', ['paid', 'selesai'])
+                    ->select(
+                        'pbm.id',
+                        'pbm.nama',
+                        'pbm.nik',
+                        'pbm.no_telepon',
+                        'pbm.jenis_kelamin'
+                    )
+                    ->get()
+                    ->map(function ($p) {
+                        return [
+                            'id' => $p->id,
+                            'name' => $p->nama ?? 'Unknown',
+                            'nik' => $p->nik ?? '',
+                            'phone' => $p->no_telepon ?? '',
+                            'gender' => $p->jenis_kelamin ?? '',
+                        ];
+                    })
+                    ->toArray();
+
                 return [
                     'id' => $ride->id,
                     'ride_type' => $ride->ride_type ?? 'mobil',
                     'service_type' => $ride->service_type ?? 'tebengan',
+                    'date' => $ride->departure_date,
+                    'time' => $ride->departure_time,
+                    'origin' => [
+                        'id' => $ride->origin_id,
+                        'name' => $ride->origin_name ?? 'Unknown',
+                        'detail' => $ride->origin_address ?? '',
+                    ],
+                    'destination' => [
+                        'id' => $ride->dest_id,
+                        'name' => $ride->dest_name ?? 'Unknown',
+                        'detail' => $ride->dest_address ?? '',
+                    ],
+                    'price' => (float) $ride->price,
+                    'vehicle' => [
+                        'name' => $ride->vehicle_name ?? '',
+                        'plate' => $ride->vehicle_plate ?? '',
+                        'brand' => $ride->vehicle_brand ?? '',
+                        'type' => $ride->vehicle_type ?? 'Mobil',
+                        'color' => $ride->vehicle_color ?? '',
+                        'model' => $ride->vehicle_model ?? '',
+                    ],
+                    'available_seats' => $ride->available_seats,
+                    'status' => $ride->status,
+                    'driver' => [
+                        'id' => $ride->driver_id,
+                        'name' => $ride->driver_name ?? 'Unknown',
+                        'phone' => $ride->driver_phone ?? '',
+                        'photo' => $ride->driver_photo ?? null,
+                    ],
+                    'passengers' => $passengers,
+                ];
+            });
+
+        // ✅ Barang rides - NEBENG BARANG
+        $barangRides = DB::table('tebengan_barang as tb')
+            ->leftJoin('users as u', 'tb.user_id', '=', 'u.id')
+            ->leftJoin('locations as origin', 'tb.origin_location_id', '=', 'origin.id')
+            ->leftJoin('locations as dest', 'tb.destination_location_id', '=', 'dest.id')
+            ->where('tb.destination_location_id', $user->location_id)
+            ->whereIn('tb.status', ['active', 'full'])
+            ->where('tb.departure_date', '>=', now()->toDateString())
+            ->orderBy('tb.departure_date')
+            ->orderBy('tb.departure_time')
+            ->select(
+                'tb.id',
+                'tb.departure_date',
+                'tb.departure_time',
+                'tb.price',
+                'tb.status',
+                'tb.service_type',
+                'tb.ride_type',
+                'origin.id as origin_id',
+                'origin.name as origin_name',
+                'origin.address as origin_address',
+                'dest.id as dest_id',
+                'dest.name as dest_name',
+                'dest.address as dest_address',
+                'u.id as driver_id',
+                'u.name as driver_name',
+                'u.phone as driver_phone',
+                'u.profile_photo as driver_photo'
+            )
+            ->get()
+            ->map(function ($ride) {
+                return [
+                    'id' => $ride->id,
+                    'ride_type' => 'barang',
+                    'service_type' => 'barang',
                     'date' => $ride->departure_date,
                     'time' => $ride->departure_time,
                     'origin' => [
@@ -195,7 +338,7 @@ class BerandaController extends Controller
                         'type' => 'Mobil',
                         'color' => '',
                     ],
-                    'available_seats' => $ride->available_seats,
+                    'available_seats' => 0,
                     'status' => $ride->status,
                     'driver' => [
                         'id' => $ride->driver_id,
@@ -206,8 +349,78 @@ class BerandaController extends Controller
                 ];
             });
 
-        // Merge & sort
-        $rides = $motorRides->concat($mobilRides)
+        // ✅ Titip Barang rides (tabel ini menggunakan transportation_type, bukan service_type/ride_type)
+        $titipBarangRides = DB::table('tebengan_titip_barang as ttb')
+            ->leftJoin('users as u', 'ttb.user_id', '=', 'u.id')
+            ->leftJoin('locations as origin', 'ttb.origin_location_id', '=', 'origin.id')
+            ->leftJoin('locations as dest', 'ttb.destination_location_id', '=', 'dest.id')
+            ->where('ttb.destination_location_id', $user->location_id)
+            ->whereIn('ttb.status', ['active', 'full'])
+            ->where('ttb.departure_date', '>=', now()->toDateString())
+            ->orderBy('ttb.departure_date')
+            ->orderBy('ttb.departure_time')
+            ->select(
+                'ttb.id',
+                'ttb.departure_date',
+                'ttb.departure_time',
+                'ttb.price',
+                'ttb.status',
+                'ttb.transportation_type',
+                'ttb.bagasi_capacity',
+                'origin.id as origin_id',
+                'origin.name as origin_name',
+                'origin.address as origin_address',
+                'dest.id as dest_id',
+                'dest.name as dest_name',
+                'dest.address as dest_address',
+                'u.id as driver_id',
+                'u.name as driver_name',
+                'u.phone as driver_phone',
+                'u.profile_photo as driver_photo'
+            )
+            ->get()
+            ->map(function ($ride) {
+                return [
+                    'id' => $ride->id,
+                    'ride_type' => $ride->transportation_type ?? 'bus',
+                    'service_type' => 'titip_barang',
+                    'date' => $ride->departure_date,
+                    'time' => $ride->departure_time,
+                    'origin' => [
+                        'id' => $ride->origin_id,
+                        'name' => $ride->origin_name ?? 'Unknown',
+                        'detail' => $ride->origin_address ?? '',
+                    ],
+                    'destination' => [
+                        'id' => $ride->dest_id,
+                        'name' => $ride->dest_name ?? 'Unknown',
+                        'detail' => $ride->dest_address ?? '',
+                    ],
+                    'price' => (float) $ride->price,
+                    'vehicle' => [
+                        'name' => '',
+                        'plate' => '',
+                        'brand' => '',
+                        'type' => 'Titip Barang',
+                        'color' => '',
+                    ],
+                    'available_seats' => 0,
+                    'bagasi_capacity' => $ride->bagasi_capacity ?? 0,
+                    'status' => $ride->status,
+                    'driver' => [
+                        'id' => $ride->driver_id,
+                        'name' => $ride->driver_name ?? 'Unknown',
+                        'phone' => $ride->driver_phone ?? '',
+                        'photo' => $ride->driver_photo ?? null,
+                    ],
+                ];
+            });
+
+        // Merge & sort all rides
+        $rides = $motorRides
+            ->concat($mobilRides)
+            ->concat($barangRides)
+            ->concat($titipBarangRides)
             ->sortBy(function($r) {
                 return $r['date'] . ' ' . $r['time'];
             })
@@ -218,6 +431,13 @@ class BerandaController extends Controller
             'success' => true,
             'message' => 'Data tebengan berhasil diambil',
             'data' => $rides,
+            'debug' => [
+                'user_location_id' => $user->location_id,
+                'motor_rides_count' => $motorRides->count(),
+                'mobil_rides_count' => $mobilRides->count(),
+                'barang_rides_count' => $barangRides->count(),
+                'titip_barang_rides_count' => $titipBarangRides->count(),
+            ],
         ]);
     }
 
@@ -351,13 +571,14 @@ public function completedRides(Request $request)
         ]);
     }
 
-    // ✅ AMBIL MOTOR YANG SUDAH COMPLETED
+    // ✅ AMBIL MOTOR YANG SUDAH COMPLETED - DENGAN JOIN kendaraan_mitra
     $motorRides = DB::table('tebengan_motor as tm')
         ->leftJoin('users as u', 'tm.user_id', '=', 'u.id')
+        ->leftJoin('kendaraan_mitra as km', 'tm.kendaraan_mitra_id', '=', 'km.id')
         ->leftJoin('locations as origin', 'tm.origin_location_id', '=', 'origin.id')
         ->leftJoin('locations as dest', 'tm.destination_location_id', '=', 'dest.id')
         ->where('tm.destination_location_id', $user->location_id)
-        ->where('tm.status', 'completed')  // 🔥 FILTER COMPLETED!
+        ->where('tm.status', 'completed')  // FILTER COMPLETED!
         ->orderBy('tm.departure_date', 'desc')
         ->orderBy('tm.departure_time', 'desc')
         ->select(
@@ -369,6 +590,13 @@ public function completedRides(Request $request)
             'tm.status',
             'tm.service_type',
             'tm.ride_type',
+            // Vehicle from kendaraan_mitra
+            'km.name as vehicle_name',
+            'km.plate_number as vehicle_plate',
+            'km.brand as vehicle_brand',
+            'km.model as vehicle_model',
+            'km.color as vehicle_color',
+            'km.vehicle_type as vehicle_type',
             'origin.id as origin_id',
             'origin.name as origin_name',
             'origin.address as origin_address',
@@ -400,11 +628,12 @@ public function completedRides(Request $request)
                 ],
                 'price' => (float) $ride->price,
                 'vehicle' => [
-                    'name' => '',
-                    'plate' => '',
-                    'brand' => '',
-                    'type' => 'Motor',
-                    'color' => '',
+                    'name' => $ride->vehicle_name ?? '',
+                    'plate' => $ride->vehicle_plate ?? '',
+                    'brand' => $ride->vehicle_brand ?? '',
+                    'type' => $ride->vehicle_type ?? 'Motor',
+                    'color' => $ride->vehicle_color ?? '',
+                    'model' => $ride->vehicle_model ?? '',
                 ],
                 'available_seats' => $ride->available_seats,
                 'status' => $ride->status,
@@ -417,13 +646,14 @@ public function completedRides(Request $request)
             ];
         });
 
-    // ✅ AMBIL MOBIL YANG SUDAH COMPLETED
+    // ✅ AMBIL MOBIL YANG SUDAH COMPLETED - DENGAN JOIN kendaraan_mitra DAN passenger
     $mobilRides = DB::table('tebengan_mobil as tmb')
         ->leftJoin('users as u', 'tmb.user_id', '=', 'u.id')
+        ->leftJoin('kendaraan_mitra as km', 'tmb.kendaraan_mitra_id', '=', 'km.id')
         ->leftJoin('locations as origin', 'tmb.origin_location_id', '=', 'origin.id')
         ->leftJoin('locations as dest', 'tmb.destination_location_id', '=', 'dest.id')
         ->where('tmb.destination_location_id', $user->location_id)
-        ->where('tmb.status', 'completed')  // 🔥 FILTER COMPLETED!
+        ->where('tmb.status', 'completed')  // FILTER COMPLETED!
         ->orderBy('tmb.departure_date', 'desc')
         ->orderBy('tmb.departure_time', 'desc')
         ->select(
@@ -435,6 +665,13 @@ public function completedRides(Request $request)
             'tmb.status',
             'tmb.ride_type',
             'tmb.service_type',
+            // Vehicle from kendaraan_mitra
+            'km.name as vehicle_name',
+            'km.plate_number as vehicle_plate',
+            'km.brand as vehicle_brand',
+            'km.model as vehicle_model',
+            'km.color as vehicle_color',
+            'km.vehicle_type as vehicle_type',
             'origin.id as origin_id',
             'origin.name as origin_name',
             'origin.address as origin_address',
@@ -448,6 +685,30 @@ public function completedRides(Request $request)
         )
         ->get()
         ->map(function ($ride) {
+            // Ambil data passengers dari tabel penumpang_booking_mobil
+            $passengers = DB::table('penumpang_booking_mobil as pbm')
+                ->join('booking_mobil as bm', 'pbm.booking_mobil_id', '=', 'bm.id')
+                ->where('bm.ride_id', $ride->id)
+                ->whereIn('bm.status', ['paid', 'selesai'])
+                ->select(
+                    'pbm.id',
+                    'pbm.nama',
+                    'pbm.nik',
+                    'pbm.no_telepon',
+                    'pbm.jenis_kelamin'
+                )
+                ->get()
+                ->map(function ($p) {
+                    return [
+                        'id' => $p->id,
+                        'name' => $p->nama ?? 'Unknown',
+                        'nik' => $p->nik ?? '',
+                        'phone' => $p->no_telepon ?? '',
+                        'gender' => $p->jenis_kelamin ?? '',
+                    ];
+                })
+                ->toArray();
+
             return [
                 'id' => $ride->id,
                 'ride_type' => $ride->ride_type ?? 'mobil',
@@ -466,11 +727,12 @@ public function completedRides(Request $request)
                 ],
                 'price' => (float) $ride->price,
                 'vehicle' => [
-                    'name' => '',
-                    'plate' => '',
-                    'brand' => '',
-                    'type' => 'Mobil',
-                    'color' => '',
+                    'name' => $ride->vehicle_name ?? '',
+                    'plate' => $ride->vehicle_plate ?? '',
+                    'brand' => $ride->vehicle_brand ?? '',
+                    'type' => $ride->vehicle_type ?? 'Mobil',
+                    'color' => $ride->vehicle_color ?? '',
+                    'model' => $ride->vehicle_model ?? '',
                 ],
                 'available_seats' => $ride->available_seats,
                 'status' => $ride->status,
@@ -480,6 +742,7 @@ public function completedRides(Request $request)
                     'phone' => $ride->driver_phone ?? '',
                     'photo' => $ride->driver_photo ?? null,
                 ],
+                'passengers' => $passengers,
             ];
         });
 

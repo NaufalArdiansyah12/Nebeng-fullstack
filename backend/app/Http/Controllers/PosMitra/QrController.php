@@ -14,9 +14,37 @@ use App\Models\Booking;
 use App\Models\BookingMobil;
 use App\Models\BookingBarang;
 use App\Models\BookingTitipBarang;
+use App\Models\PosMitraUser;
+use App\Models\ApiToken;
 
 class QrController extends Controller
 {
+    /**
+     * Get authenticated PosMitra user from bearer token
+     * 
+     * @param Request $request
+     * @return PosMitraUser|null
+     */
+    private function getAuthenticatedPosMitra(Request $request)
+    {
+        $bearer = $request->bearerToken();
+        if (!$bearer) {
+            return null;
+        }
+
+        $hashed = hash('sha256', $bearer);
+
+        $apiToken = ApiToken::where('token', $hashed)
+            ->where('expires_at', '>', now())
+            ->first();
+
+        if (!$apiToken || $apiToken->user_type !== 'posmitra') {
+            return null;
+        }
+
+        return PosMitraUser::find($apiToken->posmitra_id);
+    }
+
     /**
      * Verify QR code and return booking details
      * 
@@ -34,7 +62,6 @@ class QrController extends Controller
             Log::info('PosMitra QR Verification', ['qr_data' => $qrData]);
 
             // Parse QR code format: RIDE-{TYPE}-{ID}-{RANDOM}
-            // Example: RIDE-MOTOR-123-ABC123XY
             if (!preg_match('/^RIDE-([A-Z]+)-(\d+)-/', $qrData, $matches)) {
                 return response()->json([
                     'success' => false,
@@ -45,7 +72,6 @@ class QrController extends Controller
             $rideType = strtolower($matches[1]);
             $rideId = (int) $matches[2];
 
-            // Find the ride and booking based on type
             $result = $this->findBookingByQrCode($qrData, $rideType, $rideId);
 
             if (!$result) {
@@ -83,27 +109,18 @@ class QrController extends Controller
 
     /**
      * Find booking by QR code
-     * 
-     * @param string $qrData
-     * @param string $rideType
-     * @param int $rideId
-     * @return array|null
      */
     private function findBookingByQrCode($qrData, $rideType, $rideId)
     {
         switch ($rideType) {
             case 'motor':
                 return $this->findMotorBooking($qrData, $rideId);
-            
             case 'mobil':
                 return $this->findMobilBooking($qrData, $rideId);
-            
             case 'barang':
                 return $this->findBarangBooking($qrData, $rideId);
-            
             case 'titip':
                 return $this->findTitipBarangBooking($qrData, $rideId);
-            
             default:
                 return null;
         }
@@ -114,7 +131,6 @@ class QrController extends Controller
      */
     private function findMotorBooking($qrData, $rideId)
     {
-        // First, try to find the ride with matching ID (from QR code pattern)
         $ride = Ride::with([
             'user',
             'originLocation',
@@ -124,19 +140,16 @@ class QrController extends Controller
           ->where('id', $rideId)
           ->first();
 
-        // Check if this ride has bookings
         if ($ride) {
             $hasBookings = Booking::where('ride_id', $ride->id)
                 ->where('status', '!=', 'cancelled')
                 ->exists();
             
             if (!$hasBookings) {
-                // This ride doesn't have bookings, try fallback
                 $ride = null;
             }
         }
 
-        // If not found with ID match OR has no bookings, try to find any ride with this QR code that has bookings
         if (!$ride) {
             $rides = Ride::with([
                 'user',
@@ -145,7 +158,6 @@ class QrController extends Controller
                 'kendaraanMitra'
             ])->where('qr_code_data', $qrData)->get();
 
-            // Find the first ride that has bookings
             foreach ($rides as $r) {
                 $hasBookings = Booking::where('ride_id', $r->id)
                     ->where('status', '!=', 'cancelled')
@@ -161,7 +173,6 @@ class QrController extends Controller
             return null;
         }
 
-        // Get all bookings for this ride (accept any status that's not cancelled)
         $bookings = Booking::with(['user'])
             ->where('ride_id', $ride->id)
             ->where('status', '!=', 'cancelled')
@@ -171,7 +182,6 @@ class QrController extends Controller
             return null;
         }
 
-        // Calculate total earnings from all passengers
         $totalEarnings = 0;
         $passengerItems = [];
 
@@ -184,7 +194,6 @@ class QrController extends Controller
                 'status' => $booking->status,
             ];
 
-            // Calculate earnings based on price per seat
             if ($ride->price && $booking->seats) {
                 $totalEarnings += $ride->price * $booking->seats;
             }
@@ -360,7 +369,6 @@ class QrController extends Controller
                 'status' => $booking->status,
             ];
 
-            // Calculate based on weight and price
             if ($ride->price_per_kg && $booking->weight) {
                 $totalEarnings += $ride->price_per_kg * $booking->weight;
             }
@@ -491,9 +499,6 @@ class QrController extends Controller
 
     /**
      * Complete ride after QR scan
-     * 
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
      */
     public function completeRide(Request $request)
     {
@@ -576,11 +581,26 @@ class QrController extends Controller
                 ], 404);
             }
 
-            // TODO: Additional logic
-            // - Update ride status if all bookings are completed
-            // - Calculate and transfer earnings to driver
-            // - Send notification to customer
-            // - Send notification to mitra
+            // Get authenticated PosMitra user and add balance
+            $posMitra = $this->getAuthenticatedPosMitra($request);
+            
+            $previousBalance = 0;
+            $newBalance = 0;
+            $bonusAmount = 1000;
+
+            if ($posMitra) {
+                $previousBalance = (float) ($posMitra->balance ?? 0);
+                $posMitra->balance = $previousBalance + $bonusAmount;
+                $posMitra->save();
+                $newBalance = (float) $posMitra->balance;
+                
+                Log::info('PosMitra Balance Updated', [
+                    'posmitra_id' => $posMitra->id,
+                    'previous_balance' => $previousBalance,
+                    'bonus_amount' => $bonusAmount,
+                    'new_balance' => $newBalance,
+                ]);
+            }
 
             Log::info('Booking completed successfully', [
                 'booking_id' => $bookingId,
@@ -594,6 +614,11 @@ class QrController extends Controller
                     'booking_id' => $bookingId,
                     'status' => 'completed',
                     'booking_number' => $booking->booking_number ?? null,
+                    'balance_info' => [
+                        'previous_balance' => $previousBalance,
+                        'bonus_added' => $bonusAmount,
+                        'new_balance' => $newBalance,
+                    ],
                 ],
             ]);
 

@@ -95,11 +95,40 @@ class _AktivitasPageState extends State<AktivitasPage> {
     }
   }
 
+  // Get ride type label based on rideType + serviceType (new logic)
   String _getRideTypeLabel(String rideType, String serviceType) {
-    if (serviceType == 'barang') return 'Titip Barang';
-    if (rideType == 'motor') return 'Nabung Motor';
-    if (rideType == 'mobil') return 'Nabung Mobil';
+    // Handle 'both' service type
+    if (serviceType == 'both') {
+      if (rideType == 'motor') return 'Nebeng Motor + Barang';
+      if (rideType == 'mobil') return 'Nebeng Mobil + Barang';
+      return 'Tebengan + Barang';
+    }
+    // Handle 'barang' service type
+    if (serviceType == 'barang') {
+      return 'Titip Barang';
+    }
+    // Handle 'tebengan' service type (default)
+    if (rideType == 'motor') return 'Nebeng Motor';
+    if (rideType == 'mobil') return 'Nebeng Mobil';
     return 'Tebengan';
+  }
+
+  // Get icon based on rideType only (NOT serviceType)
+  IconData _getRideTypeIcon(String rideType, String serviceType) {
+    // Always show vehicle icon based on rideType, ignore serviceType
+    if (rideType == 'motor') return Icons.two_wheeler;
+    if (rideType == 'mobil') return Icons.directions_car;
+    if (rideType == 'barang') return Icons.inventory_2;
+    return Icons.directions_car;
+  }
+
+  // Get color based on rideType only (NOT serviceType)
+  Color _getRideTypeColor(String rideType, String serviceType) {
+    // Always show color based on rideType, ignore serviceType
+    if (rideType == 'motor') return const Color(0xFF4CAF50); // Hijau
+    if (rideType == 'mobil') return const Color(0xFF2196F3); // Biru
+    if (rideType == 'barang') return const Color(0xFF9C27B0); // Ungu
+    return const Color(0xFF2196F3);
   }
 
   Color _getStatusColor(String status) {
@@ -155,6 +184,7 @@ class _AktivitasPageState extends State<AktivitasPage> {
     final time = ride['time']?.toString() ?? '';
     final formattedDateTime = _formatDateTime(date, time);
 
+    // Use ride_type and service_type separately (new logic)
     final rideType = ride['ride_type']?.toString() ?? 'motor';
     final serviceType = ride['service_type']?.toString() ?? 'tebengan';
     final rideTypeLabel = _getRideTypeLabel(rideType, serviceType);
@@ -176,6 +206,12 @@ class _AktivitasPageState extends State<AktivitasPage> {
       'status': statusLabel,
       'statusColor': statusColor,
       'slot': rideTypeLabel,
+      // Use new field names: rideType and serviceTypeRaw
+      'rideType': rideType,
+      'serviceTypeRaw': serviceType,
+      // Keep for backward compatibility if needed
+      'serviceTypeIcon': _getRideTypeIcon(rideType, serviceType),
+      'serviceTypeColor': _getRideTypeColor(rideType, serviceType),
       'locations': [
         {'name': origin['name'] ?? 'Tidak tersedia', 'detail': origin['detail'] ?? '', 'isPrimary': true},
         {'name': destination['name'] ?? 'Tidak tersedia', 'detail': destination['detail'] ?? '', 'isPrimary': false},
@@ -250,6 +286,11 @@ class _AktivitasPageState extends State<AktivitasPage> {
                               itemCount: filteredActivities.length,
                               itemBuilder: (context, index) {
                                 final ride = filteredActivities[index];
+
+                                debugPrint('--- RIDE RAW ---');
+                                debugPrint(ride.toString());
+                                debugPrint('---------------');
+
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 12),
                                   child: InkWell(
@@ -404,6 +445,7 @@ class _AktivitasPageState extends State<AktivitasPage> {
     final statusLabel = _getStatusLabel(status);
     final statusColor = _getStatusColor(status);
 
+    // Use new logic: separate rideType and serviceType
     final rideType = ride['ride_type']?.toString() ?? 'motor';
     final serviceType = ride['service_type']?.toString() ?? 'tebengan';
     final rideTypeLabel = _getRideTypeLabel(rideType, serviceType);
@@ -438,6 +480,20 @@ class _AktivitasPageState extends State<AktivitasPage> {
             padding: const EdgeInsets.all(14),
             child: Row(
               children: [
+                // Vehicle Icon Badge - based on RIDE TYPE only
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: _getRideTypeColor(rideType, serviceType).withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    _getRideTypeIcon(rideType, serviceType),
+                    size: 20,
+                    color: _getRideTypeColor(rideType, serviceType),
+                  ),
+                ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -453,10 +509,10 @@ class _AktivitasPageState extends State<AktivitasPage> {
                       const SizedBox(height: 4),
                       Text(
                         rideTypeLabel,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF424242),
-                          fontWeight: FontWeight.w500,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: _getRideTypeColor(rideType, serviceType),
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
