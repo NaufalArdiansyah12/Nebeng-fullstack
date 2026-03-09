@@ -4,6 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
 import '../../services/api_service.dart';
+import '../../services/shared/api_config.dart';
 import '../../services/shared/auth_service.dart';
 import '../../models/user_role.dart';
 import '../customer/main_page.dart';
@@ -32,16 +33,20 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  Future<void> _sendFcmTokenToBackend(String apiToken) async {
+  Future<void> _sendFcmTokenToBackend(String apiToken, String role) async {
     try {
       final messaging = FirebaseMessaging.instance;
       final fcmToken = await messaging.getToken();
 
       if (fcmToken != null) {
-        print('Sending FCM token to backend: $fcmToken');
-        final uri = Uri.parse(
-          '${const String.fromEnvironment('API_BASE_URL', defaultValue: 'http://10.0.2.2:8000')}/api/v1/user/fcm-token',
-        );
+        final isPosMitra = role == 'posmitra' || role == 'pos_mitra';
+        final endpoint = isPosMitra
+            ? '/api/v1/posmitra/fcm-token'
+            : '/api/v1/user/fcm-token';
+        final baseUrl = ApiConfig.baseUrl;
+        final uri = Uri.parse('$baseUrl$endpoint');
+
+        print('Sending FCM token to backend ($role): $endpoint');
 
         final response = await http.post(
           uri,
@@ -112,8 +117,8 @@ class _LoginScreenState extends State<LoginScreen> {
           print('User name saved: ${user['name']}');
         }
 
-        // Kirim FCM token ke backend setelah login berhasil
-        _sendFcmTokenToBackend(token);
+        // Kirim FCM token ke backend setelah login berhasil (endpoint sesuai role: user vs posmitra)
+        _sendFcmTokenToBackend(token, role);
       }
 
       if (mounted) {
@@ -261,7 +266,7 @@ class _LoginScreenState extends State<LoginScreen> {
         if (user != null && user['name'] != null) {
           await prefs.setString('user_name', user['name'] as String);
         }
-        _sendFcmTokenToBackend(token);
+        _sendFcmTokenToBackend(token, role);
       }
 
       if (mounted) {

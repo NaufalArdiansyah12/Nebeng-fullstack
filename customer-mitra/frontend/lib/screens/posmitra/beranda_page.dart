@@ -7,6 +7,7 @@ import 'saldo/tarik_saldo_page.dart';
 import 'aktivitas_page.dart';
 import '/services/api_service.dart';
 import '/services/posmitra/posmitra_service.dart';
+import '/services/posmitra/notification_service.dart';
 
 class BerandaPage extends StatefulWidget {
   const BerandaPage({Key? key}) : super(key: key);
@@ -16,7 +17,7 @@ class BerandaPage extends StatefulWidget {
 }
 
 class _BerandaPageState extends State<BerandaPage> {
-  DateTime selectedDate = DateTime(2025, 6, 20);
+  DateTime selectedDate = DateTime.now();
   bool isSaldoVisible = true;
 
   double _saldo = 0;
@@ -29,12 +30,15 @@ class _BerandaPageState extends State<BerandaPage> {
   bool _isLoadingRides = true;
 
   Map<String, dynamic> _statistics = {
-    'nabung_motor': 0,
-    'nabung_mobil': 0,
-    'nabung_barang': 0,
+    'nebeng_motor': 0,
+    'nebeng_mobil': 0,
+    'nebeng_barang': 0,
     'titip_barang': 0,
   };
   bool _isLoadingStatistics = true;
+
+  // 🔔 Badge notifikasi
+  int _unreadCount = 0;
 
   @override
   void initState() {
@@ -43,6 +47,35 @@ class _BerandaPageState extends State<BerandaPage> {
     _loadSaldo();
     _loadUpcomingRides();
     _loadStatistics();
+    _loadUnreadCount(); // ← load badge
+    // Daftarkan FCM token ke backend (fallback jika belum terkirim saat login/app start)
+    PosMitraService.registerFcmToken();
+
+    // 🔔 MULAI POLLING UNTUK NOTIFIKASI TEBENGAN AKAN DATANG
+    NotificationService.startUpcomingRidesPolling(intervalMinutes: 5);
+  }
+
+  @override
+  void dispose() {
+    // ⏹️ HENTIKAN POLLING SAAT KELUAR DARI HALAMAN
+    NotificationService.stopUpcomingRidesPolling();
+    super.dispose();
+  }
+
+  // ─────────────────────────────────────────────
+  // LOAD UNREAD COUNT UNTUK BADGE
+  // ─────────────────────────────────────────────
+
+  Future<void> _loadUnreadCount() async {
+    try {
+      final notifs = await PosMitraService.getWithdrawalNotifications();
+      final rides = await PosMitraService.getUpcomingRides();
+      if (mounted) {
+        setState(() {
+          _unreadCount = notifs.length + rides.length;
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _loadStatistics() async {
@@ -52,7 +85,7 @@ class _BerandaPageState extends State<BerandaPage> {
         _statistics = stats;
         _isLoadingStatistics = false;
       });
-    } catch (e) {
+    } catch (_) {
       setState(() {
         _isLoadingStatistics = false;
       });
@@ -63,11 +96,10 @@ class _BerandaPageState extends State<BerandaPage> {
     try {
       final rides = await PosMitraService.getUpcomingRides();
       setState(() {
-        _upcomingRides =
-            rides.take(2).toList(); // Only take first 2 for preview
+        _upcomingRides = rides.take(2).toList();
         _isLoadingRides = false;
       });
-    } catch (e) {
+    } catch (_) {
       setState(() {
         _isLoadingRides = false;
       });
@@ -78,20 +110,24 @@ class _BerandaPageState extends State<BerandaPage> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('api_token');
+
       if (token == null || token.isEmpty) {
         setState(() {
+          _userProfile = null;
           _isLoadingProfile = false;
         });
         return;
       }
 
-      final profile = await PosMitraService.getProfile();
+      final profile = await PosMitraService.getProfile(token);
+
       setState(() {
-        _userProfile = profile;
+        _userProfile = profile['data']?['user'] as Map<String, dynamic>?;
         _isLoadingProfile = false;
       });
-    } catch (_) {
+    } catch (e) {
       setState(() {
+        _userProfile = null;
         _isLoadingProfile = false;
       });
     }
@@ -105,7 +141,9 @@ class _BerandaPageState extends State<BerandaPage> {
         _isLoadingSaldo = false;
       });
     } catch (e) {
+      print('Error loading saldo: $e');
       setState(() {
+        _saldo = 0;
         _isLoadingSaldo = false;
       });
     }
@@ -221,7 +259,6 @@ class _BerandaPageState extends State<BerandaPage> {
                                         },
                                         errorBuilder:
                                             (context, error, stackTrace) {
-                                          // Jika gagal (misal 403 atau file tidak ada), fallback ke avatar default
                                           return Image.network(
                                             'https://i.pravatar.cc/150?img=12',
                                             width: 40,
@@ -248,7 +285,7 @@ class _BerandaPageState extends State<BerandaPage> {
                                 ),
                               ),
                               Text(
-                                _userProfile?['name'] ?? 'Mitra',
+                                _userProfile?['name'] ?? 'Pos Mitra',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
@@ -260,29 +297,67 @@ class _BerandaPageState extends State<BerandaPage> {
                             ],
                           ),
                         ),
-                        const Spacer(),
-                        // Notification Bell
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: IconButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const NotifikasiPage(),
+
+                        // 🔔 Notification Bell dengan Badge
+                        Stack(
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: IconButton(
+                                onPressed: () async {
+                                  await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const NotifikasiPage(),
+                                    ),
+                                  );
+                                  // Reset badge setelah kembali dari halaman notifikasi
+                                  setState(() => _unreadCount = 0);
+                                },
+                                icon: const Icon(
+                                  Icons.notifications_outlined,
+                                  color: Colors.white,
+                                  size: 24,
                                 ),
-                              );
-                            },
-                            icon: const Icon(
-                              Icons.notifications_outlined,
-                              color: Colors.white,
-                              size: 24,
+                                padding: const EdgeInsets.all(8),
+                              ),
                             ),
-                            padding: const EdgeInsets.all(8),
-                          ),
+                            if (_unreadCount > 0)
+                              Positioned(
+                                right: 4,
+                                top: 4,
+                                child: Container(
+                                  padding: const EdgeInsets.all(3),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: const Color(0xFF1E3A8A),
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  constraints: const BoxConstraints(
+                                    minWidth: 18,
+                                    minHeight: 18,
+                                  ),
+                                  child: Text(
+                                    _unreadCount > 99
+                                        ? '99+'
+                                        : '$_unreadCount',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ],
                     ),
@@ -359,7 +434,7 @@ class _BerandaPageState extends State<BerandaPage> {
                                           ? NumberFormat.currency(
                                               locale: 'id_ID',
                                               symbol: 'Rp ',
-                                              decimalDigits: 2,
+                                              decimalDigits: 0,
                                             ).format(_saldo)
                                           : 'Rp ...',
                                       style: const TextStyle(
@@ -388,7 +463,6 @@ class _BerandaPageState extends State<BerandaPage> {
                               ),
                             ],
                           ),
-
                           const SizedBox(height: 14),
                           // Riwayat Penarikan
                           InkWell(
@@ -620,15 +694,14 @@ class _BerandaPageState extends State<BerandaPage> {
   Widget _buildStatsGrid() {
     return Column(
       children: [
-        // Row 1
         Row(
           children: [
             Expanded(
               child: _buildStatCard(
                 _isLoadingStatistics
                     ? '0'
-                    : '${_statistics['nabung_motor'] ?? 0}',
-                'Nabung Motor',
+                    : '${_statistics['nebeng_motor'] ?? 0}',
+                'Nebeng Motor',
                 Icons.two_wheeler,
               ),
             ),
@@ -637,23 +710,22 @@ class _BerandaPageState extends State<BerandaPage> {
               child: _buildStatCard(
                 _isLoadingStatistics
                     ? '0'
-                    : '${_statistics['nabung_mobil'] ?? 0}',
-                'Nabung Mobil',
+                    : '${_statistics['nebeng_mobil'] ?? 0}',
+                'Nebeng Mobil',
                 Icons.directions_car,
               ),
             ),
           ],
         ),
         const SizedBox(height: 12),
-        // Row 2
         Row(
           children: [
             Expanded(
               child: _buildStatCard(
                 _isLoadingStatistics
                     ? '0'
-                    : '${_statistics['nabung_barang'] ?? 0}',
-                'Nabung Barang',
+                    : '${_statistics['nebeng_barang'] ?? 0}',
+                'Nebeng Barang',
                 Icons.shopping_bag_outlined,
               ),
             ),
@@ -690,7 +762,6 @@ class _BerandaPageState extends State<BerandaPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Icon Container
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
@@ -704,7 +775,6 @@ class _BerandaPageState extends State<BerandaPage> {
             ),
           ),
           const SizedBox(height: 12),
-          // Number
           Text(
             number,
             style: const TextStyle(
@@ -715,7 +785,6 @@ class _BerandaPageState extends State<BerandaPage> {
             ),
           ),
           const SizedBox(height: 4),
-          // Label
           Text(
             label,
             style: const TextStyle(
@@ -766,11 +835,8 @@ class _BerandaPageState extends State<BerandaPage> {
 
   String _formatDateTime(String date, String time) {
     try {
-      // Parse date (format: 2026-02-05 or 2026-02-05 00:00:00.000000Z)
       final cleanDate = date.split(' ')[0];
-      // Parse time (format: 12:13:00)
       final cleanTime = time.split('.')[0];
-
       final dateTime = DateTime.parse('$cleanDate $cleanTime');
       final dayName = DateFormat('EEE', 'id_ID').format(dateTime);
       final formattedDate =
@@ -784,8 +850,8 @@ class _BerandaPageState extends State<BerandaPage> {
 
   String _getRideTypeLabel(String rideType, String serviceType) {
     if (serviceType == 'barang') return 'Titip Barang';
-    if (rideType == 'motor') return 'Nabung Motor';
-    if (rideType == 'mobil') return 'Nabung Mobil';
+    if (rideType == 'motor') return 'Nebeng Motor';
+    if (rideType == 'mobil') return 'Nebeng Mobil';
     return 'Tebengan';
   }
 
@@ -807,7 +873,7 @@ class _BerandaPageState extends State<BerandaPage> {
   String _getStatusLabel(String status) {
     switch (status) {
       case 'active':
-        return 'Proses';
+        return 'akan datang';
       case 'full':
         return 'Konring';
       case 'completed':
@@ -849,8 +915,8 @@ class _BerandaPageState extends State<BerandaPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Date Time and Status
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: Text(
@@ -860,46 +926,56 @@ class _BerandaPageState extends State<BerandaPage> {
                     color: Color(0xFF757575),
                     fontWeight: FontWeight.w400,
                   ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
                 ),
               ),
-              if (status != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: statusColor!.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    status,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: statusColor,
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (status != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: statusColor!.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        status,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: statusColor,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              if (isPending)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEF5350).withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text(
-                    'Pending',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFFEF5350),
+                  if (isPending) ...[
+                    if (status != null) const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEF5350).withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Text(
+                        'Pending',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFEF5350),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
+                  ],
+                ],
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -951,7 +1027,10 @@ class _BerandaPageState extends State<BerandaPage> {
   }
 }
 
+// ─────────────────────────────────────────────
 // Custom Calendar Dialog Widget
+// ─────────────────────────────────────────────
+
 class CustomCalendarDialog extends StatefulWidget {
   final DateTime initialDate;
 
@@ -1004,13 +1083,11 @@ class _CustomCalendarDialogState extends State<CustomCalendarDialog> {
 
     List<DateTime> days = [];
 
-    // Add empty cells for days before month starts
     final firstWeekday = firstDay.weekday;
     for (int i = 0; i < (firstWeekday % 7); i++) {
       days.add(DateTime(0));
     }
 
-    // Add actual days
     for (int i = 1; i <= daysInMonth; i++) {
       days.add(DateTime(currentMonth.year, currentMonth.month, i));
     }
@@ -1124,8 +1201,9 @@ class _CustomCalendarDialogState extends State<CustomCalendarDialog> {
                         fontSize: 15,
                         fontWeight:
                             isSelected ? FontWeight.w600 : FontWeight.w400,
-                        color:
-                            isSelected ? Colors.white : const Color(0xFF424242),
+                        color: isSelected
+                            ? Colors.white
+                            : const Color(0xFF424242),
                       ),
                     ),
                   ),
@@ -1133,7 +1211,6 @@ class _CustomCalendarDialogState extends State<CustomCalendarDialog> {
               },
             ),
             const SizedBox(height: 16),
-            // Divider
             Divider(
               height: 1,
               color: Colors.grey[300],
@@ -1141,7 +1218,8 @@ class _CustomCalendarDialogState extends State<CustomCalendarDialog> {
             const SizedBox(height: 16),
             // Selected date display
             Container(
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              padding:
+                  const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               decoration: BoxDecoration(
                 color: const Color(0xFFF5F5F5),
                 borderRadius: BorderRadius.circular(12),

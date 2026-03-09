@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Mitra;
 use App\Http\Controllers\Controller;
 use App\Models\Ride;
 use App\Services\PosMitraConversationService;
+use App\Services\MitraNotificationService;
+use App\Services\FcmService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -435,11 +437,167 @@ class RideController extends Controller
             ], 500);
         }
 
+        // 🔔 KIRIM PUSH NOTIFICATION KE POS MITRA
+        // Setelah ride dibuat, kirim notifikasi ke PosMitra terkait lokasi origin dan destination
+        try {
+            self::sendNewRideNotifications($ride, $apiToken->user_id);
+        } catch (\Exception $e) {
+            Log::warning('Failed to send new ride notifications: ' . $e->getMessage());
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Ride created successfully',
             'data' => $ride,
         ], 201);
+    }
+
+    /**
+     * Send push notifications to PosMitra when new ride is created
+     * Notifies PosMitra at origin and destination locations
+     */
+    private static function sendNewRideNotifications($ride, $driverUserId)
+    {
+        // Get origin and destination location IDs
+        $originLocationId = $ride->origin_location_id;
+        $destinationLocationId = $ride->destination_location_id;
+
+        // Get location names for notification
+        $originName = $ride->originLocation->name ?? 'Unknown';
+        $destinationName = $ride->destinationLocation->name ?? 'Unknown';
+        $departureDate = date('d M Y', strtotime($ride->departure_date));
+        $departureTime = $ride->departure_time ?? '';
+        $price = number_format($ride->price, 0, ',', '.');
+
+        switch ($ride->ride_type) {
+            case 'motor':
+                $rideTypeLabel = 'Nebeng Motor';
+                break;
+            case 'mobil':
+                $rideTypeLabel = 'Nebeng Mobil';
+                break;
+            case 'barang':
+                $rideTypeLabel = 'Nebeng Barang';
+                break;
+            default:
+                $rideTypeLabel = 'Tebengan';
+        }
+
+        // Title and body for notification
+        $title = "🚗 Tebengan Baru Available!";
+        $body = "{$rideTypeLabel} dari {$originName} ke {$destinationName} pada {$departureDate} {$departureTime}. Harga: Rp {$price}";
+
+        $data = [
+            'ride_id' => (string) $ride->id,
+            'ride_type' => $ride->ride_type,
+            'origin' => $originName,
+            'destination' => $destinationName,
+            'departure_date' => $ride->departure_date,
+            'departure_time' => $ride->departure_time,
+            'price' => (string) $ride->price,
+            'type' => 'new_ride_available',
+        ];
+
+        // Find PosMitra users at origin and destination locations and send notification
+        $locationIds = array_unique([$originLocationId, $destinationLocationId]);
+
+        foreach ($locationIds as $locationId) {
+            // Find PosMitra users at this location - check both User table and PosMitraUser table
+            // First try PosMitraUser table (where FCM token is actually stored)
+            $posMitraUsers = [];
+            
+            try {
+                // Try PosMitraUser model first
+                $posMitraFromTable = \App\Models\PosMitraUser::where('location_id', $locationId)
+                    ->whereNotNull('fcm_token')
+                    ->where('fcm_token', '!=', '')
+                    ->get();
+                    
+                if ($posMitraFromTable->count() > 0) {
+                    foreach ($posMitraFromTable as $pm) {
+                        $posMitraUsers[] = $pm;
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::warning('Failed to query PosMitraUser: ' . $e->getMessage());
+            }
+            
+            // Also try User table with role = posmitra
+            try {
+                $usersFromUserTable = \App\Models\User::where('role', 'posmitra')
+                    ->where('location_id', $locationId)
+                    ->where('id', '!=', $driverUserId)
+                    ->whereNotNull('fcm_token')
+                    ->where('fcm_token', '!=', '')
+                    ->get();
+                    
+                if ($usersFromUserTable->count() > 0) {
+                    foreach ($usersFromUserTable as $user) {
+                        // Avoid duplicates
+                        $exists = false;
+                        foreach ($posMitraUsers as $existing) {
+                            if (isset($existing->id) && $existing->id == $user->id) {
+                                $exists = true;
+                                break;
+                            }
+                        }
+                        if (!$exists) {
+                            $posMitraUsers[] = $user;
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::warning('Failed to query User table: ' . $e->getMessage());
+            }
+
+            Log::info('Found PosMitra users at location', [
+                'location_id' => $locationId,
+                'count' => count($posMitraUsers)
+            ]);
+
+            foreach ($posMitraUsers as $posMitra) {
+                $fcmToken = $posMitra->fcm_token ?? null;
+                
+                if (empty($fcmToken)) {
+                    Log::info('Skipping PosMitra - no FCM token', ['id' => $posMitra->id ?? 'unknown']);
+                    continue;
+                }
+
+                // Save to notifications table
+                try {
+                    \App\Models\Notification::create([
+                        'user_id' => $posMitra->id,
+                        'type' => 'new_ride_available',
+                        'title' => $title,
+                        'body' => $body,
+                        'icon' => '🚗',
+                        'data' => $data,
+                        'is_read' => false,
+                    ]);
+                    Log::info('Notification saved to DB', ['user_id' => $posMitra->id]);
+                } catch (\Exception $e) {
+                    Log::warning('Failed to save notification: ' . $e->getMessage());
+                }
+
+                // Send FCM push notification
+                try {
+                    $sent = FcmService::sendToToken($fcmToken, $title, $body, $data);
+                    if ($sent) {
+                        Log::info('FCM notification sent to PosMitra', [
+                            'posmitra_id' => $posMitra->id,
+                            'ride_id' => $ride->id,
+                            'location_id' => $locationId,
+                        ]);
+                    } else {
+                        Log::warning('FCM send returned false', [
+                            'posmitra_id' => $posMitra->id,
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('Failed to send FCM to PosMitra: ' . $e->getMessage());
+                }
+            }
+        }
     }
 
     public function show($id)

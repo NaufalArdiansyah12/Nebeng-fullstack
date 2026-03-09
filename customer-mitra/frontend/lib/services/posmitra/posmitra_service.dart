@@ -1,5 +1,594 @@
+// import 'dart:convert';
+// import 'dart:io';
+// import 'package:http/http.dart' as http;
+// import 'package:shared_preferences/shared_preferences.dart';
+// import '../api_service.dart';
+
+// class PosMitraService {
+//   static String get baseUrl => ApiService.baseUrl;
+
+//   // ==================== AUTHENTICATION ====================
+
+//   /// Get authorization header with bearer token
+//   static Future<Map<String, String>> _getHeaders() async {
+//     final prefs = await SharedPreferences.getInstance();
+//     final token = prefs.getString('api_token');
+
+//     if (token == null || token.isEmpty) {
+//       throw Exception('Token tidak ditemukan');
+//     }
+
+//     return {
+//       'Content-Type': 'application/json',
+//       'Accept': 'application/json',
+//       'Authorization': 'Bearer $token',
+//     };
+//   }
+
+//   // ==================== BERANDA / DASHBOARD ====================
+
+//   /// Get pos mitra balance
+// static Future<double> getBalance() async {
+//   final headers = await _getHeaders();
+//   final response = await http.get(
+//     Uri.parse('$baseUrl/api/v1/posmitra/beranda'),
+//     headers: headers,
+//   );
+
+//   if (response.statusCode == 200) {
+//     final data = json.decode(response.body);
+//     if (data['success'] == true) {
+//       final balance = data['data']['balance'];
+      
+//       // ✅ Parse balance ke double
+//       return double.tryParse(balance.toString()) ?? 0.0;
+//     }
+//     throw Exception(data['message'] ?? 'Gagal mengambil saldo');
+//   }
+//   throw Exception('Gagal mengambil saldo: ${response.statusCode}');
+// }
+
+
+//   /// Get dashboard statistics
+//   static Future<Map<String, dynamic>> getDashboardStats() async {
+//     try {
+//       final headers = await _getHeaders();
+//       final response = await http.get(
+//         Uri.parse('$baseUrl/api/v1/posmitra/dashboard/stats'),
+//         headers: headers,
+//       );
+
+//       if (response.statusCode == 200) {
+//         final data = json.decode(response.body);
+//         if (data['success'] == true) {
+//           return data['data'];
+//         }
+//         throw Exception(data['message'] ?? 'Gagal mengambil statistik');
+//       }
+//       throw Exception('Gagal mengambil statistik: ${response.statusCode}');
+//     } catch (e) {
+//       throw Exception('Error saat mengambil statistik: $e');
+//     }
+//   }
+
+
+
+
+//   // ==================== ACTIVITIES / TEBENGAN ====================
+
+//   /// Get upcoming rides (tebengan akan datang) berdasarkan lokasi pos mitra
+//   static Future<List<Map<String, dynamic>>> getUpcomingRides() async {
+//     try {
+//       final headers = await _getHeaders();
+//       final url = '$baseUrl/api/v1/posmitra/tebengan-akan-datang';
+
+//       final response = await http.get(
+//         Uri.parse(url),
+//         headers: headers,
+//       );
+
+//       if (response.statusCode == 200) {
+//         final data = json.decode(response.body);
+//         if (data['success'] == true) {
+//           return List<Map<String, dynamic>>.from(data['data'] ?? []);
+//         }
+//         throw Exception(data['message'] ?? 'Gagal mengambil data tebengan');
+//       } else if (response.statusCode == 401) {
+//         throw Exception('Token tidak valid atau sudah kadaluarsa');
+//       }
+//       throw Exception('Gagal mengambil data tebengan: ${response.statusCode}');
+//     } catch (e) {
+//       throw Exception('Error saat mengambil data tebengan: $e');
+//     }
+//   }
+
+//   /// Get upcoming rides/activities
+//   static Future<List<Map<String, dynamic>>> getUpcomingActivities({
+//     String? status, // 'semua', 'proses', 'kosong'
+//     int page = 1,
+//     int limit = 10,
+//   }) async {
+//     try {
+//       final headers = await _getHeaders();
+//       final queryParams = {
+//         'page': page.toString(),
+//         'limit': limit.toString(),
+//       };
+
+//       if (status != null && status != 'semua') {
+//         queryParams['status'] = status;
+//       }
+
+//       final uri = Uri.parse('$baseUrl/api/v1/posmitra/activities')
+//           .replace(queryParameters: queryParams);
+
+//       final response = await http.get(uri, headers: headers);
+
+//       if (response.statusCode == 200) {
+//         final data = json.decode(response.body);
+//         if (data['success'] == true) {
+//           return List<Map<String, dynamic>>.from(
+//               data['data']['activities'] ?? []);
+//         }
+//         throw Exception(data['message'] ?? 'Gagal mengambil aktivitas');
+//       }
+//       throw Exception('Gagal mengambil aktivitas: ${response.statusCode}');
+//     } catch (e) {
+//       throw Exception('Error saat mengambil aktivitas: $e');
+//     }
+//   }
+
+//   /// Get statistics (completed rides by location)
+//   static Future<Map<String, dynamic>> getStatistics() async {
+//     try {
+//       final headers = await _getHeaders();
+//       final response = await http.get(
+//         Uri.parse('$baseUrl/api/v1/posmitra/statistics'),
+//         headers: headers,
+//       );
+
+//       if (response.statusCode == 200) {
+//         final data = json.decode(response.body);
+//         if (data['success'] == true) {
+//           return data['data'] as Map<String, dynamic>;
+//         }
+//         throw Exception(data['message'] ?? 'Gagal mengambil statistik');
+//       } else if (response.statusCode == 401) {
+//         throw Exception('Token tidak valid atau sudah kadaluarsa');
+//       }
+//       throw Exception('Gagal mengambil statistik: ${response.statusCode}');
+//     } catch (e) {
+//       throw Exception('Error saat mengambil statistik: $e');
+//     }
+//   }
+
+//   /// Get activity detail
+//   static Future<Map<String, dynamic>> getActivityDetail(int activityId) async {
+//     try {
+//       final headers = await _getHeaders();
+//       final response = await http.get(
+//         Uri.parse('$baseUrl/api/v1/posmitra/activities/$activityId'),
+//         headers: headers,
+//       );
+
+//       if (response.statusCode == 200) {
+//         final data = json.decode(response.body);
+//         if (data['success'] == true) {
+//           return data['data']['activity'];
+//         }
+//         throw Exception(data['message'] ?? 'Gagal mengambil detail aktivitas');
+//       }
+//       throw Exception('Gagal mengambil detail: ${response.statusCode}');
+//     } catch (e) {
+//       throw Exception('Error saat mengambil detail: $e');
+//     }
+//   }
+
+
+
+//   // ==================== WITHDRAWAL ====================
+
+//   /// Withdraw Balance - Penarikan Saldo
+//   /// 
+//   /// Method untuk melakukan penarikan saldo dengan verifikasi PIN
+//   /// 
+//   /// Parameters:
+//   /// - [token]: API token untuk autentikasi
+//   /// - [amount]: Jumlah uang yang akan ditarik
+//   /// - [bankName]: Nama bank tujuan
+//   /// - [accountNumber]: Nomor rekening tujuan
+//   /// - [pin]: PIN verifikasi pengguna (6 digit)
+//   /// 
+//   /// Returns:
+//   /// Map dengan struktur:
+//   /// {
+//   ///   'success': bool,
+//   ///   'message': String,
+//   ///   'data': dynamic (optional)
+//   /// }
+
+//   /// Get withdrawal history
+//   static Future<List<Map<String, dynamic>>> getWithdrawalHistory({
+//     int page = 1,
+//     int limit = 10,
+//   }) async {
+//     try {
+//       final headers = await _getHeaders();
+//       final uri = Uri.parse('$baseUrl/api/v1/posmitra/withdraw/history')
+//           .replace(queryParameters: {
+//         'page': page.toString(),
+//         'limit': limit.toString(),
+//       });
+
+//       final response = await http.get(uri, headers: headers);
+
+//       if (response.statusCode == 200) {
+//         final data = json.decode(response.body);
+//         if (data['success'] == true) {
+//           return List<Map<String, dynamic>>.from(
+//               data['data']['withdrawals'] ?? []);
+//         }
+//         throw Exception(data['message'] ?? 'Gagal mengambil riwayat pencairan');
+//       }
+//       throw Exception('Gagal mengambil riwayat: ${response.statusCode}');
+//     } catch (e) {
+//       throw Exception('Error saat mengambil riwayat: $e');
+//     }
+//   }
+
+//   /// Get withdrawal detail
+//   static Future<Map<String, dynamic>> getWithdrawalDetail(
+//       int withdrawalId) async {
+//     try {
+//       final headers = await _getHeaders();
+//       final response = await http.get(
+//         Uri.parse('$baseUrl/api/v1/posmitra/withdraw/$withdrawalId'),
+//         headers: headers,
+//       );
+
+//       if (response.statusCode == 200) {
+//         final data = json.decode(response.body);
+//         if (data['success'] == true) {
+//           return data['data']['withdrawal'];
+//         }
+//         throw Exception(data['message'] ?? 'Gagal mengambil detail pencairan');
+//       }
+//       throw Exception('Gagal mengambil detail: ${response.statusCode}');
+//     } catch (e) {
+//       throw Exception('Error saat mengambil detail: $e');
+//     }
+//   }
+
+//   /// Request withdrawal
+//   // ==================== NOTIFICATIONS ====================
+
+//   /// Get notifications
+//   static Future<List<Map<String, dynamic>>> getNotifications({
+//     int page = 1,
+//     int limit = 20,
+//   }) async {
+//     try {
+//       final headers = await _getHeaders();
+//       final uri = Uri.parse('$baseUrl/api/v1/posmitra/notifications')
+//           .replace(queryParameters: {
+//         'page': page.toString(),
+//         'limit': limit.toString(),
+//       });
+
+//       final response = await http.get(uri, headers: headers);
+
+//       if (response.statusCode == 200) {
+//         final data = json.decode(response.body);
+//         if (data['success'] == true) {
+//           return List<Map<String, dynamic>>.from(
+//               data['data']['notifications'] ?? []);
+//         }
+//         throw Exception(data['message'] ?? 'Gagal mengambil notifikasi');
+//       }
+//       throw Exception('Gagal mengambil notifikasi: ${response.statusCode}');
+//     } catch (e) {
+//       throw Exception('Error saat mengambil notifikasi: $e');
+//     }
+//   }
+
+//   /// Mark notification as read
+//   static Future<void> markNotificationAsRead(int notificationId) async {
+//     try {
+//       final headers = await _getHeaders();
+//       final response = await http.post(
+//         Uri.parse(
+//             '$baseUrl/api/v1/posmitra/notifications/$notificationId/read'),
+//         headers: headers,
+//       );
+
+//       if (response.statusCode != 200) {
+//         throw Exception('Gagal menandai notifikasi: ${response.statusCode}');
+//       }
+//     } catch (e) {
+//       throw Exception('Error saat menandai notifikasi: $e');
+//     }
+//   }
+
+//   /// Mark all notifications as read
+//   static Future<void> markAllNotificationsAsRead() async {
+//     try {
+//       final headers = await _getHeaders();
+//       final response = await http.post(
+//         Uri.parse('$baseUrl/api/v1/posmitra/notifications/read-all'),
+//         headers: headers,
+//       );
+
+//       if (response.statusCode != 200) {
+//         throw Exception(
+//             'Gagal menandai semua notifikasi: ${response.statusCode}');
+//       }
+//     } catch (e) {
+//       throw Exception('Error saat menandai semua notifikasi: $e');
+//     }
+//   }
+
+//   // ==================== EARNINGS / PENDAPATAN ====================
+
+//   /// Get earnings summary
+//   static Future<Map<String, dynamic>> getEarningsSummary({
+//     DateTime? startDate,
+//     DateTime? endDate,
+//   }) async {
+//     try {
+//       final headers = await _getHeaders();
+//       final queryParams = <String, String>{};
+
+//       if (startDate != null) {
+//         queryParams['start_date'] = startDate.toIso8601String().split('T')[0];
+//       }
+//       if (endDate != null) {
+//         queryParams['end_date'] = endDate.toIso8601String().split('T')[0];
+//       }
+
+//       final uri = Uri.parse('$baseUrl/api/v1/posmitra/earnings/summary')
+//           .replace(queryParameters: queryParams);
+
+//       final response = await http.get(uri, headers: headers);
+
+//       if (response.statusCode == 200) {
+//         final data = json.decode(response.body);
+//         if (data['success'] == true) {
+//           return data['data'];
+//         }
+//         throw Exception(
+//             data['message'] ?? 'Gagal mengambil ringkasan pendapatan');
+//       }
+//       throw Exception('Gagal mengambil ringkasan: ${response.statusCode}');
+//     } catch (e) {
+//       throw Exception('Error saat mengambil ringkasan: $e');
+//     }
+//   }
+
+//   /// Get detailed earnings history
+//   static Future<List<Map<String, dynamic>>> getEarningsHistory({
+//     DateTime? startDate,
+//     DateTime? endDate,
+//     int page = 1,
+//     int limit = 10,
+//   }) async {
+//     try {
+//       final headers = await _getHeaders();
+//       final queryParams = {
+//         'page': page.toString(),
+//         'limit': limit.toString(),
+//       };
+
+//       if (startDate != null) {
+//         queryParams['start_date'] = startDate.toIso8601String().split('T')[0];
+//       }
+//       if (endDate != null) {
+//         queryParams['end_date'] = endDate.toIso8601String().split('T')[0];
+//       }
+
+//       final uri = Uri.parse('$baseUrl/api/v1/posmitra/earnings/history')
+//           .replace(queryParameters: queryParams);
+
+//       final response = await http.get(uri, headers: headers);
+
+//       if (response.statusCode == 200) {
+//         final data = json.decode(response.body);
+//         if (data['success'] == true) {
+//           return List<Map<String, dynamic>>.from(
+//               data['data']['earnings'] ?? []);
+//         }
+//         throw Exception(
+//             data['message'] ?? 'Gagal mengambil riwayat pendapatan');
+//       }
+//       throw Exception('Gagal mengambil riwayat: ${response.statusCode}');
+//     } catch (e) {
+//       throw Exception('Error saat mengambil riwayat: $e');
+//     }
+//   }
+
+//   // ==================== STATISTICS ====================
+
+//   /// Get daily statistics
+//   static Future<Map<String, dynamic>> getDailyStats(DateTime date) async {
+//     try {
+//       final headers = await _getHeaders();
+//       final dateStr = date.toIso8601String().split('T')[0];
+//       final response = await http.get(
+//         Uri.parse('$baseUrl/api/v1/posmitra/stats/daily?date=$dateStr'),
+//         headers: headers,
+//       );
+
+//       if (response.statusCode == 200) {
+//         final data = json.decode(response.body);
+//         if (data['success'] == true) {
+//           return data['data'];
+//         }
+//         throw Exception(data['message'] ?? 'Gagal mengambil statistik harian');
+//       }
+//       throw Exception('Gagal mengambil statistik: ${response.statusCode}');
+//     } catch (e) {
+//       throw Exception('Error saat mengambil statistik: $e');
+//     }
+//   }
+
+//   // Di file lib/services/posmitra/posmitra_service.dart
+
+// // ✅ SIMPAN YANG INI SAJA (hapus yang lain)
+// static Future<Map<String, dynamic>> withdrawBalance({
+//   required String token,
+//   required double amount,
+//   required String bankName,
+//   required String accountNumber,
+//   required String pin,
+// }) async {
+//   final response = await http.post(
+//     Uri.parse('$baseUrl/api/v1/posmitra/withdraw'),
+//     headers: {
+//       'Accept': 'application/json',
+//       'Content-Type': 'application/json',
+//       'Authorization': 'Bearer $token',
+//     },
+//     body: json.encode({
+//       'amount': amount,
+//       'bank_name': bankName,
+//       'account_number': accountNumber,
+//       'pin': pin,
+//     }),
+//   );
+
+//   print('Withdraw Response Status: ${response.statusCode}');
+//   print('Withdraw Response Body: ${response.body}');
+
+//   if (response.statusCode == 200) {
+//     return json.decode(response.body);
+//   } else {
+//     final error = json.decode(response.body);
+//     throw Exception(error['message'] ?? 'Failed to withdraw');
+//   }
+// }
+
+//   /// Get monthly statistics
+//   static Future<Map<String, dynamic>> getMonthlyStats(
+//       int year, int month) async {
+//     try {
+//       final headers = await _getHeaders();
+//       final response = await http.get(
+//         Uri.parse(
+//             '$baseUrl/api/v1/posmitra/stats/monthly?year=$year&month=$month'),
+//         headers: headers,
+//       );
+
+//       if (response.statusCode == 200) {
+//         final data = json.decode(response.body);
+//         if (data['success'] == true) {
+//           return data['data'];
+//         }
+//         throw Exception(data['message'] ?? 'Gagal mengambil statistik bulanan');
+//       }
+//       throw Exception('Gagal mengambil statistik: ${response.statusCode}');
+//     } catch (e) {
+//       throw Exception('Error saat mengambil statistik: $e');
+//     }
+//   }
+
+//   // ==================== HELP / BANTUAN ====================
+
+//   /// Get help articles
+//   static Future<List<Map<String, dynamic>>> getHelpArticles() async {
+//     try {
+//       final headers = await _getHeaders();
+//       final response = await http.get(
+//         Uri.parse('$baseUrl/api/v1/posmitra/help/articles'),
+//         headers: headers,
+//       );
+
+//       if (response.statusCode == 200) {
+//         final data = json.decode(response.body);
+//         if (data['success'] == true) {
+//           return List<Map<String, dynamic>>.from(
+//               data['data']['articles'] ?? []);
+//         }
+//         throw Exception(data['message'] ?? 'Gagal mengambil artikel bantuan');
+//       }
+//       throw Exception('Gagal mengambil artikel: ${response.statusCode}');
+//     } catch (e) {
+//       throw Exception('Error saat mengambil artikel: $e');
+//     }
+//   }
+
+
+//   /// Get help article detail
+//   static Future<Map<String, dynamic>> getHelpArticleDetail(
+//       int articleId) async {
+//     try {
+//       final headers = await _getHeaders();
+//       final response = await http.get(
+//         Uri.parse('$baseUrl/api/v1/posmitra/help/articles/$articleId'),
+//         headers: headers,
+//       );
+
+//       if (response.statusCode == 200) {
+//         final data = json.decode(response.body);
+//         if (data['success'] == true) {
+//           return data['data']['article'];
+//         }
+//         throw Exception(data['message'] ?? 'Gagal mengambil detail artikel');
+//       }
+//       throw Exception('Gagal mengambil detail: ${response.statusCode}');
+//     } catch (e) {
+//       throw Exception('Error saat mengambil detail: $e');
+//     }
+//   }
+
+//   /// Submit help request / feedback
+//   static Future<void> submitHelpRequest({
+//     required String subject,
+//     required String message,
+//     File? attachment,
+//   }) async {
+//     try {
+//       final prefs = await SharedPreferences.getInstance();
+//       final token = prefs.getString('api_token');
+
+//       if (token == null || token.isEmpty) {
+//         throw Exception('Token tidak ditemukan');
+//       }
+
+//       var request = http.MultipartRequest(
+//         'POST',
+//         Uri.parse('$baseUrl/api/v1/posmitra/help/request'),
+//       );
+
+//       request.headers['Authorization'] = 'Bearer $token';
+//       request.headers['Accept'] = 'application/json';
+
+//       request.fields['subject'] = subject;
+//       request.fields['message'] = message;
+
+//       if (attachment != null) {
+//         request.files.add(
+//           await http.MultipartFile.fromPath(
+//             'attachment',
+//             attachment.path,
+//           ),
+//         );
+//       }
+
+//       final streamedResponse = await request.send();
+//       final response = await http.Response.fromStream(streamedResponse);
+
+//       if (response.statusCode != 200 && response.statusCode != 201) {
+//         throw Exception(
+//             'Gagal mengirim permintaan bantuan: ${response.statusCode}');
+//       }
+//     } catch (e) {
+//       throw Exception('Error saat mengirim permintaan bantuan: $e');
+//     }
+//   }
+// }
+
 import 'dart:convert';
 import 'dart:io';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../api_service.dart';
@@ -8,6 +597,42 @@ class PosMitraService {
   static String get baseUrl => ApiService.baseUrl;
 
   // ==================== AUTHENTICATION ====================
+
+  /// Kirim FCM token ke backend agar PosMitra bisa terima push notification.
+  /// Dipanggil saat Beranda dibuka (fallback selain saat login/app start).
+  static Future<void> registerFcmToken() async {
+    try {
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token == null || token.isEmpty) {
+        print('[FCM PosMitra] registerFcmToken: no FCM token');
+        return;
+      }
+      final prefs = await SharedPreferences.getInstance();
+      final apiToken = prefs.getString('api_token');
+      if (apiToken == null || apiToken.isEmpty) {
+        print('[FCM PosMitra] registerFcmToken: no api_token');
+        return;
+      }
+      final uri = Uri.parse('$baseUrl/api/v1/posmitra/fcm-token');
+      print('[FCM PosMitra] registerFcmToken: POST $uri');
+      final response = await http.post(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $apiToken',
+        },
+        body: json.encode({'fcm_token': token}),
+      );
+      print('[FCM PosMitra] registerFcmToken: status=${response.statusCode}, body=${response.body}');
+      if (response.statusCode == 200) {
+        print('[FCM PosMitra] registerFcmToken: token terdaftar');
+      }
+    } catch (e, st) {
+      print('[FCM PosMitra] registerFcmToken error: $e');
+      print('[FCM PosMitra] $st');
+    }
+  }
 
   /// Get authorization header with bearer token
   static Future<Map<String, String>> _getHeaders() async {
@@ -28,214 +653,116 @@ class PosMitraService {
   // ==================== BERANDA / DASHBOARD ====================
 
   /// Get pos mitra balance
+  /// ✅ DIPERBAIKI: Endpoint yang benar
   static Future<double> getBalance() async {
     try {
+      print('🔄 [getBalance] Fetching balance...');
+      
       final headers = await _getHeaders();
+      
+      // ✅ ENDPOINT YANG BENAR: /api/posmitra/beranda
       final response = await http.get(
-        Uri.parse('$baseUrl/api/v1/posmitra/beranda'),
+        Uri.parse('$baseUrl/api/posmitra/beranda'),
         headers: headers,
       );
+
+      print('📡 [getBalance] Status: ${response.statusCode}');
+      print('📡 [getBalance] Response: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true) {
-          return (data['data']['balance'] ?? 0).toDouble();
+          final balance = data['data']['balance'];
+          
+          // ✅ Parse balance ke double
+          final result = double.tryParse(balance.toString()) ?? 0.0;
+          print('✅ [getBalance] Balance parsed: $result');
+          return result;
         }
         throw Exception(data['message'] ?? 'Gagal mengambil saldo');
-      } else if (response.statusCode == 401) {
-        throw Exception('Token tidak valid atau sudah kadaluarsa');
-      } else {
-        throw Exception('Gagal mengambil saldo: ${response.statusCode}');
       }
+      throw Exception('Gagal mengambil saldo: ${response.statusCode}');
     } catch (e) {
-      throw Exception('Error saat mengambil saldo: $e');
-    }
-  }
-
-  /// Get dashboard statistics
-  static Future<Map<String, dynamic>> getDashboardStats() async {
-    try {
-      final headers = await _getHeaders();
-      final response = await http.get(
-        Uri.parse('$baseUrl/api/v1/posmitra/dashboard/stats'),
-        headers: headers,
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['success'] == true) {
-          return data['data'];
-        }
-        throw Exception(data['message'] ?? 'Gagal mengambil statistik');
-      }
-      throw Exception('Gagal mengambil statistik: ${response.statusCode}');
-    } catch (e) {
-      throw Exception('Error saat mengambil statistik: $e');
+      print('❌ [getBalance] Error: $e');
+      rethrow;
     }
   }
 
   // ==================== PROFILE ====================
 
-  /// Get pos mitra profile
-  static Future<Map<String, dynamic>> getProfile() async {
+static Future<Map<String, dynamic>> getProfile(String token) async {
     try {
-      final headers = await _getHeaders();
+      final url = Uri.parse('${ApiService.baseUrl}/api/v1/pos-mitra/profile');
+
       final response = await http.get(
-        Uri.parse('$baseUrl/api/pos-mitra/profile'),
-        headers: headers,
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
       );
 
+      // Jika status code 200, parse body
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['success'] == true) {
-          return data['data']['user'];
-        }
-        throw Exception(data['message'] ?? 'Gagal mengambil profil');
-      } else if (response.statusCode == 401) {
-        throw Exception('Token tidak valid atau sudah kadaluarsa');
-      }
-      throw Exception('Gagal mengambil profil: ${response.statusCode}');
-    } catch (e) {
-      throw Exception('Error saat mengambil profil: $e');
-    }
-  }
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
 
-  /// Update pos mitra profile
-  static Future<Map<String, dynamic>> updateProfile({
-    String? email,
-    String? photoFilePath,
-    String? name,
-    String? phone,
-  }) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('api_token');
-
-      if (token == null || token.isEmpty) {
-        throw Exception('Token tidak ditemukan');
-      }
-
-      var request = http.MultipartRequest(
-        'POST',
-        Uri.parse('$baseUrl/api/pos-mitra/profile'),
-      );
-
-      request.headers['Authorization'] = 'Bearer $token';
-      request.headers['Accept'] = 'application/json';
-
-      if (email != null && email.isNotEmpty) {
-        request.fields['email'] = email;
-      }
-
-      if (name != null && name.isNotEmpty) {
-        request.fields['name'] = name;
-      }
-
-      if (phone != null && phone.isNotEmpty) {
-        request.fields['phone'] = phone;
-      }
-
-      if (photoFilePath != null) {
-        request.files.add(
-          await http.MultipartFile.fromPath(
-            'profile_photo',
-            photoFilePath,
-          ),
-        );
-      }
-
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['success'] == true) {
+        // Pastikan format success/data ada
+        if (data.containsKey('success') && data.containsKey('data')) {
           return data;
+        } else {
+          // Jika struktur response tidak sesuai
+          return {
+            'success': false,
+            'message': 'Format response tidak valid',
+          };
         }
-        throw Exception(data['message'] ?? 'Gagal memperbarui profil');
-      }
-      throw Exception('Gagal memperbarui profil: ${response.statusCode}');
-    } catch (e) {
-      throw Exception('Error saat memperbarui profil: $e');
-    }
-  }
-
-  // ==================== ACTIVITIES / TEBENGAN ====================
-
-  /// Get upcoming rides (tebengan akan datang) berdasarkan lokasi pos mitra
-  static Future<List<Map<String, dynamic>>> getUpcomingRides() async {
-    try {
-      final headers = await _getHeaders();
-      final url = '$baseUrl/api/v1/posmitra/tebengan-akan-datang';
-
-      final response = await http.get(
-        Uri.parse(url),
-        headers: headers,
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['success'] == true) {
-          return List<Map<String, dynamic>>.from(data['data'] ?? []);
-        }
-        throw Exception(data['message'] ?? 'Gagal mengambil data tebengan');
       } else if (response.statusCode == 401) {
-        throw Exception('Token tidak valid atau sudah kadaluarsa');
+        // Token invalid / unauthorized
+        return {
+          'success': false,
+          'message': 'Token tidak valid atau sesi habis. Silakan login kembali.',
+        };
+      } else {
+        // Error lain
+        return {
+          'success': false,
+          'message': 'Gagal load profile (${response.statusCode})',
+        };
       }
-      throw Exception('Gagal mengambil data tebengan: ${response.statusCode}');
     } catch (e) {
-      throw Exception('Error saat mengambil data tebengan: $e');
-    }
-  }
-
-  /// Get upcoming rides/activities
-  static Future<List<Map<String, dynamic>>> getUpcomingActivities({
-    String? status, // 'semua', 'proses', 'kosong'
-    int page = 1,
-    int limit = 10,
-  }) async {
-    try {
-      final headers = await _getHeaders();
-      final queryParams = {
-        'page': page.toString(),
-        'limit': limit.toString(),
+      // Error koneksi / parsing
+      return {
+        'success': false,
+        'message': 'Terjadi kesalahan: $e',
       };
-
-      if (status != null && status != 'semua') {
-        queryParams['status'] = status;
-      }
-
-      final uri = Uri.parse('$baseUrl/api/v1/posmitra/activities')
-          .replace(queryParameters: queryParams);
-
-      final response = await http.get(uri, headers: headers);
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['success'] == true) {
-          return List<Map<String, dynamic>>.from(
-              data['data']['activities'] ?? []);
-        }
-        throw Exception(data['message'] ?? 'Gagal mengambil aktivitas');
-      }
-      throw Exception('Gagal mengambil aktivitas: ${response.statusCode}');
-    } catch (e) {
-      throw Exception('Error saat mengambil aktivitas: $e');
     }
   }
 
-  /// Get statistics (completed rides by location)
+
+
+  // ==================== STATISTICS ====================
+
+  /// Get statistics (nebeng motor, mobil, barang, titip barang)
+  /// ✅ DIPERBAIKI: Endpoint yang benar
   static Future<Map<String, dynamic>> getStatistics() async {
     try {
+      print('🔄 [getStatistics] Fetching statistics...');
+      
       final headers = await _getHeaders();
+      
+      // ✅ ENDPOINT YANG BENAR: /api/posmitra/statistics
       final response = await http.get(
-        Uri.parse('$baseUrl/api/v1/posmitra/statistics'),
+        Uri.parse('$baseUrl/api/posmitra/statistics'),
         headers: headers,
       );
+
+      print('📡 [getStatistics] Status: ${response.statusCode}');
+      print('📡 [getStatistics] Response: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true) {
+          print('✅ [getStatistics] Data: ${data['data']}');
           return data['data'] as Map<String, dynamic>;
         }
         throw Exception(data['message'] ?? 'Gagal mengambil statistik');
@@ -244,25 +771,246 @@ class PosMitraService {
       }
       throw Exception('Gagal mengambil statistik: ${response.statusCode}');
     } catch (e) {
-      throw Exception('Error saat mengambil statistik: $e');
+      print('❌ [getStatistics] Error: $e');
+      rethrow;
     }
   }
 
-  /// Get activity detail
-  static Future<Map<String, dynamic>> getActivityDetail(int activityId) async {
+  // ==================== UPCOMING RIDES ====================
+
+  /// Get upcoming rides (tebengan akan datang)
+  /// ✅ DIPERBAIKI: Endpoint yang benar
+ // ==================== RIDES / TEBENGAN UNTUK FILTER TAB ====================
+
+/// 🟢 GET UPCOMING RIDES - Tab "Akan Datang"
+static Future<List<Map<String, dynamic>>> getUpcomingRides() async {
+  try {
+    print('🔄 [getUpcomingRides] Fetching upcoming rides...');
+    
+    final headers = await _getHeaders();
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/posmitra/upcoming-rides'),
+      headers: headers,
+    );
+
+    print('📡 [getUpcomingRides] Status: ${response.statusCode}');
+    
+    // 🔥 TAMBAH 1 BARIS INI UNTUK LIHAT ISI RESPONSE
+    print('📦 [getUpcomingRides] Response body: ${response.body}');
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['success'] == true) {
+        final rides = List<Map<String, dynamic>>.from(data['data'] ?? []);
+        print('✅ [getUpcomingRides] Found ${rides.length} upcoming rides');
+        return rides;
+      }
+      throw Exception(data['message'] ?? 'Gagal mengambil data tebengan');
+    }
+    throw Exception('Gagal mengambil data tebengan: ${response.statusCode}');
+  } catch (e) {
+    print('❌ [getUpcomingRides] Error: $e');
+    return [];
+  }
+}
+
+/// 🟢 GET COMPLETED RIDES - Tab "Selesai"
+/// 🔥 INI YANG ANDA BUTUHKAN!
+/// 🟢 GET COMPLETED RIDES - Tab "Selesai"
+static Future<List<Map<String, dynamic>>> getCompletedRides() async {
+  try {
+    print('🔄 [getCompletedRides] Fetching completed rides...');
+    
+    final headers = await _getHeaders();
+    
+    // 🔥 GUNAKAN 1 ENDPOINT INI SAJA - HAPUS ALTERNATIF LAINNYA
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/posmitra/completed-rides'),  // PASTIKAN ENDPOINT INI ADA DI BACKEND
+      headers: headers,
+    );
+    
+    print('📡 [getCompletedRides] Status: ${response.statusCode}');
+    print('📦 [getCompletedRides] Response: ${response.body}');
+    
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['success'] == true) {
+        final rides = List<Map<String, dynamic>>.from(data['data'] ?? []);
+        print('✅ [getCompletedRides] Found ${rides.length} completed rides');
+        return rides;
+      }
+    }
+    
+    print('❌ [getCompletedRides] No completed rides found');
+    return [];
+    
+  } catch (e) {
+    print('❌ [getCompletedRides] Error: $e');
+    return [];
+  }
+}
+/// 🟢 GET ALL RIDES - Tab "Semua"
+static Future<List<Map<String, dynamic>>> getAllRides() async {
+  try {
+    print('🔄 [getAllRides] Fetching all rides...');
+    
+    // Ambil upcoming dan completed secara parallel
+    final results = await Future.wait([
+      getUpcomingRides(),
+      getCompletedRides(),
+    ], eagerError: false);
+    
+    final upcoming = results[0];
+    final completed = results[1];
+    
+    // Gabungkan semua rides
+    final allRides = [...upcoming, ...completed];
+    
+    // Urutkan berdasarkan tanggal (terbaru ke terlama)
+    allRides.sort((a, b) {
+      final dateA = a['date']?.toString() ?? '';
+      final dateB = b['date']?.toString() ?? '';
+      return dateB.compareTo(dateA);
+    });
+    
+    print('✅ [getAllRides] Total: ${allRides.length} rides');
+    print('   - Upcoming: ${upcoming.length}');
+    print('   - Completed: ${completed.length}');
+    
+    return allRides;
+  } catch (e) {
+    print('❌ [getAllRides] Error: $e');
+    return []; // ⚠️ RETURN EMPTY LIST
+  }
+}
+  /// Withdraw Balance
+  static Future<Map<String, dynamic>> withdrawBalance({
+  required String token,
+  required double amount,
+  required String bankName,
+  required String accountNumber,
+  required String accountName, // ← Tambahkan parameter
+  required String pin,
+}) async {
+  try {
+    print('🔄 [withdrawBalance] Processing withdrawal...');
+    print('💰 Amount: $amount');
+    print('🏦 Bank: $bankName');
+    print('🔢 Account Number: $accountNumber');
+    print('👤 Account Name: $accountName');
+    
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/v1/posmitra/withdraw'),
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: json.encode({
+        'amount': amount,
+        'bank_name': bankName,
+        'account_number': accountNumber,// ← Sesuaikan dengan backend
+        'bank_account_name': accountName,     // ← Tambahkan field ini
+        'pin': pin,
+      }),
+    );
+
+    print('📡 [withdrawBalance] Status: ${response.statusCode}');
+    print('📡 [withdrawBalance] Response: ${response.body}');
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return data;
+    } else {
+      final error = json.decode(response.body);
+      return {
+        'success': false,
+        'message': error['message'] ?? 'Gagal melakukan penarikan'
+      };
+    }
+  } catch (e) {
+    print('❌ [withdrawBalance] Error: $e');
+    return {
+      'success': false,
+      'message': 'Error: $e'
+    };
+  }
+}
+  /// Get withdrawal history
+static Future<List<Map<String, dynamic>>> getWithdrawalHistory({
+  int page = 1,
+  int limit = 10,
+}) async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('api_token');
+
+    print("TOKEN WITHDRAW: $token");
+
+    final uri = Uri.parse('$baseUrl/v1/posmitra/withdraw/history')
+        .replace(queryParameters: {
+      'page': page.toString(),
+      'limit': limit.toString(),
+    });
+
+    final response = await http.get(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      },
+    );
+
+    print("STATUS: ${response.statusCode}");
+    print("BODY: ${response.body}");
+
+    if (response.statusCode != 200) {
+      throw Exception('Gagal mengambil riwayat: ${response.statusCode}');
+    }
+
+    final decoded = json.decode(response.body);
+
+    if (decoded is! Map) {
+      throw Exception('Format response tidak valid');
+    }
+
+    if (decoded['success'] != true) {
+      throw Exception(decoded['message'] ?? 'Gagal mengambil riwayat');
+    }
+
+    final rawData = decoded['data'];
+
+    if (rawData is List) {
+      return List<Map<String, dynamic>>.from(rawData);
+    }
+
+    // Jika backend suatu saat mengubah struktur
+    if (rawData is Map && rawData['withdrawals'] is List) {
+      return List<Map<String, dynamic>>.from(rawData['withdrawals']);
+    }
+
+    return [];
+  } catch (e) {
+    throw Exception('Error saat mengambil riwayat: $e');
+  }
+}
+
+  /// Get withdrawal detail
+  static Future<Map<String, dynamic>> getWithdrawalDetail(
+      int withdrawalId) async {
     try {
       final headers = await _getHeaders();
       final response = await http.get(
-        Uri.parse('$baseUrl/api/v1/posmitra/activities/$activityId'),
+        Uri.parse('$baseUrl/api/v1/posmitra/withdraw/$withdrawalId'),
         headers: headers,
       );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true) {
-          return data['data']['activity'];
+          return data['data']['withdrawal'] ?? data['data'];
         }
-        throw Exception(data['message'] ?? 'Gagal mengambil detail aktivitas');
+        throw Exception(data['message'] ?? 'Gagal mengambil detail pencairan');
       }
       throw Exception('Gagal mengambil detail: ${response.statusCode}');
     } catch (e) {
@@ -270,7 +1018,283 @@ class PosMitraService {
     }
   }
 
-  // ==================== QR CODE SCANNING ====================
+  // ==================== NOTIFICATIONS ====================
+
+  /// Get notifications
+  static Future<List<Map<String, dynamic>>> getNotifications({
+    int page = 1,
+    int limit = 20,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse('$baseUrl/api/v1/notifications')
+          .replace(queryParameters: {
+        'page': page.toString(),
+        'limit': limit.toString(),
+      });
+
+      final response = await http.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          return List<Map<String, dynamic>>.from(
+              data['data']['notifications'] ?? data['data'] ?? []);
+        }
+        throw Exception(data['message'] ?? 'Gagal mengambil notifikasi');
+      }
+      throw Exception('Gagal mengambil notifikasi: ${response.statusCode}');
+    } catch (e) {
+      throw Exception('Error saat mengambil notifikasi: $e');
+    }
+  }
+
+  /// Mark notification as read
+  static Future<void> markNotificationAsRead(int notificationId) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/v1/notifications/$notificationId/read'),
+        headers: headers,
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Gagal menandai notifikasi: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error saat menandai notifikasi: $e');
+    }
+  }
+
+  /// Mark all notifications as read
+  static Future<void> markAllNotificationsAsRead() async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/v1/notifications/read-all'),
+        headers: headers,
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception(
+            'Gagal menandai semua notifikasi: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error saat menandai semua notifikasi: $e');
+    }
+  }
+
+  /// Get withdrawal notifications - Transform withdrawal history into notification format
+  /// Returns list of notifications from withdrawal transactions (tarik saldo)
+  static Future<List<Map<String, dynamic>>> getWithdrawalNotifications({
+    int page = 1,
+    int limit = 10,
+  }) async {
+    try {
+      print('🔄 [getWithdrawalNotifications] Fetching withdrawal notifications...');
+      
+      // Fetch withdrawal history
+      final withdrawals = await getWithdrawalHistory(page: page, limit: limit);
+      
+      print('📦 [getWithdrawalNotifications] Found ${withdrawals.length} withdrawals');
+      
+      // Transform withdrawal data into notification format
+      final notifications = <Map<String, dynamic>>[];
+      
+      for (final withdrawal in withdrawals) {
+        // Parse amount
+        final amount = double.tryParse(withdrawal['amount']?.toString() ?? '0') ?? 0;
+        final adminFee = double.tryParse(withdrawal['admin_fee']?.toString() ?? '0') ?? 0;
+        final totalAmount = double.tryParse(withdrawal['total_amount']?.toString() ?? '0') ?? 0;
+        
+        // Get bank info
+        final bankName = withdrawal['bank_name']?.toString() ?? '';
+        final accountNumber = withdrawal['bank_account_number']?.toString() ?? '';
+        final status = withdrawal['status']?.toString() ?? '';
+        
+        // Get dates
+        final submittedAt = withdrawal['submitted_at']?.toString() ?? '';
+        final completedAt = withdrawal['completed_at']?.toString() ?? '';
+        
+        // Format the date for display
+        String formattedDate = submittedAt;
+        if (completedAt.isNotEmpty) {
+          formattedDate = completedAt;
+        }
+        
+        // Format the date to dd-MM-yyyy HH:mm format
+        String displayDate = formattedDate;
+        if (formattedDate.isNotEmpty) {
+          try {
+            final dateTime = DateTime.parse(formattedDate);
+            final day = dateTime.day.toString().padLeft(2, '0');
+            final month = dateTime.month.toString().padLeft(2, '0');
+            final year = dateTime.year;
+            final hour = dateTime.hour.toString().padLeft(2, '0');
+            final minute = dateTime.minute.toString().padLeft(2, '0');
+            displayDate = '$day-$month-$year  $hour:$minute';
+          } catch (e) {
+            // Keep original format if parsing fails
+            displayDate = formattedDate;
+          }
+        }
+        
+        // Create status label
+        String statusLabel = 'Menunggu';
+        switch (status) {
+          case 'completed':
+            statusLabel = 'Berhasil';
+            break;
+          case 'processing':
+            statusLabel = 'Diproses';
+            break;
+          case 'rejected':
+            statusLabel = 'Ditolak';
+            break;
+          case 'pending':
+            statusLabel = 'Menunggu';
+            break;
+        }
+        
+        // Create notification message based on status
+        String message = '';
+        if (status == 'completed') {
+          message = 'Saldo sebesar Rp ${_formatCurrency(totalAmount)} telah berhasil dicairkan ke $bankName $accountNumber';
+        } else if (status == 'processing') {
+          message = 'Penarikan saldo sebesar Rp ${_formatCurrency(amount)} ke $bankName $accountNumber sedang diproses';
+        } else if (status == 'rejected') {
+          message = 'Penarikan saldo sebesar Rp ${_formatCurrency(amount)} ke $bankName $accountNumber ditolak';
+        } else {
+          message = 'Permintaan penarikan saldo sebesar Rp ${_formatCurrency(amount)} ke $bankName $accountNumber';
+        }
+        
+        // Create notification object
+        final notification = {
+          'title': 'Tarik Saldo',
+          'message': message,
+          'time': displayDate,
+          'type': 'withdrawal',
+          'status': statusLabel,
+          'amount': amount,
+          'adminFee': adminFee,
+          'totalAmount': totalAmount,
+          'bankName': bankName,
+          'accountNumber': accountNumber,
+          'withdrawalId': withdrawal['id'],
+          'transactionId': withdrawal['transaction_id'] ?? '',
+        };
+        
+        notifications.add(notification);
+        print('✅ [getWithdrawalNotifications] Added notification: $statusLabel - ${withdrawal['id']}');
+      }
+      
+      return notifications;
+    } catch (e) {
+      print('❌ [getWithdrawalNotifications] Error: $e');
+      return [];
+    }
+  }
+
+  /// Helper function to format currency
+  static String _formatCurrency(double amount) {
+    final formatted = amount.toStringAsFixed(0);
+    final regex = RegExp(r'\B(?=(\d{3})+(?!\d))');
+    return formatted.replaceAllMapped(regex, (match) => '.');
+  }
+
+    /// Update pos mitra profile
+static Future<Map<String, dynamic>> updateProfile({
+  String? email,
+  String? photoFilePath,
+  String? name,
+  String? phone,
+  String? bankName,
+  String? bankAccountNumber,
+  String? bankAccountName,
+}) async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('api_token');
+
+    if (token == null || token.isEmpty) {
+      return {
+        'success': false,
+        'message': 'Token tidak ditemukan'
+      };
+    }
+
+    var request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl/api/v1/pos-mitra/profile'),  // ← Pastikan endpoint ini
+    );
+
+    request.headers['Authorization'] = 'Bearer $token';
+    request.headers['Accept'] = 'application/json';
+
+    if (email != null && email.isNotEmpty) {
+      request.fields['email'] = email;
+    }
+
+    if (name != null && name.isNotEmpty) {
+      request.fields['name'] = name;
+    }
+
+    if (phone != null && phone.isNotEmpty) {
+      request.fields['phone'] = phone;
+    }
+
+    if (bankName != null && bankName.isNotEmpty) {
+      request.fields['bank_name'] = bankName;
+    }
+
+    if (bankAccountNumber != null && bankAccountNumber.isNotEmpty) {
+      request.fields['bank_account_number'] = bankAccountNumber;
+    }
+
+    if (bankAccountName != null && bankAccountName.isNotEmpty) {
+      request.fields['bank_account_name'] = bankAccountName;
+    }
+
+    if (photoFilePath != null && photoFilePath.isNotEmpty) {
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'profile_photo',
+          photoFilePath,
+        ),
+      );
+    }
+
+    print('=== Update Profile Request ===');
+    print('URL: ${request.url}');
+    print('Fields: ${request.fields}');
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    print('=== Response ===');
+    print('Status: ${response.statusCode}');
+    print('Body: ${response.body}');
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return data;
+    } else {
+      final data = json.decode(response.body);
+      return {
+        'success': false,
+        'message': data['message'] ?? 'Gagal memperbarui profil: ${response.statusCode}'
+      };
+    }
+  } catch (e) {
+    print('=== Error ===');
+    print('$e');
+    return {
+      'success': false,
+      'message': 'Error saat memperbarui profil: $e'
+    };
+  }
+}
+  //   // ==================== QR CODE SCANNING ====================
 
   /// Verify QR code and complete ride
   static Future<Map<String, dynamic>> verifyQRCode(String qrData) async {
@@ -327,379 +1351,4 @@ class PosMitraService {
     }
   }
 
-  // ==================== WITHDRAWAL ====================
-
-  /// Get withdrawal history
-  static Future<List<Map<String, dynamic>>> getWithdrawalHistory({
-    int page = 1,
-    int limit = 10,
-  }) async {
-    try {
-      final headers = await _getHeaders();
-      final uri = Uri.parse('$baseUrl/api/v1/posmitra/withdrawals')
-          .replace(queryParameters: {
-        'page': page.toString(),
-        'limit': limit.toString(),
-      });
-
-      final response = await http.get(uri, headers: headers);
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['success'] == true) {
-          return List<Map<String, dynamic>>.from(
-              data['data']['withdrawals'] ?? []);
-        }
-        throw Exception(data['message'] ?? 'Gagal mengambil riwayat pencairan');
-      }
-      throw Exception('Gagal mengambil riwayat: ${response.statusCode}');
-    } catch (e) {
-      throw Exception('Error saat mengambil riwayat: $e');
-    }
-  }
-
-  /// Get withdrawal detail
-  static Future<Map<String, dynamic>> getWithdrawalDetail(
-      int withdrawalId) async {
-    try {
-      final headers = await _getHeaders();
-      final response = await http.get(
-        Uri.parse('$baseUrl/api/v1/posmitra/withdrawals/$withdrawalId'),
-        headers: headers,
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['success'] == true) {
-          return data['data']['withdrawal'];
-        }
-        throw Exception(data['message'] ?? 'Gagal mengambil detail pencairan');
-      }
-      throw Exception('Gagal mengambil detail: ${response.statusCode}');
-    } catch (e) {
-      throw Exception('Error saat mengambil detail: $e');
-    }
-  }
-
-  /// Request withdrawal
-  static Future<Map<String, dynamic>> requestWithdrawal({
-    required double amount,
-    required String bankAccount,
-    required String pin,
-  }) async {
-    try {
-      final headers = await _getHeaders();
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/v1/posmitra/withdrawals'),
-        headers: headers,
-        body: json.encode({
-          'amount': amount,
-          'bank_account': bankAccount,
-          'pin': pin,
-        }),
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final data = json.decode(response.body);
-        if (data['success'] == true) {
-          return data['data'];
-        }
-        throw Exception(data['message'] ?? 'Gagal mengajukan pencairan');
-      } else if (response.statusCode == 400) {
-        final data = json.decode(response.body);
-        throw Exception(data['message'] ?? 'Data tidak valid');
-      }
-      throw Exception('Gagal mengajukan pencairan: ${response.statusCode}');
-    } catch (e) {
-      throw Exception('Error saat mengajukan pencairan: $e');
-    }
-  }
-
-  // ==================== NOTIFICATIONS ====================
-
-  /// Get notifications
-  static Future<List<Map<String, dynamic>>> getNotifications({
-    int page = 1,
-    int limit = 20,
-  }) async {
-    try {
-      final headers = await _getHeaders();
-      final uri = Uri.parse('$baseUrl/api/v1/posmitra/notifications')
-          .replace(queryParameters: {
-        'page': page.toString(),
-        'limit': limit.toString(),
-      });
-
-      final response = await http.get(uri, headers: headers);
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['success'] == true) {
-          return List<Map<String, dynamic>>.from(
-              data['data']['notifications'] ?? []);
-        }
-        throw Exception(data['message'] ?? 'Gagal mengambil notifikasi');
-      }
-      throw Exception('Gagal mengambil notifikasi: ${response.statusCode}');
-    } catch (e) {
-      throw Exception('Error saat mengambil notifikasi: $e');
-    }
-  }
-
-  /// Mark notification as read
-  static Future<void> markNotificationAsRead(int notificationId) async {
-    try {
-      final headers = await _getHeaders();
-      final response = await http.post(
-        Uri.parse(
-            '$baseUrl/api/v1/posmitra/notifications/$notificationId/read'),
-        headers: headers,
-      );
-
-      if (response.statusCode != 200) {
-        throw Exception('Gagal menandai notifikasi: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Error saat menandai notifikasi: $e');
-    }
-  }
-
-  /// Mark all notifications as read
-  static Future<void> markAllNotificationsAsRead() async {
-    try {
-      final headers = await _getHeaders();
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/v1/posmitra/notifications/read-all'),
-        headers: headers,
-      );
-
-      if (response.statusCode != 200) {
-        throw Exception(
-            'Gagal menandai semua notifikasi: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Error saat menandai semua notifikasi: $e');
-    }
-  }
-
-  // ==================== EARNINGS / PENDAPATAN ====================
-
-  /// Get earnings summary
-  static Future<Map<String, dynamic>> getEarningsSummary({
-    DateTime? startDate,
-    DateTime? endDate,
-  }) async {
-    try {
-      final headers = await _getHeaders();
-      final queryParams = <String, String>{};
-
-      if (startDate != null) {
-        queryParams['start_date'] = startDate.toIso8601String().split('T')[0];
-      }
-      if (endDate != null) {
-        queryParams['end_date'] = endDate.toIso8601String().split('T')[0];
-      }
-
-      final uri = Uri.parse('$baseUrl/api/v1/posmitra/earnings/summary')
-          .replace(queryParameters: queryParams);
-
-      final response = await http.get(uri, headers: headers);
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['success'] == true) {
-          return data['data'];
-        }
-        throw Exception(
-            data['message'] ?? 'Gagal mengambil ringkasan pendapatan');
-      }
-      throw Exception('Gagal mengambil ringkasan: ${response.statusCode}');
-    } catch (e) {
-      throw Exception('Error saat mengambil ringkasan: $e');
-    }
-  }
-
-  /// Get detailed earnings history
-  static Future<List<Map<String, dynamic>>> getEarningsHistory({
-    DateTime? startDate,
-    DateTime? endDate,
-    int page = 1,
-    int limit = 10,
-  }) async {
-    try {
-      final headers = await _getHeaders();
-      final queryParams = {
-        'page': page.toString(),
-        'limit': limit.toString(),
-      };
-
-      if (startDate != null) {
-        queryParams['start_date'] = startDate.toIso8601String().split('T')[0];
-      }
-      if (endDate != null) {
-        queryParams['end_date'] = endDate.toIso8601String().split('T')[0];
-      }
-
-      final uri = Uri.parse('$baseUrl/api/v1/posmitra/earnings/history')
-          .replace(queryParameters: queryParams);
-
-      final response = await http.get(uri, headers: headers);
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['success'] == true) {
-          return List<Map<String, dynamic>>.from(
-              data['data']['earnings'] ?? []);
-        }
-        throw Exception(
-            data['message'] ?? 'Gagal mengambil riwayat pendapatan');
-      }
-      throw Exception('Gagal mengambil riwayat: ${response.statusCode}');
-    } catch (e) {
-      throw Exception('Error saat mengambil riwayat: $e');
-    }
-  }
-
-  // ==================== STATISTICS ====================
-
-  /// Get daily statistics
-  static Future<Map<String, dynamic>> getDailyStats(DateTime date) async {
-    try {
-      final headers = await _getHeaders();
-      final dateStr = date.toIso8601String().split('T')[0];
-      final response = await http.get(
-        Uri.parse('$baseUrl/api/v1/posmitra/stats/daily?date=$dateStr'),
-        headers: headers,
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['success'] == true) {
-          return data['data'];
-        }
-        throw Exception(data['message'] ?? 'Gagal mengambil statistik harian');
-      }
-      throw Exception('Gagal mengambil statistik: ${response.statusCode}');
-    } catch (e) {
-      throw Exception('Error saat mengambil statistik: $e');
-    }
-  }
-
-  /// Get monthly statistics
-  static Future<Map<String, dynamic>> getMonthlyStats(
-      int year, int month) async {
-    try {
-      final headers = await _getHeaders();
-      final response = await http.get(
-        Uri.parse(
-            '$baseUrl/api/v1/posmitra/stats/monthly?year=$year&month=$month'),
-        headers: headers,
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['success'] == true) {
-          return data['data'];
-        }
-        throw Exception(data['message'] ?? 'Gagal mengambil statistik bulanan');
-      }
-      throw Exception('Gagal mengambil statistik: ${response.statusCode}');
-    } catch (e) {
-      throw Exception('Error saat mengambil statistik: $e');
-    }
-  }
-
-  // ==================== HELP / BANTUAN ====================
-
-  /// Get help articles
-  static Future<List<Map<String, dynamic>>> getHelpArticles() async {
-    try {
-      final headers = await _getHeaders();
-      final response = await http.get(
-        Uri.parse('$baseUrl/api/v1/posmitra/help/articles'),
-        headers: headers,
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['success'] == true) {
-          return List<Map<String, dynamic>>.from(
-              data['data']['articles'] ?? []);
-        }
-        throw Exception(data['message'] ?? 'Gagal mengambil artikel bantuan');
-      }
-      throw Exception('Gagal mengambil artikel: ${response.statusCode}');
-    } catch (e) {
-      throw Exception('Error saat mengambil artikel: $e');
-    }
-  }
-
-  /// Get help article detail
-  static Future<Map<String, dynamic>> getHelpArticleDetail(
-      int articleId) async {
-    try {
-      final headers = await _getHeaders();
-      final response = await http.get(
-        Uri.parse('$baseUrl/api/v1/posmitra/help/articles/$articleId'),
-        headers: headers,
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['success'] == true) {
-          return data['data']['article'];
-        }
-        throw Exception(data['message'] ?? 'Gagal mengambil detail artikel');
-      }
-      throw Exception('Gagal mengambil detail: ${response.statusCode}');
-    } catch (e) {
-      throw Exception('Error saat mengambil detail: $e');
-    }
-  }
-
-  /// Submit help request / feedback
-  static Future<void> submitHelpRequest({
-    required String subject,
-    required String message,
-    File? attachment,
-  }) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('api_token');
-
-      if (token == null || token.isEmpty) {
-        throw Exception('Token tidak ditemukan');
-      }
-
-      var request = http.MultipartRequest(
-        'POST',
-        Uri.parse('$baseUrl/api/v1/posmitra/help/request'),
-      );
-
-      request.headers['Authorization'] = 'Bearer $token';
-      request.headers['Accept'] = 'application/json';
-
-      request.fields['subject'] = subject;
-      request.fields['message'] = message;
-
-      if (attachment != null) {
-        request.files.add(
-          await http.MultipartFile.fromPath(
-            'attachment',
-            attachment.path,
-          ),
-        );
-      }
-
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode != 200 && response.statusCode != 201) {
-        throw Exception(
-            'Gagal mengirim permintaan bantuan: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Error saat mengirim permintaan bantuan: $e');
-    }
-  }
 }

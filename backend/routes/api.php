@@ -28,6 +28,7 @@ use App\Http\Controllers\Finance\SettingsController;
 // use App\Http\Controllers\Finance\PricePerKgController;
 use App\Http\Controllers\PosMitra\ProfileController;
 use App\Http\Controllers\PosMitra\BerandaController;
+use App\Http\Controllers\PosMitra\WithdrawController;
 use App\Http\Controllers\PosMitra\QrController;
 
 // Customer Controllers
@@ -448,6 +449,9 @@ Route::prefix('api/v1')->group(function () {
     // FCM token update from mobile app (expects bearer token)
     Route::post('/user/fcm-token', [FcmController::class, 'updateToken']);
 
+    // FCM token update for posmitra (expects bearer token)
+    Route::post('/posmitra/fcm-token', [FcmController::class, 'updatePosMitraToken']);
+
     // Notifications (requires auth via bearer token)
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
@@ -468,9 +472,10 @@ Route::prefix('api/v1')->group(function () {
     // =====================================================
 
     Route::get('/pos-mitra/profile', [ProfileController::class, 'show']);
+    Route::post('/pos-mitra/profile', [ProfileController::class, 'update']);
     Route::get('/posmitra/beranda', [BerandaController::class, 'beranda']);
-    Route::get('/posmitra/tebengan-akan-datang', [BerandaController::class, 'upcomingRides']);
-    Route::get('/posmitra/statistics', [BerandaController::class, 'statistics']);
+    // Route::get('/posmitra/tebengan-akan-datang', [BerandaController::class, 'upcomingRides']);
+    // Route::get('/posmitra/statistics', [BerandaController::class, 'statistics']);
 
     // =====================================================
     // POSMITRA - QR CODE SCANNING
@@ -751,3 +756,28 @@ Route::prefix('admin')->group(function () {
         });
     });
 });
+
+    
+    // Withdrawal routes
+Route::prefix('v1')->group(function () {
+    Route::post('posmitra/withdraw', [WithdrawController::class, 'withdraw']);
+    Route::get('posmitra/withdraw/history', [WithdrawController::class, 'history']);
+    Route::get('posmitra/withdraw/{id}', [WithdrawController::class, 'detail']);
+});
+
+Route::prefix('posmitra')->group(function () {
+    
+    // ✅ Beranda / Profile
+    Route::get('/beranda', [BerandaController::class, 'beranda']);
+    
+    // ✅ Statistics - untuk menampilkan card statistik
+    Route::get('/statistics', [BerandaController::class, 'statistics']);
+    
+    // ✅ Upcoming Rides - untuk tebengan akan datang
+    Route::get('/upcoming-rides', [BerandaController::class, 'upcomingRides']);
+    
+});
+
+Route::post('/posmitra/withdrawals/{id}/set-status', [WithdrawController::class, 'setStatus']);
+// Di routes/api.php
+Route::get('/posmitra/completed-rides', [BerandaController::class, 'completedRides']);

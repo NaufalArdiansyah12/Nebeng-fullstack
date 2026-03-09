@@ -168,8 +168,8 @@ class WithdrawalController extends Controller
                     'submitted_at' => now(),
                 ]);
 
-                // Deduct balance
-                $user->decrement('balance', $request->amount);
+                // // Deduct balance
+                // $user->decrement('balance', $request->amount);
 
                 // Note: Status will remain 'pending' until admin approves
                 // Admin will handle approval through admin panel

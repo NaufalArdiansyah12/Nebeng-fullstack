@@ -17,26 +17,29 @@ class ApiToken extends Model
         'expires_at',
     ];
 
-    protected $dates = ['expires_at'];
+    protected $casts = [
+        'expires_at' => 'datetime',
+    ];
 
+    // relasi user biasa
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
+    // relasi posmitra (PAKAI posmitra_id)
     public function posMitraUser()
     {
         return $this->belongsTo(PosMitraUser::class, 'posmitra_id');
     }
 
     /**
-     * Get the actual user model based on user_type
+     * ambil user sesuai user_type
      */
     public function getAuthenticatedUser()
     {
-        if ($this->user_type === 'posmitra') {
-            return $this->posMitraUser;
-        }
-        return $this->user;
+        return $this->user_type === 'posmitra'
+            ? $this->posMitraUser
+            : $this->user;
     }
 }

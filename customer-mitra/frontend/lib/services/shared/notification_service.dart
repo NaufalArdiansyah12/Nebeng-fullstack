@@ -48,7 +48,7 @@ class NotificationService {
       await androidPlugin?.createNotificationChannel(_chatChannel);
       await androidPlugin?.createNotificationChannel(_defaultChannel);
 
-      print('✅ Notification channels created');
+      print('[NotificationService] Init OK: channels created (default, chat, payments)');
     }
   }
 
@@ -94,7 +94,7 @@ class NotificationService {
     final id = notificationId ??
         DateTime.now().millisecondsSinceEpoch.remainder(1 << 31);
 
-    print('📢 Showing notification: $title');
+    print('[NotificationService] Showing: id=$id title="$title" body="$body" channel=${channel.id}');
     await _local.show(id, title, body, details);
   }
 
@@ -108,6 +108,7 @@ class NotificationService {
     String? channelType,
   }) async {
     if (messageId == null || messageId.isEmpty) {
+      print('[NotificationService] showIfNotDuplicate: no messageId, showing directly');
       await show(title: title, body: body, channelType: channelType);
       return;
     }
@@ -115,9 +116,10 @@ class NotificationService {
     final prefs = await SharedPreferences.getInstance();
     final list = prefs.getStringList(_seenKey) ?? <String>[];
     if (list.contains(messageId)) {
-      print('⏭️ Skipping duplicate notification: $messageId');
+      print('[NotificationService] Skipping duplicate: messageId=$messageId');
       return;
     }
+    print('[NotificationService] showIfNotDuplicate: showing (messageId=$messageId)');
 
     // add to front, keep max 100 ids
     list.insert(0, messageId);

@@ -237,7 +237,7 @@ class _QRResultPageState extends State<QRResultPage> {
                           horizontal: 12,
                           vertical: 8,
                         ),
-                        decoration: BoxDecoration(
+                        decoration: BoxDecoration(                                             
                           color: const Color(0xFFE3F2FD),
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -252,7 +252,7 @@ class _QRResultPageState extends State<QRResultPage> {
                               ),
                             ),
                             Text(
-                              _formatCurrency(booking['total_price']),
+                              _formatCurrency(_bookingData!['estimated_earnings'] ?? 0),
                               style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
@@ -307,7 +307,7 @@ class _QRResultPageState extends State<QRResultPage> {
                       const Divider(height: 24),
                       _buildInfoRow(
                         'Jumlah Kursi',
-                        '${vehicle['capacity'] ?? 0}',
+                        '${trip['available_seats'] ?? 0}',
                       ),
                     ],
                   ),

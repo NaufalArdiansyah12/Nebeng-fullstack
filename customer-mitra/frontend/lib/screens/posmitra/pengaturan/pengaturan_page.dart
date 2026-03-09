@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 
 import 'foto_profil_page.dart';
 import 'ubah_email_page.dart';
+import 'ubah_nomor_page.dart';
+import 'ubah_rekening_page.dart'; // Tambahkan import ini
+
 
 class PengaturanPage extends StatelessWidget {
   const PengaturanPage({Key? key}) : super(key: key);
@@ -47,35 +50,34 @@ class PengaturanPage extends StatelessWidget {
                     ),
                   ),
                 ),
-               _buildMenuItem(
-  context,
-  icon: Icons.person_outline,
-  title: 'Foto Profil',
-  subtitle: 'Ubah informasi akun Anda',
-  onTap: () async {
-    final res = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const FotoProfilPage(),
-      ),
-    );
-    if (res == true) {
-      // Bubble the success up to caller (ProfilPage)
-      Navigator.pop(context, true);
-    }
-  },
-),
-
+                _buildMenuItem(
+                  context,
+                  icon: Icons.person_outline,
+                  title: 'Foto Profil',
+                  subtitle: 'Ubah informasi akun Anda',
+                  onTap: () async {
+                    final res = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const FotoProfilPage(),
+                      ),
+                    );
+                    if (res == true) {
+                      // Bubble the success up to caller (ProfilPage)
+                      Navigator.pop(context, true);
+                    }
+                  },
+                ),
                 _buildMenuItem(
                   context,
                   icon: Icons.phone_outlined,
                   title: 'Nomor Telepon',
                   subtitle: 'Ubah nomor telepon Anda',
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Fitur ubah nomor telepon akan segera hadir'),
-                        backgroundColor: Color(0xFF1E3A8A),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const UbahNomorPage(),
                       ),
                     );
                   },
@@ -90,6 +92,20 @@ class PengaturanPage extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (context) => const UbahEmailPage(),
+                      ),
+                    );
+                  },
+                ),
+                _buildMenuItem(
+                  context,
+                  icon: Icons.account_balance_outlined,
+                  title: 'Rekening Bank',
+                  subtitle: 'Kelola informasi rekening bank Anda',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const UbahRekeningPage(),
                       ),
                     );
                   },
