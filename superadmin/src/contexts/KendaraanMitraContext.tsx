@@ -10,6 +10,7 @@ export interface KendaraanMitraData {
   warna: string;
   tahun: number;
   tanggal: Date;
+  status: string; // pending, approved, rejected, deletion_pending
 }
 
 interface KendaraanMitraContextType {
@@ -51,6 +52,7 @@ export function KendaraanMitraProvider({ children }: { children: ReactNode }) {
         warna: k.color || "",
         tahun: k.year || 0,
         tanggal: new Date(k.created_at),
+        status: k.status || "pending", // pending, approved, rejected, deletion_pending
       }));
 
       setKendaraanMitraList(transformed);
@@ -87,6 +89,7 @@ export function KendaraanMitraProvider({ children }: { children: ReactNode }) {
         warna: k.color || "",
         tahun: k.year || 0,
         tanggal: new Date(k.created_at),
+        status: k.status || "pending", // pending, approved, rejected, deletion_pending
       }));
 
       setKendaraanMitraList(transformed);

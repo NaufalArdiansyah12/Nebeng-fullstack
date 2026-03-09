@@ -25,6 +25,9 @@ class ApiService {
 
   static Future<bool> logout(String? token) => AuthService.logout(token);
 
+  static Future<Map<String, dynamic>> loginWithGoogle() =>
+      AuthService.loginWithGoogle();
+
   static Future<bool> checkPin({required String token}) =>
       AuthService.checkPin(token: token);
 

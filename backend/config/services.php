@@ -45,4 +45,8 @@ return [
         'legacy_key' => env('FCM_LEGACY_SERVER_KEY'),
     ],
 
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+    ],
+
 ];

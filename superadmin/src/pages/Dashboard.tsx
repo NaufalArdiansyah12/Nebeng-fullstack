@@ -48,17 +48,18 @@ interface MitraData {
   nama: string;
   email: string;
   noTlp: string;
-  layanan: string;
+  gender: string;
   status: string;
 }
 
 const getStatusColor = (status: string) => {
-  switch (status) {
-    case "TERVERIFIKASI":
+  const normalizedStatus = status?.toLowerCase() || 'active';
+  switch (normalizedStatus) {
+    case "active":
       return "bg-green-500 hover:bg-green-600";
-    case "DITOLAK":
+    case "blocked":
       return "bg-red-500 hover:bg-red-600";
-    case "PENGAJUAN":
+    case "pengajuan":
       return "bg-orange-500 hover:bg-orange-600";
     default:
       return "bg-gray-500";
@@ -278,7 +279,7 @@ const Dashboard = () => {
             <CardTitle className="text-lg font-semibold">
               Pesanan{" "}
               <span className="text-sm font-normal text-muted-foreground">
-                ({chartData.reduce((sum, item) => sum + item.value, 0)} Pesanan)
+                ({chartData?.reduce((sum, item) => sum + item.value, 0) || 0} Pesanan)
               </span>
             </CardTitle>
             <div className="flex items-center gap-2">
@@ -338,7 +339,7 @@ const Dashboard = () => {
                 }`}
               >
                 <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={chartData} barCategoryGap="20%">
+                  <BarChart data={chartData || []} barCategoryGap="20%">
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis
                       dataKey="name"
@@ -353,7 +354,7 @@ const Dashboard = () => {
                       domain={[0, 'dataMax + 50']}
                     />
                     <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                      {chartData.map((entry, index) => (
+                      {(chartData || []).map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                       <LabelList
@@ -540,7 +541,7 @@ const Dashboard = () => {
                       <th className="text-left py-3 font-medium">NAMA</th>
                       <th className="text-left py-3 font-medium">EMAIL</th>
                       <th className="text-left py-3 font-medium">NO. TLP</th>
-                      <th className="text-left py-3 font-medium">LAYANAN</th>
+                      <th className="text-left py-3 font-medium">JENIS KELAMIN</th>
                       <th className="text-left py-3 font-medium">STATUS</th>
                       <th className="text-center py-3 font-medium">AKSI</th>
                     </tr>
@@ -552,7 +553,7 @@ const Dashboard = () => {
                         <td className="py-4">{mitra.nama}</td>
                         <td className="py-4">{mitra.email}</td>
                         <td className="py-4">{mitra.noTlp}</td>
-                        <td className="py-4">{mitra.layanan}</td>
+                        <td className="py-4">{mitra.gender || '-'}</td>
                         <td className="py-4">
                           <Badge className={`${getStatusColor(mitra.status)} text-white text-xs`}>
                             {mitra.status}

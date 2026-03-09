@@ -710,7 +710,42 @@ class _BookingDetailRiwayatPageState extends State<BookingDetailRiwayatPage>
     // Do NOT fallback to booking['user'] (that's the customer).
     final driver = mitraData ?? ride['mitra'] ?? ride['user'] ?? {};
     final driverName = driver['name'] ?? 'Driver';
-    final driverPhoto = driver['photo_url'] ?? driver['photo'] ?? '';
+
+    // Get photo URL with proper fallbacks and URL building
+    String driverPhoto = '';
+    final photoUrl = driver['photo_url'];
+    final profilePhoto = driver['profile_photo'];
+    final photo = driver['photo'];
+
+    if (photoUrl != null && photoUrl.toString().isNotEmpty) {
+      final photoStr = photoUrl.toString();
+      // If already a full URL, use it
+      if (photoStr.startsWith('http://') || photoStr.startsWith('https://')) {
+        driverPhoto = photoStr;
+      } else {
+        // Build full URL using API base URL
+        driverPhoto = '${ApiService.baseUrl}$photoStr';
+      }
+    } else if (profilePhoto != null && profilePhoto.toString().isNotEmpty) {
+      final photoStr = profilePhoto.toString();
+      if (photoStr.startsWith('http://') || photoStr.startsWith('https://')) {
+        driverPhoto = photoStr;
+      } else {
+        driverPhoto = '${ApiService.baseUrl}$photoStr';
+      }
+      print('📸 Using profile_photo: $driverPhoto');
+    } else if (photo != null && photo.toString().isNotEmpty) {
+      final photoStr = photo.toString();
+      if (photoStr.startsWith('http://') || photoStr.startsWith('https://')) {
+        driverPhoto = photoStr;
+      } else {
+        driverPhoto = '${ApiService.baseUrl}$photoStr';
+      }
+      print('📸 Using photo: $driverPhoto');
+    } else {
+      print('📸 No photo available for driver');
+    }
+
     final driverRatingSummary = ride['driver_rating_summary'] ?? {};
     final averageRating = driverRatingSummary['average_rating'] is num
         ? (driverRatingSummary['average_rating'] as num).toDouble()

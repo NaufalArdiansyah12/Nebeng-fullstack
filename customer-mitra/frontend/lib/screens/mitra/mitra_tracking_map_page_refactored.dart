@@ -1072,6 +1072,10 @@ class _MitraTrackingMapPageState extends State<MitraTrackingMapPage> {
       return QROnlyScreen(
         qrCodeData: BookingInfoHelper.getQRCodeData(widget.item),
         bookingNumber: BookingInfoHelper.getBookingNumber(widget.item),
+        destinationLocationId:
+            BookingInfoHelper.getDestinationLocationId(widget.item),
+        bookingType: _state.bookingType,
+        bookingId: BookingInfoHelper.getBookingId(widget.item) ?? 0,
       );
     }
 

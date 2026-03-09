@@ -121,15 +121,42 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
         ? response.data
         : response.data?.data ?? [];
 
+      // ✅ Backend sudah mengirim data dalam format yang benar
+      // Tidak perlu transform besar-besaran, hanya perlu ensure type safety
+      // Transform API response to include fields compatible with Mitra frontend
       const transformedData = rawData.map((c: any) => ({
-        ...c,
-        id: safeNumber(c.id),  // Safe conversion with fallback to 0
+        id: String(safeNumber(c.id)),
+        nama: c.nama || '-',
+        email: c.email || '-',
+        // provide both snake_case and camelCase phone fields
+        no_tlp: c.no_tlp || c.noTlp || '-',
+        noTlp: c.no_tlp || c.noTlp || '-',
+        // gender intentionally omitted: take all fields except gender
+        alamat: c.alamat || '',
+        tanggal_lahir: c.tanggal_lahir || '',
+        nik: c.nik || '',
+        // normalize status using helper
         status: mapStatusToDisplay(c.status),
-        tanggal_daftar: safeDate(c.tanggal_daftar),
+        // date fields for filter/export compatibility
+        tanggal_daftar: safeDate(c.tanggal_daftar || c.created_at),
+        tanggal: safeDate(c.tanggal_daftar || c.created_at),
+        created_at: c.created_at,
+        updated_at: c.updated_at,
+        // compatibility fields used by Mitra frontend
+        layanan: c.layanan || 'Customer',
+        kode: c.kode || `#${c.id}`,
+        // Additional fields
+        nama_lengkap_ktp: c.nama_lengkap_ktp,
+        jenis_kelamin_ktp: c.jenis_kelamin_ktp,
+        photo_wajah: c.photo_wajah,
+        photo_ktp: c.photo_ktp,
+        verifikasi_id: c.verifikasi_id,
       }));
 
       setCustomers(transformedData);
       console.log('✅ Customers fetched:', transformedData.length);
+      console.log('📊 Sample customer:', transformedData[0]);
+      console.log('🕐 Fetch timestamp:', new Date().toISOString());
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch customers';
       setError(message);
@@ -262,6 +289,7 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
     try {
       console.log(`🔒 Blocking customer ${id}...`);
       const response = await customerApi.block(id);
+      console.log('🔁 blockCustomer response:', response?.data);
       
       // ✅ PENTING: Update state LANGSUNG tanpa menunggu fetchCustomers
       if (response.data) {
@@ -300,6 +328,7 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
     try {
       console.log(`🔓 Unblocking customer ${id}...`);
       const response = await customerApi.unblock(id);
+      console.log('🔁 unblockCustomer response:', response?.data);
       
       // ✅ PENTING: Update state LANGSUNG tanpa menunggu fetchCustomers
       if (response.data) {

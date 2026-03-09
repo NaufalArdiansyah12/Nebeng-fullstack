@@ -36,8 +36,8 @@ const Index = () => {
     setIsLoading(true);
     
     try {
-      // Coba fetch tanpa abort signal dulu
-      const response = await fetch('http://localhost:3001/api/auth/login', {
+      // SuperAdmin login menggunakan /api/superadmin/auth/login
+      const response = await fetch('http://localhost:3001/api/superadmin/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,18 +1,18 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Eye, Trash2, Plus, X } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Search, Eye, Trash2, Plus, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -21,6 +21,22 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { posmitraUsersApi, posmitraApi, locationsApi } from "@/services/api";
+import * as XLSX from "xlsx";
+import { format } from "date-fns";
+
+const getStatusBadge = (item: any) => {
+  if (!item.verifikasi_id) {
+    return <Badge className="bg-gray-400 hover:bg-gray-500 text-white text-xs">Belum Ada</Badge>;
+  }
+  switch (item.verifikasi_status) {
+    case "approved":
+      return <Badge className="bg-green-500 hover:bg-green-600 text-white text-xs">Terverifikasi</Badge>;
+    case "rejected":
+      return <Badge className="bg-red-500 hover:bg-red-600 text-white text-xs">Ditolak</Badge>;
+    default:
+      return <Badge className="bg-yellow-500 hover:bg-yellow-600 text-white text-xs">Menunggu</Badge>;
+  }
+};
 
 const PosMitra = () => {
   const navigate = useNavigate();
@@ -29,7 +45,7 @@ const PosMitra = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [entriesPerPage, setEntriesPerPage] = useState("10");
   const [showAddForm, setShowAddForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -73,29 +89,62 @@ const PosMitra = () => {
       item.phone?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const itemsPerPage = parseInt(entriesPerPage) || 10;
+  const totalEntries = filteredData.length;
+  const totalPages = Math.ceil(totalEntries / itemsPerPage) || 1;
   const paginatedData = filteredData.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
   const handleViewDetail = (posMitra: any) => {
     navigate(`/dashboard/pos-mitra/${posMitra.id}`);
   };
 
   const handleDelete = async (posMitra: any) => {
-    if (window.confirm(`Apakah Anda yakin ingin menghapus akun "${posMitra.name}"?`)) {
-      try {
-        // Delete posmitra user
-        await posmitraUsersApi.delete(posMitra.id);
-        alert("Pos Mitra berhasil dihapus");
-        loadData();
-      } catch (error) {
-        console.error("Error deleting posmitra:", error);
-        alert("Gagal menghapus pos mitra");
-      }
+    if (!window.confirm(`Hapus akun "${posMitra.name}"?`)) return;
+    try {
+      await posmitraUsersApi.delete(posMitra.id);
+      loadData();
+    } catch (error) {
+      console.error("Error deleting posmitra:", error);
     }
+  };
+
+  const handleDownload = () => {
+    if (filteredData.length === 0) return;
+    const data = filteredData.map((item, i) => ({
+      "NO": i + 1,
+      "NAMA": item.name || "-",
+      "EMAIL": item.email || "-",
+      "TELEPON": item.phone || "-",
+      "STATUS VERIFIKASI": item.verifikasi_id
+        ? item.verifikasi_status === "approved"
+          ? "Terverifikasi"
+          : item.verifikasi_status === "rejected"
+          ? "Ditolak"
+          : "Menunggu"
+        : "Belum Ada",
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    ws["!cols"] = [{ wch: 6 }, { wch: 25 }, { wch: 30 }, { wch: 16 }, { wch: 20 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Daftar Pos Mitra");
+    XLSX.writeFile(wb, `pos-mitra-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+  };
+
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else if (currentPage <= 3) {
+      pages.push(1, 2, 3, "...", totalPages);
+    } else if (currentPage >= totalPages - 2) {
+      pages.push(1, "...", totalPages - 2, totalPages - 1, totalPages);
+    } else {
+      pages.push(1, "...", currentPage, "...", totalPages);
+    }
+    return pages;
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -105,7 +154,6 @@ const PosMitra = () => {
   const handleAddPosMitra = async () => {
     // Validasi form
     if (!formData.name || !formData.email || !formData.phone || !formData.location_id) {
-      alert("Mohon lengkapi semua field yang required");
       return;
     }
 
@@ -133,8 +181,6 @@ const PosMitra = () => {
         status: "pending",
       } as any);
 
-      alert("Pos Mitra berhasil ditambahkan!");
-
       // Reset form
       setFormData({
         name: "",
@@ -153,346 +199,248 @@ const PosMitra = () => {
       loadData();
     } catch (error) {
       console.error("Error adding posmitra:", error);
-      alert("Gagal menambahkan pos mitra");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Pos Mitra</h1>
-          <p className="text-gray-500 mt-2">
-            Kelola dan pantau semua akun pos mitra Anda
-          </p>
-        </div>
-        <Button
-          onClick={() => setShowAddForm(!showAddForm)}
-          className="gap-2 bg-blue-600 hover:bg-blue-700"
-        >
-          <Plus size={20} />
-          Tambah Pos Mitra
-        </Button>
-      </div>
+    <div className="space-y-6">
+      {/* Modal: Tambah Pos Mitra */}
+      <Dialog open={showAddForm} onOpenChange={(open) => { setShowAddForm(open); if (!open) setFormData({ name: "", email: "", phone: "", location_id: "", verifikasi_nama: "", jenis_kelamin: "", tanggal_lahir: "", nik: "", alamat: "" }); }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold text-[#1e3a5f]">Tambah Pos Mitra Baru</DialogTitle>
+          </DialogHeader>
 
-      {/* Add Form */}
-      {showAddForm && (
-        <Card className="border-2 border-blue-200 bg-blue-50">
-          <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <CardTitle>Tambah Pos Mitra Baru</CardTitle>
-            <button
-              onClick={() => setShowAddForm(false)}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <X size={24} />
-            </button>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Nama Lengkap */}
-              <div>
-                <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Nama Lengkap *
-                </Label>
-                <Input
-                  placeholder="Masukkan nama lengkap"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange("name", e.target.value)}
-                  className="bg-white border-gray-300"
-                />
-              </div>
-
-              {/* Email */}
-              <div>
-                <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Email *
-                </Label>
-                <Input
-                  type="email"
-                  placeholder="Masukkan email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange("email", e.target.value)}
-                  className="bg-white border-gray-300"
-                />
-              </div>
-
-              {/* No. Telepon */}
-              <div>
-                <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                  No. Telepon *
-                </Label>
-                <Input
-                  placeholder="Masukkan nomor telepon"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange("phone", e.target.value)}
-                  className="bg-white border-gray-300"
-                />
-              </div>
-
-              {/* Lokasi Terminal */}
-              <div>
-                <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Lokasi Terminal *
-                </Label>
-                <Select
-                  value={formData.location_id}
-                  onValueChange={(value) => handleInputChange("location_id", value)}
-                >
-                  <SelectTrigger className="bg-white border-gray-300">
-                    <SelectValue placeholder="Pilih terminal" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {locations.map((loc) => (
-                      <SelectItem key={loc.id} value={loc.id.toString()}>
-                        {loc.name} - {loc.city}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Nama di KTP */}
-              <div>
-                <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Nama di KTP
-                </Label>
-                <Input
-                  placeholder="Masukkan nama sesuai KTP"
-                  value={formData.verifikasi_nama}
-                  onChange={(e) => handleInputChange("verifikasi_nama", e.target.value)}
-                  className="bg-white border-gray-300"
-                />
-              </div>
-
-              {/* NIK */}
-              <div>
-                <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                  NIK
-                </Label>
-                <Input
-                  placeholder="Masukkan NIK"
-                  value={formData.nik}
-                  onChange={(e) => handleInputChange("nik", e.target.value)}
-                  className="bg-white border-gray-300"
-                />
-              </div>
-
-              {/* Jenis Kelamin */}
-              <div>
-                <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Jenis Kelamin
-                </Label>
-                <Select
-                  value={formData.jenis_kelamin}
-                  onValueChange={(value) => handleInputChange("jenis_kelamin", value)}
-                >
-                  <SelectTrigger className="bg-white border-gray-300">
-                    <SelectValue placeholder="Pilih jenis kelamin" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Laki - Laki">Laki - Laki</SelectItem>
-                    <SelectItem value="Perempuan">Perempuan</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Tanggal Lahir */}
-              <div>
-                <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Tanggal Lahir
-                </Label>
-                <Input
-                  type="date"
-                  value={formData.tanggal_lahir}
-                  onChange={(e) => handleInputChange("tanggal_lahir", e.target.value)}
-                  className="bg-white border-gray-300"
-                />
-              </div>
-
-              {/* Alamat */}
-              <div className="md:col-span-2">
-                <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Alamat
-                </Label>
-                <Input
-                  placeholder="Masukkan alamat"
-                  value={formData.alamat}
-                  onChange={(e) => handleInputChange("alamat", e.target.value)}
-                  className="bg-white border-gray-300"
-                />
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
+            {/* Nama Lengkap */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Nama Lengkap <span className="text-red-500">*</span></Label>
+              <Input
+                placeholder="Masukkan nama lengkap"
+                value={formData.name}
+                onChange={(e) => handleInputChange("name", e.target.value)}
+              />
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-3 mt-6">
-              <Button
-                variant="outline"
-                onClick={() => setShowAddForm(false)}
-                className="flex-1"
-              >
-                Batal
-              </Button>
-              <Button
-                onClick={handleAddPosMitra}
-                disabled={isSubmitting}
-                className="flex-1 bg-blue-600 hover:bg-blue-700"
-              >
-                {isSubmitting ? "Menyimpan..." : "Simpan Pos Mitra"}
-              </Button>
+            {/* Email */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Email <span className="text-red-500">*</span></Label>
+              <Input
+                type="email"
+                placeholder="Masukkan email"
+                value={formData.email}
+                onChange={(e) => handleInputChange("email", e.target.value)}
+              />
             </div>
-          </CardContent>
-        </Card>
-      )}
 
-      {/* Search and Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Daftar Akun Pos Mitra</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-3 text-gray-400" size={20} />
-            <Input
-              placeholder="Cari berdasarkan nama, email, atau telepon..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="pl-10"
-            />
+            {/* No. Telepon */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">No. Telepon <span className="text-red-500">*</span></Label>
+              <Input
+                placeholder="Contoh: 08123456789"
+                value={formData.phone}
+                onChange={(e) => handleInputChange("phone", e.target.value)}
+              />
+            </div>
+
+            {/* Lokasi Terminal */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Lokasi Terminal <span className="text-red-500">*</span></Label>
+              <Select value={formData.location_id} onValueChange={(v) => handleInputChange("location_id", v)}>
+                <SelectTrigger><SelectValue placeholder="Pilih terminal" /></SelectTrigger>
+                <SelectContent>
+                  {locations.map((loc) => (
+                    <SelectItem key={loc.id} value={loc.id.toString()}>{loc.name} - {loc.city}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Nama di KTP */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Nama di KTP</Label>
+              <Input
+                placeholder="Sesuai KTP (kosongkan jika sama)"
+                value={formData.verifikasi_nama}
+                onChange={(e) => handleInputChange("verifikasi_nama", e.target.value)}
+              />
+            </div>
+
+            {/* NIK */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">NIK</Label>
+              <Input
+                placeholder="16 digit NIK"
+                maxLength={16}
+                value={formData.nik}
+                onChange={(e) => handleInputChange("nik", e.target.value)}
+              />
+            </div>
+
+            {/* Jenis Kelamin */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Jenis Kelamin</Label>
+              <Select value={formData.jenis_kelamin} onValueChange={(v) => handleInputChange("jenis_kelamin", v)}>
+                <SelectTrigger><SelectValue placeholder="Pilih jenis kelamin" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Laki - Laki">Laki - Laki</SelectItem>
+                  <SelectItem value="Perempuan">Perempuan</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Tanggal Lahir */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Tanggal Lahir</Label>
+              <Input
+                type="date"
+                value={formData.tanggal_lahir}
+                onChange={(e) => handleInputChange("tanggal_lahir", e.target.value)}
+              />
+            </div>
+
+            {/* Alamat */}
+            <div className="space-y-1.5 md:col-span-2">
+              <Label className="text-sm font-medium">Alamat</Label>
+              <Input
+                placeholder="Masukkan alamat lengkap"
+                value={formData.alamat}
+                onChange={(e) => handleInputChange("alamat", e.target.value)}
+              />
+            </div>
           </div>
 
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <p className="text-gray-500">Memuat data...</p>
+          <DialogFooter className="gap-2 mt-2">
+            <Button variant="outline" onClick={() => setShowAddForm(false)} disabled={isSubmitting}>
+              Batal
+            </Button>
+            <Button onClick={handleAddPosMitra} disabled={isSubmitting} className="bg-[#1e3a5f] hover:bg-[#152a45]">
+              {isSubmitting ? "Menyimpan..." : "Simpan Pos Mitra"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Main Table Card */}
+      <Card className="shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-xl font-semibold">Daftar Akun Pos Mitra</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {/* Filters */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="relative w-72">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+              <Input
+                placeholder="Cari nama, email, atau telepon..."
+                value={searchTerm}
+                onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                className="pl-10 h-10 bg-background border-border"
+              />
             </div>
-          ) : posMitraList.length === 0 ? (
-            <div className="flex items-center justify-center py-8">
-              <p className="text-gray-500">Belum ada data pos mitra</p>
+            <div className="flex items-center gap-3">
+              <Button className="gap-2 bg-primary hover:bg-primary/90" onClick={handleDownload} disabled={filteredData.length === 0}>
+                <Download size={18} />
+                Download
+              </Button>
+              <Button className="gap-2 bg-[#1e3a5f] hover:bg-[#152a45]" onClick={() => setShowAddForm(true)}>
+                <Plus size={18} />
+                Tambah Pos Mitra
+              </Button>
             </div>
-          ) : (
-            <>
-              {/* Table */}
-              <div className="border rounded-lg overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-gray-50">
-                      <TableHead className="w-12">NO</TableHead>
-                      <TableHead>NAMA</TableHead>
-                      <TableHead>EMAIL</TableHead>
-                      <TableHead>TELEPON</TableHead>
-                      <TableHead>STATUS VERIFIKASI</TableHead>
-                      <TableHead className="w-32 text-center">AKSI</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedData.map((item, index) => (
-                      <TableRow key={item.id} className="hover:bg-gray-50">
-                        <TableCell className="font-medium">
-                          {(currentPage - 1) * itemsPerPage + index + 1}
-                        </TableCell>
-                        <TableCell className="font-medium">{item.name}</TableCell>
-                        <TableCell>{item.email}</TableCell>
-                        <TableCell>{item.phone || "-"}</TableCell>
-                        <TableCell>
-                          {item.verifikasi_id ? (
-                            <span
-                              className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                item.verifikasi_status === "approved"
-                                  ? "bg-green-100 text-green-800"
-                                  : item.verifikasi_status === "rejected"
-                                  ? "bg-red-100 text-red-800"
-                                  : "bg-yellow-100 text-yellow-800"
-                              }`}
-                            >
-                              {item.verifikasi_status === "approved"
-                                ? "Terverifikasi"
-                                : item.verifikasi_status === "rejected"
-                                ? "Ditolak"
-                                : "Menunggu Verifikasi"}
-                            </span>
-                          ) : (
-                            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-800">
-                              Belum Ada
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell>
+          </div>
+
+          {/* Table */}
+          <div className="overflow-x-auto">
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <p className="text-muted-foreground">Memuat data...</p>
+              </div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-[#1e3a5f] text-white">
+                    <th className="text-left py-3 px-4 font-medium rounded-tl-lg">NO</th>
+                    <th className="text-left py-3 px-4 font-medium">NAMA</th>
+                    <th className="text-left py-3 px-4 font-medium">EMAIL</th>
+                    <th className="text-left py-3 px-4 font-medium">TELEPON</th>
+                    <th className="text-center py-3 px-4 font-medium">STATUS VERIFIKASI</th>
+                    <th className="text-center py-3 px-4 font-medium rounded-tr-lg">AKSI</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedData.length > 0 ? (
+                    paginatedData.map((item, index) => (
+                      <tr key={item.id} className="border-b border-border/50 hover:bg-muted/30">
+                        <td className="py-4 px-4">{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                        <td className="py-4 px-4 font-medium text-primary">{item.name || "-"}</td>
+                        <td className="py-4 px-4">{item.email || "-"}</td>
+                        <td className="py-4 px-4">{item.phone || "-"}</td>
+                        <td className="py-4 px-4 text-center">{getStatusBadge(item)}</td>
+                        <td className="py-4 px-4">
                           <div className="flex items-center justify-center gap-2">
                             <Button
                               variant="ghost"
-                              size="sm"
+                              size="icon"
+                              className="h-8 w-8 bg-[#1e3a5f] hover:bg-[#152a45]"
                               onClick={() => handleViewDetail(item)}
                               title="Lihat Detail"
                             >
-                              <Eye size={18} />
+                              <Eye size={18} className="text-white" />
                             </Button>
                             <Button
                               variant="ghost"
-                              size="sm"
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              size="icon"
+                              className="h-8 w-8 bg-red-500 hover:bg-red-600"
                               onClick={() => handleDelete(item)}
                               title="Hapus"
                             >
-                              <Trash2 size={18} />
+                              <Trash2 size={18} className="text-white" />
                             </Button>
                           </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-
-              {/* Pagination */}
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-600">
-                  Menampilkan{" "}
-                  {Math.min((currentPage - 1) * itemsPerPage + 1, filteredData.length)}{" "}
-                  sampai{" "}
-                  {Math.min(currentPage * itemsPerPage, filteredData.length)} dari{" "}
-                  {filteredData.length} entri
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                    disabled={currentPage === 1}
-                  >
-                    Sebelumnya
-                  </Button>
-
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                    (page) => (
-                      <Button
-                        key={page}
-                        variant={currentPage === page ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setCurrentPage(page)}
-                      >
-                        {page}
-                      </Button>
-                    )
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                        {posMitraList.length === 0 ? "Belum ada data pos mitra" : "Tidak ada data yang sesuai pencarian"}
+                      </td>
+                    </tr>
                   )}
+                </tbody>
+              </table>
+            )}
+          </div>
 
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                    }
-                    disabled={currentPage === totalPages}
-                  >
-                    Selanjutnya
-                  </Button>
-                </div>
+          {/* Pagination */}
+          {!isLoading && (
+            <div className="flex items-center justify-between mt-6">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Select value={entriesPerPage} onValueChange={(v) => { setEntriesPerPage(v); setCurrentPage(1); }}>
+                  <SelectTrigger className="w-16 h-8"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                  </SelectContent>
+                </Select>
+                <span>of {totalEntries} entries</span>
               </div>
-            </>
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" className="h-8 w-8" disabled={currentPage === 1} onClick={() => setCurrentPage(currentPage - 1)}>&lt;</Button>
+                {getPageNumbers().map((page, idx) =>
+                  typeof page === "number" ? (
+                    <Button key={idx} variant={currentPage === page ? "default" : "ghost"} size="icon" className={`h-8 w-8 ${currentPage === page ? "bg-primary text-white" : ""}`} onClick={() => setCurrentPage(page)}>{page}</Button>
+                  ) : (
+                    <span key={idx} className="px-2 text-muted-foreground">{page}</span>
+                  )
+                )}
+                <Button variant="ghost" size="icon" className="h-8 w-8" disabled={currentPage === totalPages || totalPages === 0} onClick={() => setCurrentPage(currentPage + 1)}>&gt;</Button>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>

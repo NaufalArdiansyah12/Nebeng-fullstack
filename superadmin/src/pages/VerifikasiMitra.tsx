@@ -51,16 +51,20 @@ const VerifikasiMitra = () => {
 
   // Filter data based on search and status filter
   const filteredData = useMemo(() => {
+    if (!verifikasiMitraList || verifikasiMitraList.length === 0) {
+      return [];
+    }
+    
     return verifikasiMitraList.filter((mitra) => {
       const matchesSearch = searchQuery === "" || 
-        mitra.namaLengkap.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        mitra.nikMitra.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        mitra.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        mitra.status.toLowerCase().includes(searchQuery.toLowerCase());
+        mitra.namaLengkap?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        mitra.nikMitra?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        mitra.id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        mitra.status?.toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchesStatus = 
         statusFilter === "SEMUA" ||
-        mitra.status.toUpperCase() === statusFilter.toUpperCase();
+        mitra.status?.toUpperCase() === statusFilter.toUpperCase();
 
       return matchesSearch && matchesStatus;
     });

@@ -38,21 +38,32 @@ const Banners = () => {
     }
   };
   useEffect(() => { loadData(); }, []);
-  // Normalize image URLs so admin panel (running in browser) can preview images
-  // even when backend returned 10.0.2.2 (Android emulator host).
+  // Normalize image URLs:
+  // - data: URL → return as-is
+  // - 10.0.2.2 (Android emulator) → replace with localhost
+  // - any host → repoint /uploads/... path to backend-express (port 3001)
   const resolveImageUrl = (url?: string) => {
     if (!url) return url;
-    // Don't touch data URLs
     if (url.startsWith('data:')) return url;
-    // If backend returned emulator host, replace with localhost (browser can access)
+
     try {
-      if (url.includes('10.0.2.2')) {
-        return url.replace(/https?:\/\/10\.0\.2\.2(:\d+)?/, `${window.location.protocol}//localhost$1`);
+      // Ganti emulator host 10.0.2.2 → localhost
+      let resolved = url.replace(/https?:\/\/10\.0\.2\.2(:\d+)?/g, 'http://localhost$1');
+
+      // Jika URL mengandung path /uploads/banners/... tapi host bukan localhost:3001,
+      // arahkan ulang ke backend-express yang sebenarnya serve file tsb
+      const parsed = new URL(resolved);
+      if (parsed.pathname.startsWith('/uploads/')) {
+        const backendBase = import.meta.env.VITE_API_URL
+          ? import.meta.env.VITE_API_URL.replace(/\/api\/?.*$/, '')
+          : 'http://localhost:3001';
+        resolved = `${backendBase}${parsed.pathname}`;
       }
-    } catch (e) {
-      // fallback return original
+
+      return resolved;
+    } catch {
+      return url;
     }
-    return url;
   };
   const RECOMMENDED_RATIO = 16 / 9;
   const RATIO_TOLERANCE = 0.12;

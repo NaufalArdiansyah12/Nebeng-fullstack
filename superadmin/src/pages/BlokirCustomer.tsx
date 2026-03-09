@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Calendar as CalendarIcon, Download, Eye, Trash2 } from "lucide-react";
+import { Search, Calendar as CalendarIcon, Download, Eye, Trash2, LockOpen } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -35,9 +35,12 @@ const BlokirCustomer = () => {
   const [showUnblockSuccess, setShowUnblockSuccess] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
 
-  // Filter only blocked customers
+  // Filter only blocked customers (case-insensitive and accept multiple variants)
   const blockedCustomers = useMemo(() => {
-    return customers.filter(customer => customer.status === "DIBLOCK");
+    return customers.filter(customer => {
+      const s = (customer.status || "").toString().toLowerCase();
+      return s === "diblock" || s === "blocked" || s === "suspended";
+    });
   }, [customers]);
 
   // Filter data based on search and date
@@ -79,8 +82,8 @@ const BlokirCustomer = () => {
   };
 
   // Unblock handlers
-  const handleUnblockClick = (id: number) => {
-    setSelectedCustomerId(id.toString());
+  const handleUnblockClick = (id: string) => {
+    setSelectedCustomerId(id);
     setShowUnblockConfirm(true);
   };
 
@@ -102,9 +105,9 @@ const BlokirCustomer = () => {
 
     const excelData = dataToExport.map(customer => ({
       "NO. ID": customer.id,
-      "NAMA": customer.nama,
+      "NAMA": customer.nama || customer.name || '-',
       "EMAIL": customer.email,
-      "NO. TLP": customer.no_tlp,
+      "NO. TLP": customer.no_tlp || customer.noTlp || '-',
       "STATUS": customer.status,
       "TANGGAL": format(customer.tanggal_daftar, "dd-MM-yyyy")
     }));
@@ -217,9 +220,9 @@ const BlokirCustomer = () => {
                   paginatedData.map((customer, index) => (
                     <tr key={index} className="border-b border-border/50 hover:bg-muted/30">
                       <td className="py-4 px-4">{customer.id}</td>
-                      <td className="py-4 px-4">{customer.nama}</td>
+                      <td className="py-4 px-4">{customer.nama || customer.name || '-'}</td>
                       <td className="py-4 px-4">{customer.email}</td>
-                      <td className="py-4 px-4">{customer.no_tlp}</td>
+                      <td className="py-4 px-4">{customer.no_tlp || customer.noTlp || '-'}</td>
                       <td className="py-4 px-4 text-center">
                         <Badge className="bg-red-500 hover:bg-red-600 text-white">
                           BLOCK
@@ -235,13 +238,14 @@ const BlokirCustomer = () => {
                           >
                             <Eye size={18} className="text-white" />
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 bg-orange-500 hover:bg-orange-600"
-                            onClick={() => handleUnblockClick(customer.id)}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 bg-green-600 hover:bg-green-700"
+                            onClick={() => handleUnblockClick(customer.id.toString ? customer.id.toString() : String(customer.id))}
+                            title="Unblock Customer"
                           >
-                            <Trash2 size={18} className="text-white" />
+                            <LockOpen size={18} className="text-white" />
                           </Button>
                         </div>
                       </td>

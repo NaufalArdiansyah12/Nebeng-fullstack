@@ -91,7 +91,15 @@ class ChatService {
         if (aTime == null && bTime == null) return 0;
         if (aTime == null) return 1;
         if (bTime == null) return -1;
-        return (bTime as Timestamp).compareTo(aTime as Timestamp);
+
+        // Safely handle Timestamp comparison
+        if (aTime is Timestamp && bTime is Timestamp) {
+          return bTime.compareTo(aTime);
+        } else if (aTime is String && bTime is String) {
+          return bTime.compareTo(aTime);
+        } else {
+          return 0;
+        }
       });
 
       return conversations;
@@ -292,14 +300,7 @@ class ChatService {
     required String conversationId,
   }) async {
     try {
-      print('📤 Sending chat notification to backend...');
-      print('   Sender: $senderId ($senderName)');
-      print('   Recipient: $recipientId');
-      print(
-          '   Message: ${messageText.substring(0, messageText.length > 50 ? 50 : messageText.length)}...');
-
       final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/chat/notify');
-      print('   URL: $uri');
 
       final response = await http.post(
         uri,
@@ -315,17 +316,7 @@ class ChatService {
           'conversation_id': conversationId,
         }),
       );
-
-      print('   Response status: ${response.statusCode}');
-      print('   Response body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        print('✅ Chat notification sent successfully');
-      } else {
-        print('⚠️ Failed to send chat notification: ${response.statusCode}');
-      }
     } catch (e) {
-      print('❌ Error sending chat notification: $e');
       // Don't throw error - notification failure shouldn't block message sending
     }
   }

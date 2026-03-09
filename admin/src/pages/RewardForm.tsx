@@ -56,17 +56,13 @@ const RewardForm = () => {
     if (!url) return url;
     if (url.startsWith("data:")) return url;
     try {
-      // If backend sent a relative uploads path (e.g. "/uploads/.."),
-      // prefix it with admin API origin so the browser requests the file from the backend.
-      if (url.startsWith('/uploads')) {
-        const apiBase = (import.meta.env.VITE_API_URL as string) || 'http://localhost:3001/api';
-        const origin = apiBase.replace(/\/api\/?$/, '');
-        return `${origin}${url}`;
+      let resolved = url.replace(/https?:\/\/10\.0\.2\.2(:\d+)?/g, 'http://localhost$1');
+      const parsed = new URL(resolved, window.location.origin);
+      if (parsed.pathname.startsWith('/uploads/')) {
+        const backendBase = (import.meta.env.VITE_API_URL as string || 'http://localhost:3001/api').replace(/\/api\/?.*$/, '');
+        return `${backendBase}${parsed.pathname}`;
       }
-
-      if (url.includes("10.0.2.2")) {
-        return url.replace(/https?:\/\/10\.0\.2\.2(:\d+)?/, `${window.location.protocol}//localhost$1`);
-      }
+      return resolved;
     } catch (e) {}
     return url;
   };

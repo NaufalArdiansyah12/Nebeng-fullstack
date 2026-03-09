@@ -14,6 +14,9 @@ import {
   ChevronRight,
   ChevronDown,
   MapPin,
+  Image,
+  Gift,
+  UserCog,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -59,12 +62,21 @@ const mainMenuItems: MenuItem[] = [
     children: [
       { title: "Daftar Pos Mitra", path: "/dashboard/pos-mitra" },
       { title: "Terminal", path: "/dashboard/pos-mitra-by-location" },
+      { title: "Pengaturan QR Bypass", path: "/dashboard/qr-bypass-settings" },
     ],
   },
   { title: "Pesanan", icon: ShoppingCart, path: "/dashboard/pesanan" },
   { title: "Refund", icon: RotateCcw, path: "/dashboard/refund" },
   { title: "Laporan", icon: BarChart3, path: "/dashboard/laporan" },
-
+  { title: "Banner", icon: Image, path: "/dashboard/banners" },
+  {
+    title: "Reward",
+    icon: Gift,
+    children: [
+      { title: "Katalog Reward", path: "/dashboard/reward/catalog" },
+    ],
+  },
+  { title: "Manajemen Admin", icon: UserCog, path: "/dashboard/manajemen-admin" },
 ];
 
 const supportMenuItems: MenuItem[] = [

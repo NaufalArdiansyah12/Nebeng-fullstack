@@ -25,4 +25,12 @@ class Location extends Model
     {
         return $this->hasMany(PosMitraUser::class, 'location_id');
     }
+
+    /**
+     * Get the QR bypass setting for this location
+     */
+    public function qrBypassSetting()
+    {
+        return $this->hasOne(LocationQRBypassSetting::class);
+    }
 }

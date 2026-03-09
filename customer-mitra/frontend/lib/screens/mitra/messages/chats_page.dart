@@ -322,24 +322,15 @@ class _MitraChatsPageState extends State<MitraChatsPage>
             final customerPhoto = conv['customerPhoto'] as String?;
             final lastMessage = conv['lastMessage'] as String? ?? '';
             final unreadCount = conv['unreadMitra'] as int? ?? 0;
-            final lastMessageAt = conv['lastMessageAt'] as Timestamp?;
+            final lastMessageAtRaw = conv['lastMessageAt'];
+            final lastMessageAt =
+                lastMessageAtRaw is Timestamp ? lastMessageAtRaw : null;
             final bookingType = conv['bookingType'] as String? ?? 'motor';
             final conversationContext = conv['context'] as String?;
             final otherUserRole = conv['otherUserRole'] as String?;
 
-            // Debug: Print photo data for first conversation
-            if (index == 0) {
-              print('🔍 [MITRA] First conversation data:');
-              print('  - Conversation ID: $conversationId');
-              print('  - Customer name: $customerName');
-              print('  - Customer photo: $customerPhoto');
-              print('  - Full conv data: ${conv.keys}');
-            }
-
-            // Determine if this is pos mitra conversation
             final isPosMitra = otherUserRole == 'posmitra';
 
-            // Create display name with context
             String displayName = customerName;
             if (isPosMitra && conversationContext != null) {
               displayName = '$customerName ($conversationContext)';
@@ -379,177 +370,328 @@ class _MitraChatsPageState extends State<MitraChatsPage>
               }
             }
 
-            return InkWell(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => MitraChatDetailPage(
-                      conversationId: conversationId,
-                      otherUserName: customerName,
-                      otherUserPhoto: customerPhoto,
-                      bookingType: bookingType,
-                      isPosMitra: isPosMitra,
-                    ),
-                  ),
-                );
-              },
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(color: Colors.grey[300]!, width: 0.5),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    // Avatar
-                    Stack(
-                      children: [
-                        CircleAvatar(
-                          radius: 28,
-                          backgroundColor: isPosMitra
-                              ? Color(0xFFEC4899)
-                              : Color(0xFF0F4AA3),
-                          backgroundImage:
-                              customerPhoto != null && customerPhoto.isNotEmpty
-                                  ? NetworkImage(customerPhoto)
-                                  : null,
-                          child: customerPhoto == null || customerPhoto.isEmpty
-                              ? Icon(
-                                  isPosMitra ? Icons.store : Icons.person,
-                                  color: Colors.white,
-                                  size: 24,
-                                )
-                              : null,
+            return Dismissible(
+              key: Key(conversationId),
+              direction: DismissDirection.endToStart,
+              confirmDismiss: (direction) async {
+                return await showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return Dialog(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Container(
+                        padding: EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
                         ),
-                        if (isPosMitra)
-                          Positioned(
-                            right: 0,
-                            bottom: 0,
-                            child: Container(
-                              width: 18,
-                              height: 18,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 80,
+                              height: 80,
                               decoration: BoxDecoration(
-                                color: Color(0xFFEC4899),
+                                color: Colors.red.shade50,
                                 shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Colors.white,
-                                  width: 2,
-                                ),
                               ),
                               child: Icon(
-                                Icons.location_on,
-                                size: 10,
-                                color: Colors.white,
+                                Icons.delete_outline_rounded,
+                                size: 40,
+                                color: Colors.red.shade600,
                               ),
                             ),
-                          ),
-                      ],
-                    ),
-                    SizedBox(width: 12),
-
-                    // Content
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      displayName,
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: unreadCount > 0
-                                            ? FontWeight.w600
-                                            : FontWeight.w500,
-                                        color: Colors.black87,
+                            SizedBox(height: 20),
+                            Text(
+                              'Hapus Percakapan',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            SizedBox(height: 12),
+                            Text(
+                              'Apakah Anda yakin ingin menghapus percakapan ini? Tindakan ini tidak dapat dibatalkan.',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey.shade600,
+                                height: 1.5,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            SizedBox(height: 24),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton(
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(false),
+                                    style: OutlinedButton.styleFrom(
+                                      padding:
+                                          EdgeInsets.symmetric(vertical: 14),
+                                      side: BorderSide(
+                                          color: Colors.grey.shade300),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
                                       ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                    if (isPosMitra)
-                                      Text(
-                                        'Pos Mitra',
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          color: Color(0xFFEC4899),
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                              if (timeText.isNotEmpty)
-                                Text(
-                                  timeText,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: unreadCount > 0
-                                        ? Color(0xFF0F4AA3)
-                                        : Colors.grey,
-                                    fontWeight: unreadCount > 0
-                                        ? FontWeight.w600
-                                        : FontWeight.normal,
-                                  ),
-                                ),
-                            ],
-                          ),
-                          SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  lastMessage.isEmpty
-                                      ? 'Belum ada pesan'
-                                      : lastMessage,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: lastMessage.isEmpty
-                                        ? Colors.grey[400]
-                                        : Colors.grey[600],
-                                    fontWeight: unreadCount > 0
-                                        ? FontWeight.w500
-                                        : FontWeight.normal,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              if (unreadCount > 0) ...[
-                                SizedBox(width: 8),
-                                Container(
-                                  width: 20,
-                                  height: 20,
-                                  decoration: BoxDecoration(
-                                    color: Color(0xFFEC4899),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Center(
                                     child: Text(
-                                      unreadCount > 9
-                                          ? '9+'
-                                          : unreadCount.toString(),
+                                      'Batal',
                                       style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 10,
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.grey.shade700,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: 12),
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(true),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.red.shade600,
+                                      foregroundColor: Colors.white,
+                                      padding:
+                                          EdgeInsets.symmetric(vertical: 14),
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'Hapus',
+                                      style: TextStyle(
+                                        fontSize: 15,
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                   ),
                                 ),
                               ],
-                            ],
-                          ),
-                        ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+              onDismissed: (direction) async {
+                try {
+                  await FirebaseFirestore.instance
+                      .collection('conversations')
+                      .doc(conversationId)
+                      .delete();
+
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Percakapan berhasil dihapus'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Gagal menghapus percakapan'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+              background: Container(
+                alignment: Alignment.centerRight,
+                padding: EdgeInsets.only(right: 20),
+                color: Colors.red,
+                child: Icon(
+                  Icons.delete,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
+              child: InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => MitraChatDetailPage(
+                        conversationId: conversationId,
+                        otherUserName: customerName,
+                        otherUserPhoto: customerPhoto,
+                        bookingType: bookingType,
+                        isPosMitra: isPosMitra,
                       ),
                     ),
-                  ],
+                  );
+                },
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: Colors.grey[300]!, width: 0.5),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      // Avatar
+                      Stack(
+                        children: [
+                          CircleAvatar(
+                            radius: 28,
+                            backgroundColor: isPosMitra
+                                ? Color(0xFFEC4899)
+                                : Color(0xFF0F4AA3),
+                            backgroundImage: customerPhoto != null &&
+                                    customerPhoto.isNotEmpty
+                                ? NetworkImage(customerPhoto)
+                                : null,
+                            child:
+                                customerPhoto == null || customerPhoto.isEmpty
+                                    ? Icon(
+                                        isPosMitra ? Icons.store : Icons.person,
+                                        color: Colors.white,
+                                        size: 24,
+                                      )
+                                    : null,
+                          ),
+                          if (isPosMitra)
+                            Positioned(
+                              right: 0,
+                              bottom: 0,
+                              child: Container(
+                                width: 18,
+                                height: 18,
+                                decoration: BoxDecoration(
+                                  color: Color(0xFFEC4899),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: Icon(
+                                  Icons.location_on,
+                                  size: 10,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      SizedBox(width: 12),
+
+                      // Content
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        displayName,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: unreadCount > 0
+                                              ? FontWeight.w600
+                                              : FontWeight.w500,
+                                          color: Colors.black87,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      if (isPosMitra)
+                                        Text(
+                                          'Pos Mitra',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: Color(0xFFEC4899),
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                if (timeText.isNotEmpty)
+                                  Text(
+                                    timeText,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: unreadCount > 0
+                                          ? Color(0xFF0F4AA3)
+                                          : Colors.grey,
+                                      fontWeight: unreadCount > 0
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    lastMessage.isEmpty
+                                        ? 'Belum ada pesan'
+                                        : lastMessage,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: lastMessage.isEmpty
+                                          ? Colors.grey[400]
+                                          : Colors.grey[600],
+                                      fontWeight: unreadCount > 0
+                                          ? FontWeight.w500
+                                          : FontWeight.normal,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (unreadCount > 0) ...[
+                                  SizedBox(width: 8),
+                                  Container(
+                                    width: 20,
+                                    height: 20,
+                                    decoration: BoxDecoration(
+                                      color: Color(0xFFEC4899),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        unreadCount > 9
+                                            ? '9+'
+                                            : unreadCount.toString(),
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );

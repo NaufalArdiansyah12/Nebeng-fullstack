@@ -8,7 +8,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'services/shared/notification_service.dart';
 import 'models/user_role.dart';
-import 'screens/auth/splash_screen.dart';
+import 'screens/auth/loading_screen.dart';
+import 'screens/auth/onboarding_screen.dart';
 import 'screens/customer/main_page.dart';
 import 'screens/mitra/main_page.dart';
 import 'screens/posmitra/main_page.dart';
@@ -51,7 +52,7 @@ Future<void> main() async {
     try {
       await NotificationService.init();
     } catch (e, st) {
-      print('NotificationService.init error: $e\n$st');
+      // Notification service init failed
     }
 
     try {
@@ -65,7 +66,6 @@ Future<void> main() async {
 
       // Get token and (optionally) send to backend
       final token = await messaging.getToken();
-      print('FCM token: $token');
       try {
         final prefs = await SharedPreferences.getInstance();
         final apiToken = prefs.getString('api_token');
@@ -87,7 +87,6 @@ Future<void> main() async {
       // Listen for token refreshes and update backend when it happens
       FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
         try {
-          print('FCM token refreshed: $newToken');
           final prefs = await SharedPreferences.getInstance();
           final apiToken = prefs.getString('api_token');
           if (newToken != null && apiToken != null && apiToken.isNotEmpty) {
@@ -107,9 +106,6 @@ Future<void> main() async {
 
       // Foreground message handler
       FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
-        print('📨 FCM message received in foreground');
-        print('   Data: ${message.data}');
-
         final n = message.notification;
         final msgId = message.messageId ??
             message.data['message_id'] ??
@@ -119,9 +115,6 @@ Future<void> main() async {
         final notificationType = message.data['type'];
 
         if (n != null) {
-          print('   Title: ${n.title}');
-          print('   Body: ${n.body}');
-
           // Use 'chat' channel for chat messages, default for others
           final channelType =
               notificationType == 'chat_message' ? 'chat' : null;
@@ -132,27 +125,14 @@ Future<void> main() async {
             body: n.body ?? '',
             channelType: channelType,
           );
-        } else {
-          print('   No notification payload, data only');
-        }
-
-        // Log for debugging
-        if (notificationType == 'chat_message') {
-          print('   Type: Chat Message');
-          print('   Sender: ${message.data['sender_name']}');
-          print('   Conversation: ${message.data['conversation_id']}');
         }
       });
 
       // Background message handler (when app is in background but not terminated)
       FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-        print('📬 Notification opened from background');
         final notificationType = message.data['type'];
 
         if (notificationType == 'chat_message') {
-          final conversationId = message.data['conversation_id'];
-          final senderName = message.data['sender_name'];
-          print('   Opening chat: $conversationId with $senderName');
           // TODO: Navigate to chat page when app opens
           // This will be handled in the app's navigation logic
         }
@@ -162,17 +142,14 @@ Future<void> main() async {
       final initialMessage =
           await FirebaseMessaging.instance.getInitialMessage();
       if (initialMessage != null) {
-        print('📭 App opened from notification (terminated state)');
         final notificationType = initialMessage.data['type'];
 
         if (notificationType == 'chat_message') {
-          final conversationId = initialMessage.data['conversation_id'];
-          print('   Should open chat: $conversationId');
           // TODO: Store this to navigate after app initializes
         }
       }
     } catch (e, st) {
-      print('Firebase messaging init error: $e\n$st');
+      // Firebase messaging init failed
     }
   }
 
@@ -226,8 +203,8 @@ class _AuthCheckerState extends State<AuthChecker> {
   }
 
   Future<void> _checkAuth() async {
-    // Tunggu sebentar agar tidak flicker
-    await Future.delayed(const Duration(milliseconds: 100));
+    // Hapus delay agar langsung cepat
+    // await Future.delayed(const Duration(milliseconds: 100));
 
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('api_token');
@@ -257,48 +234,17 @@ class _AuthCheckerState extends State<AuthChecker> {
         );
       }
     } else {
-      // User belum login, redirect ke splash screen
+      // User belum login, redirect ke onboarding screen
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const SplashScreen()),
+        MaterialPageRoute(builder: (context) => const OnboardingScreen()),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Tampilkan splash yang sama dengan splash login
-    return Scaffold(
-      backgroundColor: const Color(0xFF1D4ED8),
-      body: SafeArea(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text(
-                'Nebeng',
-                style: TextStyle(
-                  fontSize: 56,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
-                  letterSpacing: 0,
-                  height: 1,
-                ),
-              ),
-              const SizedBox(height: 40),
-              const SizedBox(
-                width: 40,
-                height: 40,
-                child: CircularProgressIndicator(
-                  strokeWidth: 3,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    return const LoadingScreen();
   }
 }
 

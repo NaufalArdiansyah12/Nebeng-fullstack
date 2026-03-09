@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:google_sign_in/google_sign_in.dart';
 import 'api_config.dart';
 
 /// Custom exception for blocked users
@@ -158,5 +159,69 @@ class AuthService {
       return body['success'] ?? false;
     }
     return false;
+  }
+
+  /// Login or Register with Google.
+  /// Returns the same map structure as [login]: { 'user': {...}, 'token': '...' }
+  static Future<Map<String, dynamic>> loginWithGoogle() async {
+    final googleSignIn = GoogleSignIn(
+      scopes: ['email', 'profile'],
+    );
+
+    // Sign out first to always show account picker
+    await googleSignIn.signOut();
+
+    final googleUser = await googleSignIn.signIn();
+    if (googleUser == null) {
+      throw Exception('Google Sign-In dibatalkan');
+    }
+
+    final googleAuth = await googleUser.authentication;
+    final idToken = googleAuth.idToken;
+
+    if (idToken == null) {
+      throw Exception('Gagal mendapatkan ID token dari Google');
+    }
+
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/auth/google');
+    final resp = await http.post(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode({'id_token': idToken}),
+    );
+
+    if (resp.statusCode == 200) {
+      final body = json.decode(resp.body);
+      if (body is Map && body['success'] == true && body['data'] != null) {
+        return Map<String, dynamic>.from(body['data']);
+      }
+      throw Exception('Unexpected Google auth response');
+    } else if (resp.statusCode == 403) {
+      try {
+        final body = json.decode(resp.body);
+        final reason = body['data']?['reason'] ?? 'Akun Anda telah diblokir';
+        final blockedAtStr = body['data']?['blocked_at'];
+        DateTime? blockedAt;
+        if (blockedAtStr != null) {
+          try {
+            blockedAt = DateTime.parse(blockedAtStr);
+          } catch (_) {}
+        }
+        throw UserBlockedException(reason: reason, blockedAt: blockedAt);
+      } catch (e) {
+        if (e is UserBlockedException) rethrow;
+        throw UserBlockedException(
+          reason: 'Akun Anda telah diblokir. Hubungi customer support.',
+        );
+      }
+    } else {
+      final preview =
+          resp.body.length > 300 ? resp.body.substring(0, 300) : resp.body;
+      throw Exception(
+          'Google auth failed: ${resp.statusCode}. Preview: $preview');
+    }
   }
 }

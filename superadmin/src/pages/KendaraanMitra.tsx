@@ -1,16 +1,20 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Calendar as CalendarIcon, Download, Eye, Edit, RefreshCw } from "lucide-react";
+import { Search, Calendar as CalendarIcon, Download, Eye, Edit, RefreshCw, Check, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import * as XLSX from "xlsx";
 import { useKendaraanMitra } from "@/contexts/KendaraanMitraContext";
+import { mitraApi } from "@/services/api";
+import { useToast } from "@/hooks/use-toast";
 import {
   Select,
   SelectContent,
@@ -19,16 +23,37 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-// Ganti import ini dengan auth context kamu yang sebenarnya
-// import { useAuth } from "@/contexts/AuthContext";
+const getStatusBadge = (status: string) => {
+  switch (status?.toLowerCase()) {
+    case "approved":
+    case "active":
+      return <Badge className="bg-green-500 hover:bg-green-600 text-white text-xs">AKTIF</Badge>;
+    case "pending":
+      return <Badge className="bg-yellow-500 hover:bg-yellow-600 text-white text-xs">MENUNGGU</Badge>;
+    case "rejected":
+      return <Badge className="bg-red-500 hover:bg-red-600 text-white text-xs">DITOLAK</Badge>;
+    case "deletion_pending":
+      return <Badge className="bg-orange-500 hover:bg-orange-600 text-white text-xs">HAPUS PENDING</Badge>;
+    default:
+      return <Badge className="bg-gray-500 text-white text-xs">{status?.toUpperCase()}</Badge>;
+  }
+};
 
 const KendaraanMitra = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { kendaraanMitraList, loading, error, fetchAllKendaraan } = useKendaraanMitra();
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [entriesPerPage, setEntriesPerPage] = useState("10");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  
+  // Modal states
+  const [showApproveModal, setShowApproveModal] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedKendaraanId, setSelectedKendaraanId] = useState<string | null>(null);
+  const [selectedKendaraanInfo, setSelectedKendaraanInfo] = useState<{ merk: string; plat: string } | null>(null);
 
   // Initial fetch — fetch semua kendaraan dari semua mitra dengan role 'mitra'
   useEffect(() => {
@@ -37,6 +62,102 @@ const KendaraanMitra = () => {
 
   const handleManualRefresh = () => {
     fetchAllKendaraan();
+  };
+
+  // Show modal konfirmasi approve
+  const showApproveConfirm = (kendaraanId: string, merk: string, plat: string) => {
+    setSelectedKendaraanId(kendaraanId);
+    setSelectedKendaraanInfo({ merk, plat });
+    setShowApproveModal(true);
+  };
+
+  // Show modal konfirmasi reject
+  const showRejectConfirm = (kendaraanId: string, merk: string, plat: string) => {
+    setSelectedKendaraanId(kendaraanId);
+    setSelectedKendaraanInfo({ merk, plat });
+    setShowRejectModal(true);
+  };
+
+  // Show modal konfirmasi delete
+  const showDeleteConfirm = (kendaraanId: string, merk: string, plat: string) => {
+    setSelectedKendaraanId(kendaraanId);
+    setSelectedKendaraanInfo({ merk, plat });
+    setShowDeleteModal(true);
+  };
+
+  // Handle Approve Kendaraan
+  const handleApprove = async () => {
+    if (!selectedKendaraanId) return;
+    
+    try {
+      await mitraApi.approveKendaraan(selectedKendaraanId);
+      toast({
+        title: "Berhasil",
+        description: "Kendaraan telah disetujui",
+      });
+      setShowApproveModal(false);
+      fetchAllKendaraan(); // Refresh data
+    } catch (error) {
+      console.error("Failed to approve kendaraan:", error);
+      toast({
+        title: "Gagal",
+        description: "Gagal menyetujui kendaraan",
+        variant: "destructive",
+      });
+    } finally {
+      setSelectedKendaraanId(null);
+      setSelectedKendaraanInfo(null);
+    }
+  };
+
+  // Handle Reject Kendaraan
+  const handleReject = async () => {
+    if (!selectedKendaraanId) return;
+    
+    try {
+      await mitraApi.rejectKendaraan(selectedKendaraanId);
+      toast({
+        title: "Berhasil",
+        description: "Kendaraan telah ditolak",
+      });
+      setShowRejectModal(false);
+      fetchAllKendaraan(); // Refresh data
+    } catch (error) {
+      console.error("Failed to reject kendaraan:", error);
+      toast({
+        title: "Gagal",
+        description: "Gagal menolak kendaraan",
+        variant: "destructive",
+      });
+    } finally {
+      setSelectedKendaraanId(null);
+      setSelectedKendaraanInfo(null);
+    }
+  };
+
+  // Handle Approve Deletion
+  const handleApproveDeletion = async () => {
+    if (!selectedKendaraanId) return;
+    
+    try {
+      await mitraApi.deleteKendaraan(selectedKendaraanId);
+      toast({
+        title: "Berhasil",
+        description: "Permintaan penghapusan telah disetujui",
+      });
+      setShowDeleteModal(false);
+      fetchAllKendaraan(); // Refresh data
+    } catch (error) {
+      console.error("Failed to approve deletion:", error);
+      toast({
+        title: "Gagal",
+        description: "Gagal menyetujui penghapusan",
+        variant: "destructive",
+      });
+    } finally {
+      setSelectedKendaraanId(null);
+      setSelectedKendaraanInfo(null);
+    }
   };
 
   // Filter
@@ -201,13 +322,14 @@ const KendaraanMitra = () => {
                   <th className="text-left py-3 px-4 font-medium">PLAT NOMOR</th>
                   <th className="text-left py-3 px-4 font-medium">WARNA</th>
                   <th className="text-left py-3 px-4 font-medium">TAHUN</th>
+                  <th className="text-left py-3 px-4 font-medium">STATUS</th>
                   <th className="text-center py-3 px-4 font-medium rounded-tr-lg">AKSI</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="py-8 text-center text-gray-500">
+                    <td colSpan={8} className="py-8 text-center text-gray-500">
                       <div className="flex flex-col items-center gap-2">
                         <RefreshCw className="animate-spin" size={24} />
                         <p>Memuat data...</p>
@@ -216,7 +338,7 @@ const KendaraanMitra = () => {
                   </tr>
                 ) : error ? (
                   <tr>
-                    <td colSpan={7} className="py-8 text-center">
+                    <td colSpan={8} className="py-8 text-center">
                       <div className="text-red-500">
                         <p className="font-semibold">Error: {error}</p>
                         <Button onClick={handleManualRefresh} variant="outline" size="sm" className="mt-3">
@@ -234,8 +356,10 @@ const KendaraanMitra = () => {
                       <td className="py-4 px-4">{kendaraan.platNomor}</td>
                       <td className="py-4 px-4">{kendaraan.warna}</td>
                       <td className="py-4 px-4">{kendaraan.tahun}</td>
+                      <td className="py-4 px-4">{getStatusBadge(kendaraan.status)}</td>
                       <td className="py-4 px-4">
                         <div className="flex items-center justify-center gap-2">
+                          {/* Tombol View selalu tampil */}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -244,14 +368,55 @@ const KendaraanMitra = () => {
                           >
                             <Eye size={18} className="text-white" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 bg-orange-500 hover:bg-orange-600"
-                            onClick={() => navigate(`/dashboard/mitra-kendaraan/${kendaraan.id}?edit=true`)}
-                          >
-                            <Edit size={18} className="text-white" />
-                          </Button>
+                          
+                          {/* Jika status pending, tampilkan tombol Approve & Reject */}
+                          {kendaraan.status?.toLowerCase() === 'pending' && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 bg-green-500 hover:bg-green-600"
+                                onClick={() => showApproveConfirm(kendaraan.id, kendaraan.merkKendaraan, kendaraan.platNomor)}
+                                title="Setujui Kendaraan"
+                              >
+                                <Check size={18} className="text-white" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 bg-red-500 hover:bg-red-600"
+                                onClick={() => showRejectConfirm(kendaraan.id, kendaraan.merkKendaraan, kendaraan.platNomor)}
+                                title="Tolak Kendaraan"
+                              >
+                                <X size={18} className="text-white" />
+                              </Button>
+                            </>
+                          )}
+                          
+                          {/* Jika status deletion_pending, tampilkan tombol Approve Delete */}
+                          {kendaraan.status?.toLowerCase() === 'deletion_pending' && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 bg-red-500 hover:bg-red-600"
+                              onClick={() => showDeleteConfirm(kendaraan.id, kendaraan.merkKendaraan, kendaraan.platNomor)}
+                              title="Setujui Penghapusan"
+                            >
+                              <Check size={18} className="text-white" />
+                            </Button>
+                          )}
+                          
+                          {/* Jika status approved/active, tampilkan tombol Edit */}
+                          {(kendaraan.status?.toLowerCase() === 'approved' || kendaraan.status?.toLowerCase() === 'active') && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 bg-orange-500 hover:bg-orange-600"
+                              onClick={() => navigate(`/dashboard/mitra-kendaraan/${kendaraan.id}?edit=true`)}
+                            >
+                              <Edit size={18} className="text-white" />
+                            </Button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -314,6 +479,102 @@ const KendaraanMitra = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Modal Konfirmasi Approve */}
+      <Dialog open={showApproveModal} onOpenChange={setShowApproveModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Konfirmasi Persetujuan</DialogTitle>
+            <DialogDescription>
+              Apakah Anda yakin ingin menyetujui kendaraan ini?
+            </DialogDescription>
+          </DialogHeader>
+          {selectedKendaraanInfo && (
+            <div className="py-4">
+              <p className="text-sm text-muted-foreground mb-2">Detail Kendaraan:</p>
+              <div className="bg-muted p-3 rounded-md space-y-1">
+                <p className="text-sm"><span className="font-medium">Merk:</span> {selectedKendaraanInfo.merk}</p>
+                <p className="text-sm"><span className="font-medium">Plat Nomor:</span> {selectedKendaraanInfo.plat}</p>
+              </div>
+              <p className="text-sm text-muted-foreground mt-3">
+                Kendaraan yang disetujui akan dapat digunakan oleh mitra untuk menerima pesanan.
+              </p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowApproveModal(false)}>
+              Batal
+            </Button>
+            <Button className="bg-green-500 hover:bg-green-600" onClick={handleApprove}>
+              Ya, Setujui
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Konfirmasi Reject */}
+      <Dialog open={showRejectModal} onOpenChange={setShowRejectModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Konfirmasi Penolakan</DialogTitle>
+            <DialogDescription>
+              Apakah Anda yakin ingin menolak kendaraan ini?
+            </DialogDescription>
+          </DialogHeader>
+          {selectedKendaraanInfo && (
+            <div className="py-4">
+              <p className="text-sm text-muted-foreground mb-2">Detail Kendaraan:</p>
+              <div className="bg-muted p-3 rounded-md space-y-1">
+                <p className="text-sm"><span className="font-medium">Merk:</span> {selectedKendaraanInfo.merk}</p>
+                <p className="text-sm"><span className="font-medium">Plat Nomor:</span> {selectedKendaraanInfo.plat}</p>
+              </div>
+              <p className="text-sm text-red-600 mt-3 font-medium">
+                ⚠️ Kendaraan yang ditolak tidak akan dapat digunakan oleh mitra.
+              </p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRejectModal(false)}>
+              Batal
+            </Button>
+            <Button variant="destructive" onClick={handleReject}>
+              Ya, Tolak
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Konfirmasi Delete */}
+      <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Konfirmasi Penghapusan</DialogTitle>
+            <DialogDescription>
+              Apakah Anda yakin ingin menyetujui penghapusan kendaraan ini?
+            </DialogDescription>
+          </DialogHeader>
+          {selectedKendaraanInfo && (
+            <div className="py-4">
+              <p className="text-sm text-muted-foreground mb-2">Detail Kendaraan:</p>
+              <div className="bg-muted p-3 rounded-md space-y-1">
+                <p className="text-sm"><span className="font-medium">Merk:</span> {selectedKendaraanInfo.merk}</p>
+                <p className="text-sm"><span className="font-medium">Plat Nomor:</span> {selectedKendaraanInfo.plat}</p>
+              </div>
+              <p className="text-sm text-red-600 mt-3 font-medium">
+                ⚠️ Data kendaraan akan dihapus secara permanen dari sistem.
+              </p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteModal(false)}>
+              Batal
+            </Button>
+            <Button variant="destructive" onClick={handleApproveDeletion}>
+              Ya, Hapus
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -23,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'check.user.status' => \App\Http\Middleware\CheckUserStatus::class,
             'admin.auth' => \App\Http\Middleware\AdminAuthMiddleware::class,
+            'auth.api.token' => \App\Http\Middleware\AuthenticateWithApiToken::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -1,6 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import '../../services/api_service.dart';
+import '../../services/shared/auth_service.dart';
+import '../../models/user_role.dart';
+import '../customer/main_page.dart';
+import '../mitra/main_page.dart';
+import '../posmitra/main_page.dart';
+import 'blocked_user_page.dart';
 import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -126,6 +134,93 @@ class _RegisterScreenState extends State<RegisterScreen> {
           _isLoading = false;
         });
       }
+    }
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final data = await ApiService.loginWithGoogle();
+
+      final token = data['token'] as String?;
+      final user = data['user'] as Map<String, dynamic>?;
+      final role = user?['role'] as String? ?? 'customer';
+
+      if (token != null) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('api_token', token);
+        await prefs.setString('user_role', role);
+        if (user != null && user['id'] != null) {
+          final userId = user['id'];
+          if (userId is int) {
+            await prefs.setInt('user_id', userId);
+          } else if (userId is String) {
+            await prefs.setInt('user_id', int.parse(userId));
+          } else {
+            await prefs.setInt('user_id', (userId as num).toInt());
+          }
+        }
+        if (user != null && user['name'] != null) {
+          await prefs.setString('user_name', user['name'] as String);
+        }
+      }
+
+      if (mounted) {
+        _showResultDialog(
+          title: 'Berhasil!',
+          message: 'Selamat datang, ${(data['user'] as Map?)?['name'] ?? ''}!',
+          icon: Icons.check_circle_outline,
+          iconColor: Colors.green,
+          onClose: () {
+            final userRole = UserRole.fromString(role);
+            if (userRole.isMitra) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const MitraMainPage()),
+              );
+            } else if (userRole.isPosMitra) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const PosMitraMainPage()),
+              );
+            } else {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const MainPage()),
+              );
+            }
+          },
+        );
+      }
+    } on UserBlockedException catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => BlockedUserPage(
+              reason: e.reason,
+              blockedAt: e.blockedAt,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        final msg = e.toString().contains('dibatalkan')
+            ? 'Login dengan Google dibatalkan.'
+            : 'Login dengan Google gagal. Silakan coba lagi.';
+        _showResultDialog(
+          title: 'Gagal',
+          message: msg,
+          icon: Icons.error_outline,
+          iconColor: Colors.red,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -571,16 +666,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                       // Google button
                       GestureDetector(
-                        onTap: () {
-                          // TODO: Implement Google login
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content:
-                                  Text('Google login akan segera tersedia'),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                        },
+                        onTap: _isLoading ? null : _handleGoogleSignIn,
                         child: Container(
                           width: 88,
                           height: 56,

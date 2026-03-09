@@ -12,33 +12,75 @@ class CustomerController extends Controller
     /**
      * Get all customers
      * GET /api/admin/customers
+     * 
+     * Query params:
+     * - per_page: jumlah data per halaman (default: 10)
+     * - status_filter: AKTIF (tidak blocked), SEMUA (semua customer), DIBLOCK (hanya blocked)
+     * - search: pencarian nama, email, atau phone
      */
     public function index(Request $request)
     {
         $perPage = $request->input('per_page', 10);
-        $status = $request->input('status'); // verified, blocked
+        $statusFilter = $request->input('status_filter', 'AKTIF'); // AKTIF, SEMUA, DIBLOCK
         $search = $request->input('search');
 
         $query = User::where('role', 'customer');
 
-        if ($status) {
-            $query->where('status', $status);
+        // ✅ Filter berdasarkan statusFilter yang sesuai dengan frontend
+        if ($statusFilter === 'AKTIF') {
+            // Tampilkan customer yang tidak di-block
+            $query->where(function($q) {
+                $q->where('status', '!=', 'blocked')
+                  ->orWhereNull('status')
+                  ->orWhere('status', '=', 'active');
+            });
+        } elseif ($statusFilter === 'DIBLOCK') {
+            // Tampilkan hanya customer yang di-block
+            $query->where('status', 'blocked');
         }
+        // Jika SEMUA, tidak perlu filter tambahan (tampilkan semua)
 
+        // Search filter
         if ($search) {
             $query->where(function($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%");
+                  ->orWhere('phone', 'like', "%{$search}%")
+                  ->orWhere('id', 'like', "%{$search}%");
             });
         }
 
         $customers = $query->orderBy('created_at', 'desc')
                           ->paginate($perPage);
 
+        // ✅ Transform data untuk frontend
+        // Transform data to be consistent with Mitra API response
+        $transformedData = collect($customers->items())->map(function($customer) {
+            return [
+                // keep id as string for consistency with Mitra responses
+                'id' => (string) $customer->id,
+                'nama' => $customer->name,
+                'email' => $customer->email,
+                // provide both snake_case and camelCase phone fields
+                'no_tlp' => $customer->phone,
+                'noTlp' => $customer->phone,
+                // gender intentionally omitted: we take all fields from users except jenis_kelamin
+                // keep status mapping consistent with frontend expectations
+                'status' => $this->mapStatusToDisplay($customer->status),
+                // provide date fields similar to MitraController
+                'tanggal_daftar' => $customer->created_at,
+                'tanggal' => $customer->created_at,
+                'created_at' => $customer->created_at,
+                'updated_at' => $customer->updated_at,
+                // default layanan/kode for compatibility with Mitra frontend
+                'layanan' => 'Customer',
+                'kode' => '#' . $customer->id,
+            ];
+        });
+
         return response()->json([
             'success' => true,
-            'data' => $customers->items(),
+            'data' => $transformedData,
             'pagination' => [
                 'current_page' => $customers->currentPage(),
                 'per_page' => $customers->perPage(),
@@ -46,6 +88,25 @@ class CustomerController extends Controller
                 'last_page' => $customers->lastPage(),
             ]
         ], 200);
+    }
+
+    /**
+     * Map database status ke display format
+     */
+    private function mapStatusToDisplay($status)
+    {
+        if (!$status) return 'PENGAJUAN';
+        
+        $statusMap = [
+            'pending' => 'PENGAJUAN',
+            'active' => 'TERVERIFIKASI',
+            'approved' => 'TERVERIFIKASI',
+            'rejected' => 'DITOLAK',
+            'suspended' => 'DIBLOCK',
+            'blocked' => 'DIBLOCK',
+        ];
+        
+        return $statusMap[strtolower($status)] ?? strtoupper($status);
     }
 
     /**
@@ -117,7 +178,7 @@ class CustomerController extends Controller
     public function block(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
-            'reason' => 'required|string|max:500'
+            'reason' => 'nullable|string|max:500'
         ]);
 
         if ($validator->fails()) {
@@ -137,7 +198,7 @@ class CustomerController extends Controller
         }
 
         $customer->status = 'blocked';
-        $customer->blocked_reason = $request->reason;
+        $customer->blocked_reason = $request->input('reason', 'Diblokir oleh admin');
         $customer->blocked_at = now();
         $customer->save();
 

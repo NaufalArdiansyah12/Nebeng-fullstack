@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:latlong2/latlong.dart';
 
 /// Helper class for parsing location data
@@ -187,5 +188,61 @@ class BookingInfoHelper {
       'name': destination['name'] ?? 'Lokasi Tujuan',
       'address': destination['address'] ?? '',
     };
+  }
+
+  /// Get destination location ID
+  static int? getDestinationLocationId(Map<String, dynamic> item) {
+    final ride = item['ride'] ?? {};
+
+    if (ride['destination_location_id'] != null) {
+      return ride['destination_location_id'] is int
+          ? ride['destination_location_id']
+          : int.tryParse(ride['destination_location_id'].toString());
+    }
+
+    final destination = ride['destination_location'] ?? {};
+    if (destination['id'] != null) {
+      return destination['id'] is int
+          ? destination['id']
+          : int.tryParse(destination['id'].toString());
+    }
+
+    return null;
+  }
+
+  /// Get booking ID (the actual booking record ID, not ride_id)
+  static int? getBookingId(Map<String, dynamic> item) {
+    print('DEBUG getBookingId: Full item = ${json.encode(item)}');
+
+    // Try to get from 'booking_id' field first (if exists in response)
+    if (item['booking_id'] != null) {
+      final bookingId = item['booking_id'] is int
+          ? item['booking_id']
+          : int.tryParse(item['booking_id'].toString());
+      print('DEBUG getBookingId: returning booking_id = $bookingId');
+      return bookingId;
+    }
+
+    // If item IS the booking itself (has booking_number field)
+    if (item['booking_number'] != null) {
+      // This IS the booking record, use its ID
+      final bookingId =
+          item['id'] is int ? item['id'] : int.tryParse(item['id'].toString());
+      print(
+          'DEBUG getBookingId: item has booking_number, returning id = $bookingId');
+      return bookingId;
+    }
+
+    // Fallback: try item['id'] (but this might be wrong if it's ride_id)
+    if (item['id'] != null) {
+      final id =
+          item['id'] is int ? item['id'] : int.tryParse(item['id'].toString());
+      print(
+          'DEBUG getBookingId: FALLBACK returning item[id] = $id (might be wrong!)');
+      return id;
+    }
+
+    print('DEBUG getBookingId: returning null');
+    return null;
   }
 }

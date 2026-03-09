@@ -153,6 +153,7 @@ Route::prefix('api/v1')->group(function () {
     Route::post('/auth/register', [\App\Http\Controllers\Api\AuthController::class, 'register']);
     Route::post('/auth/login', [\App\Http\Controllers\Api\AuthController::class, 'login']);
     Route::post('/auth/login/posmitra', [\App\Http\Controllers\Api\AuthController::class, 'loginPosMitra']);
+    Route::post('/auth/google', [\App\Http\Controllers\Api\GoogleAuthController::class, 'handleGoogleAuth']);
     Route::post('/auth/logout', [\App\Http\Controllers\Api\AuthController::class, 'logout'])->middleware('check.user.status');
     Route::post('/auth/change-password', [\App\Http\Controllers\Api\AuthController::class, 'changePassword'])->middleware('check.user.status');
     Route::get('/auth/me', [\App\Http\Controllers\Api\AuthController::class, 'me'])->middleware('check.user.status');
@@ -207,6 +208,12 @@ Route::prefix('api/v1')->group(function () {
 
     // Mitra: riwayat tebengan (partner history)
     Route::get('/mitra/riwayat', [MitraHistoryController::class, 'index'])->middleware('check.user.status');
+    
+    // Mitra: check location bypass setting
+    Route::get('/mitra/location/{locationId}/bypass', [\App\Http\Controllers\Api\V1\Mitra\LocationBypassController::class, 'checkBypass'])->middleware(['auth.api.token', 'check.user.status']);
+    
+    // Mitra: complete trip by driver (bypass QR scan)
+    Route::post('/booking/{bookingType}/{bookingId}/complete-by-driver', [\App\Http\Controllers\Api\V1\Mitra\CompleteTripController::class, 'completeByDriver'])->middleware(['auth.api.token', 'check.user.status']);
 
     // =====================================================
     // MITRA - VEHICLES MANAGEMENT
@@ -632,6 +639,40 @@ Route::prefix('v1/finance')->group(function () {
     // Price Per Kg routes removed (deprecated)
     // The price-per-kg implementation has been removed from active routes.
     // Implementation moved to backend/deprecated/removed_price_system for archival.
+});
+
+// =====================================================
+// SUPERADMIN PANEL ROUTES
+// =====================================================
+Route::prefix('superadmin')->group(function () {
+    
+    // Location QR Bypass Settings
+    Route::prefix('location-qr-bypass')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\V1\SuperAdmin\LocationQRBypassController::class, 'index']);
+        Route::put('/{locationId}', [\App\Http\Controllers\Api\V1\SuperAdmin\LocationQRBypassController::class, 'update']);
+    });
+    
+    // Customer Management (menggunakan AdminCustomerController)
+    Route::prefix('customers')->group(function () {
+        Route::get('/', [AdminCustomerController::class, 'index']);
+        Route::get('/pending-verification', [AdminCustomerController::class, 'pendingVerification']);
+        Route::get('/blocked', [AdminCustomerController::class, 'blocked']);
+        Route::get('/{id}', [AdminCustomerController::class, 'show']);
+        Route::post('/{id}/verify', [AdminCustomerController::class, 'verify']);
+        Route::post('/{id}/block', [AdminCustomerController::class, 'block']);
+        Route::post('/{id}/unblock', [AdminCustomerController::class, 'unblock']);
+    });
+    
+    // Mitra Management
+    Route::prefix('mitra')->group(function () {
+        Route::get('/', [AdminMitraController::class, 'index']);
+        Route::get('/{id}', [AdminMitraController::class, 'show']);
+        Route::post('/{id}/verify', [AdminMitraController::class, 'verify']);
+        Route::post('/{id}/reject', [AdminMitraController::class, 'reject']);
+        Route::post('/{id}/block', [AdminMitraController::class, 'block']);
+        Route::post('/{id}/unblock', [AdminMitraController::class, 'unblock']);
+        Route::get('/{id}/vehicles', [AdminMitraController::class, 'vehicles']);
+    });
 });
 
 // =====================================================

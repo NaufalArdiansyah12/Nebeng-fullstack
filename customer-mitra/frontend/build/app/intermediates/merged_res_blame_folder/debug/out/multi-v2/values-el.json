@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.nebeng.app-mergeDebugResources-31:/values-el/values-el.xml",
+            "outputFile": "com.example.nebeng.app-mergeDebugResources-33:/values-el/values-el.xml",
             "map": [
                 {
                     "source": "/home/naufal/.gradle/caches/transforms-3/25e78ba83c2029ea8b5d616749f280a1/transformed/jetified-play-services-base-18.3.0/res/values-el/values.xml",

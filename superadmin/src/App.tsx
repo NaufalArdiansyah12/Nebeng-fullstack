@@ -30,6 +30,10 @@ import PengaturanEdit from "./pages/PengaturanEdit";
 import PosMitra from "./pages/PosMitra";
 import PosMitraByLocation from "./pages/PosMitraByLocation";
 import DetailPosMitra from "./pages/DetailPosMitra";
+import QRBypassSettings from "./pages/QRBypassSettings";
+import Banners from "./pages/Banners";
+import RewardCatalog from "./pages/RewardCatalog";
+import ManajemenAdmin from "./pages/ManajemenAdmin";
 import { MitraProvider } from "./contexts/MitraContext";
 import { CustomerProvider } from "./contexts/CustomerContext";
 import { PesananProvider } from "./contexts/PesananContext";
@@ -88,6 +92,10 @@ const App = () => (
                               <Route path="pos-mitra" element={<PosMitra />} />
                               <Route path="pos-mitra-by-location" element={<PosMitraByLocation />} />
                               <Route path="pos-mitra/:id" element={<DetailPosMitra />} />
+                              <Route path="qr-bypass-settings" element={<QRBypassSettings />} />
+                              <Route path="banners" element={<Banners />} />
+                              <Route path="reward/catalog" element={<RewardCatalog />} />
+                              <Route path="manajemen-admin" element={<ManajemenAdmin />} />
                             </Route>
                             
                             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

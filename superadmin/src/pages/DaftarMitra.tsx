@@ -23,18 +23,20 @@ import {
 } from "@/components/ui/select";
 
 const getStatusBadge = (status: string) => {
-  switch (status) {
-    case "PENGAJUAN":
-      return <Badge className="bg-orange-500 hover:bg-orange-600 text-white text-xs">PENGAJUAN</Badge>;
-    case "TERVERIFIKASI":
-      return <Badge className="bg-green-500 hover:bg-green-600 text-white text-xs">TERVERIFIKASI</Badge>;
-    case "DITOLAK":
-      return <Badge className="bg-red-500 hover:bg-red-600 text-white text-xs">DITOLAK</Badge>;
-    case "DIBLOCK":
-      return <Badge className="bg-gray-500 hover:bg-gray-600 text-white text-xs">DIBLOCK</Badge>;
-    default:
-      return <Badge className="bg-gray-500 text-white text-xs">{status}</Badge>;
+  const raw = status ?? '';
+  const lower = raw.toLowerCase();
+
+  if (lower === 'active' || lower === 'terverifikasi') {
+    // tampilkan persis seperti di DB dan gunakan badge hijau
+    return <Badge className="bg-green-500 hover:bg-green-600 text-white text-xs">{raw}</Badge>;
   }
+
+  if (lower === 'diblock' || lower === 'blocked') {
+    return <Badge className="bg-red-500 hover:bg-red-600 text-white text-xs">{raw.toUpperCase()}</Badge>;
+  }
+
+  // fallback: tampilkan uppercase pada badge abu-abu
+  return <Badge className="bg-gray-500 text-white text-xs">{raw.toUpperCase()}</Badge>;
 };
 
 const DaftarMitra = () => {
@@ -51,7 +53,7 @@ const DaftarMitra = () => {
   const [unblockSuccessOpen, setUnblockSuccessOpen] = useState(false);
   const [selectedMitraId, setSelectedMitraId] = useState<string | null>(null);
 
-  // ✅ Filter data - HANYA tampilkan mitra yang TIDAK DIBLOCK
+  // ✅ Filter data - tampilkan semua mitra dengan filter
   const filteredData = useMemo(() => {
     // ✅ Safety check
     if (!mitraList || !Array.isArray(mitraList)) {
@@ -59,17 +61,14 @@ const DaftarMitra = () => {
     }
 
     return mitraList.filter((mitra) => {
-      // ✅ PENTING: Exclude mitra yang DIBLOCK dari daftar ini
-      if (mitra.status === "DIBLOCK") {
-        return false;
-      }
+      const mitraStatus = mitra.status?.toLowerCase() || 'active';
 
       const matchesSearch = searchQuery === "" || 
         mitra.nama?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         mitra.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         mitra.id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         mitra.noTlp?.includes(searchQuery) ||
-        mitra.layanan?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        mitra.gender?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         mitra.status?.toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchesDate = !selectedDate || 
@@ -77,9 +76,11 @@ const DaftarMitra = () => {
          mitra.tanggal?.getMonth() === selectedDate.getMonth() &&
          mitra.tanggal?.getDate() === selectedDate.getDate());
 
+      // Filter status: AKTIF = tidak blocked, DIBLOCK = blocked, SEMUA = semua
       const matchesStatus = 
         statusFilter === "SEMUA" ||
-        (statusFilter === "AKTIF" && mitra.status !== "DIBLOCK");
+        (statusFilter === "AKTIF" && mitraStatus !== "diblock" && mitraStatus !== "blocked") ||
+        (statusFilter === "DIBLOCK" && (mitraStatus === "diblock" || mitraStatus === "blocked"));
 
       return matchesSearch && matchesDate && matchesStatus;
     });
@@ -226,7 +227,7 @@ const DaftarMitra = () => {
             <div className="relative w-72">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
               <Input
-                placeholder="Search nama, email, ID, layanan..."
+                placeholder="Search nama, email, ID, jenis kelamin..."
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 className="pl-10 h-10 bg-background border-border"
@@ -289,7 +290,7 @@ const DaftarMitra = () => {
                   <th className="text-left py-3 px-4 font-medium">NAMA</th>
                   <th className="text-left py-3 px-4 font-medium">EMAIL</th>
                   <th className="text-left py-3 px-4 font-medium">NO. TLP</th>
-                  <th className="text-left py-3 px-4 font-medium">LAYANAN</th>
+                  <th className="text-left py-3 px-4 font-medium">JENIS KELAMIN</th>
                   <th className="text-left py-3 px-4 font-medium">STATUS</th>
                   <th className="text-center py-3 px-4 font-medium rounded-tr-lg">AKSI</th>
                 </tr>
@@ -302,7 +303,7 @@ const DaftarMitra = () => {
                       <td className="py-4 px-4">{mitra.nama}</td>
                       <td className="py-4 px-4 text-primary">{mitra.email}</td>
                       <td className="py-4 px-4">{mitra.noTlp}</td>
-                      <td className="py-4 px-4">{mitra.layanan}</td>
+                      <td className="py-4 px-4">{mitra.gender || '-'}</td>
                       <td className="py-4 px-4">
                         {getStatusBadge(mitra.status)}
                       </td>
@@ -316,15 +317,29 @@ const DaftarMitra = () => {
                           >
                             <Eye size={18} className="text-white" />
                           </Button>
-                          {/* ✅ Hanya tampilkan tombol Block (tidak ada Unblock di halaman ini) */}
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 bg-red-600 hover:bg-red-700"
-                            onClick={() => handleBlockClick(mitra.id)}
-                          >
-                            <Lock size={18} className="text-white" />
-                          </Button>
+                          
+                          {/* Conditional button: Block jika status TERVERIFIKASI, Unblock jika DIBLOCK */}
+                          {mitra.status?.toUpperCase() === 'DIBLOCK' ? (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 bg-green-600 hover:bg-green-700"
+                              onClick={() => handleUnblockClick(mitra.id)}
+                              title="Unblock Mitra"
+                            >
+                              <LockOpen size={18} className="text-white" />
+                            </Button>
+                          ) : (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 bg-red-600 hover:bg-red-700"
+                              onClick={() => handleBlockClick(mitra.id)}
+                              title="Block Mitra"
+                            >
+                              <Lock size={18} className="text-white" />
+                            </Button>
+                          )}
                         </div>
                       </td>
                     </tr>

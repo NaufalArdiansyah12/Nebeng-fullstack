@@ -366,7 +366,11 @@ const DetailMitra = () => {
     if (!path) return null;
     // Jika sudah URL lengkap, return as is
     if (path.startsWith('http')) return path;
-    // Jika path relatif, tambahkan base URL dan /storage/
+    // Jika path dimulai dengan /storage, gunakan localhost:8000 (Laravel public storage)
+    if (path.startsWith('/storage')) {
+      return `http://localhost:8000${path}`;
+    }
+    // Jika path relatif tanpa /storage, tambahkan base URL dan /storage/
     return `http://localhost:8000/storage/${path}`;
   };
 

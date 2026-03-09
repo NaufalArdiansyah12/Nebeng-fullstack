@@ -55,19 +55,24 @@ const VerifikasiCustomer = () => {
 
   // Filter data based on search, date, and status filter
   const filteredData = useMemo(() => {
+    if (!verifikasiCustomerList || verifikasiCustomerList.length === 0) {
+      return [];
+    }
+    
     return verifikasiCustomerList.filter((customer) => {
       const matchesSearch = searchQuery === "" || 
-        customer.namaLengkap.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        customer.nikCustomer.toLowerCase().includes(searchQuery.toLowerCase());
+        customer.namaLengkap?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        customer.nikCustomer?.toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchesDate = !selectedDate || 
-        (customer.tanggalPengajuan.getFullYear() === selectedDate.getFullYear() &&
+        (customer.tanggalPengajuan && 
+         customer.tanggalPengajuan.getFullYear() === selectedDate.getFullYear() &&
          customer.tanggalPengajuan.getMonth() === selectedDate.getMonth() &&
          customer.tanggalPengajuan.getDate() === selectedDate.getDate());
 
       const matchesStatus = 
         statusFilter === "SEMUA" ||
-        customer.status.toUpperCase() === statusFilter.toUpperCase();
+        customer.status?.toUpperCase() === statusFilter.toUpperCase();
 
       return matchesSearch && matchesDate && matchesStatus;
     });

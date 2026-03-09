@@ -6,7 +6,7 @@ export interface MitraData {
   nama: string;
   email: string;
   noTlp: string;
-  layanan: string;
+  gender: string;
   status: string;
   tanggal: Date;
   kode?: string;
@@ -156,19 +156,22 @@ export const MitraProvider = ({ children }: { children: ReactNode }) => {
   const [error, setError] = useState<string | null>(null);
 
   // Helper function to map status
-  const mapStatus = (status: string | null): "PENGAJUAN" | "TERVERIFIKASI" | "DITOLAK" | "DIBLOCK" => {
+  const mapStatus = (status: string | null): "PENGAJUAN" | "TERVERIFIKASI" | "DITOLAK" | "DIBLOCK" | string => {
+    // If no status provided, keep as 'PENGAJUAN' as safe default
     if (!status) return "PENGAJUAN";
-    
+
     const statusMap: Record<string, "PENGAJUAN" | "TERVERIFIKASI" | "DITOLAK" | "DIBLOCK"> = {
       'pending': 'PENGAJUAN',
       'approved': 'TERVERIFIKASI',
       'rejected': 'DITOLAK',
       'suspended': 'DIBLOCK',
       'inactive': 'DIBLOCK',
-      'blocked': 'DIBLOCK'
+      'blocked': 'DIBLOCK',
+      // NOTE: do NOT map 'active' to 'TERVERIFIKASI' so that DB value 'active' remains 'active'
     };
-    
-    return statusMap[status.toLowerCase()] || "PENGAJUAN";
+
+    const lower = status.toLowerCase();
+    return statusMap[lower] || status; // return original status (preserve 'active') if not mapped
   };
 
   // Fetch all mitra on mount
@@ -185,7 +188,8 @@ export const MitraProvider = ({ children }: { children: ReactNode }) => {
           nama: m.nama,
           email: m.email,
           noTlp: m.no_tlp || m.noTlp || "",
-          layanan: m.layanan,
+          gender: m.gender || "-",
+          layanan: m.layanan || "Motor",
           status: mapStatus(m.status),
           tanggal: new Date(m.tanggal_daftar || m.createdAt || new Date()),
           kode: m.kode || "",

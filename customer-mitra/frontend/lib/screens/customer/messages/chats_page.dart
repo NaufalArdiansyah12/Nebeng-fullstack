@@ -248,115 +248,255 @@ class _ChatsPageState extends State<ChatsPage> {
                         ? (conv['unreadCustomer'] ?? 0)
                         : (conv['unreadMitra'] ?? 0);
 
-                    // Debug: Print photo data for first conversation
-                    if (index == 0) {
-                      print('🔍 First conversation data:');
-                      print('  - Conversation ID: ${conv['id']}');
-                      print('  - Other name: $otherName');
-                      print('  - mitraPhoto: ${conv['mitraPhoto']}');
-                      print('  - customerPhoto: ${conv['customerPhoto']}');
-                      print('  - Selected photo: $otherPhoto');
-                    }
-
-                    return Container(
-                      decoration: BoxDecoration(
-                        border: Border(
-                          bottom: BorderSide(
-                            color: Colors.grey.shade300,
-                            width: 1.5,
-                          ),
-                        ),
-                      ),
-                      child: ListTile(
-                        contentPadding:
-                            EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ChatPage(
-                                conversationId: conv['id'],
-                                otherUserName: otherName,
-                                otherUserPhoto: otherPhoto,
+                    return Dismissible(
+                      key: Key(conv['id']),
+                      direction: DismissDirection.endToStart,
+                      confirmDismiss: (direction) async {
+                        return await showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return Dialog(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
                               ),
-                            ),
-                          );
-                        },
-                        leading: CircleAvatar(
-                          radius: 24,
-                          backgroundColor: Color(0xFF0F4AA3).withOpacity(0.1),
-                          backgroundImage: otherPhoto != null &&
-                                  otherPhoto.toString().isNotEmpty
-                              ? NetworkImage(otherPhoto)
-                              : null,
-                          child: otherPhoto == null ||
-                                  otherPhoto.toString().isEmpty
-                              ? Icon(Icons.person,
-                                  color: Color(0xFF0F4AA3), size: 24)
-                              : null,
-                        ),
-                        title: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                otherName,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 15,
+                              child: Container(
+                                padding: EdgeInsets.all(24),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: 80,
+                                      height: 80,
+                                      decoration: BoxDecoration(
+                                        color: Colors.red.shade50,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        Icons.delete_outline_rounded,
+                                        size: 40,
+                                        color: Colors.red.shade600,
+                                      ),
+                                    ),
+                                    SizedBox(height: 20),
+                                    Text(
+                                      'delete_conversation'.tr(),
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black87,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    SizedBox(height: 12),
+                                    Text(
+                                      'confirm_delete_conversation'.tr(),
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey.shade600,
+                                        height: 1.5,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    SizedBox(height: 24),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: OutlinedButton(
+                                            onPressed: () =>
+                                                Navigator.of(context)
+                                                    .pop(false),
+                                            style: OutlinedButton.styleFrom(
+                                              padding: EdgeInsets.symmetric(
+                                                  vertical: 14),
+                                              side: BorderSide(
+                                                  color: Colors.grey.shade300),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                              ),
+                                            ),
+                                            child: Text(
+                                              'cancel'.tr(),
+                                              style: TextStyle(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w600,
+                                                color: Colors.grey.shade700,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        SizedBox(width: 12),
+                                        Expanded(
+                                          child: ElevatedButton(
+                                            onPressed: () =>
+                                                Navigator.of(context).pop(true),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor:
+                                                  Colors.red.shade600,
+                                              foregroundColor: Colors.white,
+                                              padding: EdgeInsets.symmetric(
+                                                  vertical: 14),
+                                              elevation: 0,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                              ),
+                                            ),
+                                            child: Text(
+                                              'delete'.tr(),
+                                              style: TextStyle(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ),
-                            Text(
-                              _formatTime(conv['lastMessageAt']),
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 12,
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
-                          ],
+                            );
+                          },
+                        );
+                      },
+                      onDismissed: (direction) async {
+                        try {
+                          await FirebaseFirestore.instance
+                              .collection('conversations')
+                              .doc(conv['id'])
+                              .delete();
+
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                  content: Text('conversation_deleted'.tr())),
+                            );
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                  content:
+                                      Text('error_delete_conversation'.tr())),
+                            );
+                          }
+                        }
+                      },
+                      background: Container(
+                        alignment: Alignment.centerRight,
+                        padding: EdgeInsets.only(right: 20),
+                        color: Colors.red,
+                        child: Icon(
+                          Icons.delete,
+                          color: Colors.white,
+                          size: 28,
                         ),
-                        subtitle: Padding(
-                          padding: const EdgeInsets.only(top: 4.0),
-                          child: Row(
+                      ),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(
+                              color: Colors.grey.shade300,
+                              width: 1.5,
+                            ),
+                          ),
+                        ),
+                        child: ListTile(
+                          contentPadding:
+                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ChatPage(
+                                  conversationId: conv['id'],
+                                  otherUserName: otherName,
+                                  otherUserPhoto: otherPhoto,
+                                ),
+                              ),
+                            );
+                          },
+                          leading: CircleAvatar(
+                            radius: 24,
+                            backgroundColor: Color(0xFF0F4AA3).withOpacity(0.1),
+                            backgroundImage: otherPhoto != null &&
+                                    otherPhoto.toString().isNotEmpty
+                                ? NetworkImage(otherPhoto)
+                                : null,
+                            child: otherPhoto == null ||
+                                    otherPhoto.toString().isEmpty
+                                ? Icon(Icons.person,
+                                    color: Color(0xFF0F4AA3), size: 24)
+                                : null,
+                          ),
+                          title: Row(
                             children: [
                               Expanded(
                                 child: Text(
-                                  conv['lastMessage'] ?? '',
+                                  otherName,
                                   style: TextStyle(
-                                    color: unread > 0
-                                        ? Colors.black87
-                                        : Colors.grey[600],
-                                    fontWeight: unread > 0
-                                        ? FontWeight.w500
-                                        : FontWeight.normal,
-                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 15,
                                   ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              if (unread > 0)
-                                Container(
-                                  margin: EdgeInsets.only(left: 8),
-                                  width: 20,
-                                  height: 20,
-                                  decoration: BoxDecoration(
-                                    color: Color(0xFFFF6B9B),
-                                    shape: BoxShape.circle,
+                              Text(
+                                _formatTime(conv['lastMessageAt']),
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            ],
+                          ),
+                          subtitle: Padding(
+                            padding: const EdgeInsets.only(top: 4.0),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    conv['lastMessage'] ?? '',
+                                    style: TextStyle(
+                                      color: unread > 0
+                                          ? Colors.black87
+                                          : Colors.grey[600],
+                                      fontWeight: unread > 0
+                                          ? FontWeight.w500
+                                          : FontWeight.normal,
+                                      fontSize: 13,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                  child: Center(
-                                    child: Text(
-                                      unread > 9 ? '9+' : '$unread',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w600,
+                                ),
+                                if (unread > 0)
+                                  Container(
+                                    margin: EdgeInsets.only(left: 8),
+                                    width: 20,
+                                    height: 20,
+                                    decoration: BoxDecoration(
+                                      color: Color(0xFFFF6B9B),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        unread > 9 ? '9+' : '$unread',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -367,26 +507,6 @@ class _ChatsPageState extends State<ChatsPage> {
             ),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Memperbarui foto profil...')),
-          );
-          // Try to update missing photos by fetching from backend
-          await UpdateConversationPhotos.updateAllConversations();
-          // Also attempt to fix any localhost URLs as a fallback
-          await UpdateConversationPhotos.fixLocalhostUrls();
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                  content: Text('Selesai! Foto akan muncul sebentar lagi.')),
-            );
-          }
-        },
-        child: Icon(Icons.refresh),
-        backgroundColor: Color(0xFF0F4AA3),
-        tooltip: 'Fix Foto Profil',
       ),
     );
   }
@@ -472,16 +592,11 @@ class _ChatPageState extends State<ChatPage> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _userId = prefs.getInt('user_id');
-      // Try multiple keys for user name
       _userName =
           prefs.getString('user_name') ?? prefs.getString('name') ?? 'Customer';
       _userRole = prefs.getString('user_role') ?? 'customer';
     });
 
-    print(
-        '🔍 ChatPage - User ID: $_userId, Name: $_userName, Role: $_userRole');
-
-    // Mark as read when opening chat
     if (_userId != null) {
       _chatService.markAsRead(widget.conversationId, _userId!, _userRole);
     }

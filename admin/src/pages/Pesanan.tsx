@@ -1,10 +1,10 @@
 import { useState, useMemo } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Calendar as CalendarIcon, Download, Eye } from "lucide-react";
+import { Search, Calendar as CalendarIcon, Download, Eye, CheckCircle2, XCircle, Clock, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
@@ -20,17 +20,59 @@ import {
 } from "@/components/ui/select";
 import { usePesanan } from "@/contexts/PesananContext";
 
+// Mapping status DB → { label, style, icon }
+const STATUS_MAP: Record<string, { label: string; cls: string; icon: React.ReactNode }> = {
+  // ── Selesai / Completed ──
+  selesai:               { label: "Selesai",           cls: "bg-green-50 text-green-700 border-green-200 ring-green-100",  icon: <CheckCircle2 size={12} className="shrink-0" /> },
+  completed:             { label: "Selesai",           cls: "bg-green-50 text-green-700 border-green-200 ring-green-100",  icon: <CheckCircle2 size={12} className="shrink-0" /> },
+  sudah_sampal_tujuan:   { label: "Sudah Sampai Tujuan", cls: "bg-green-50 text-green-700 border-green-200 ring-green-100", icon: <CheckCircle2 size={12} className="shrink-0" /> },
+  sudah_sampai_tujuan:   { label: "Sudah Sampai Tujuan", cls: "bg-green-50 text-green-700 border-green-200 ring-green-100", icon: <CheckCircle2 size={12} className="shrink-0" /> },
+  // ── Batal / Cancelled ──
+  batal:                 { label: "Dibatalkan",        cls: "bg-red-50 text-red-600 border-red-200 ring-red-100",          icon: <XCircle size={12} className="shrink-0" /> },
+  cancelled:             { label: "Dibatalkan",        cls: "bg-red-50 text-red-600 border-red-200 ring-red-100",          icon: <XCircle size={12} className="shrink-0" /> },
+  canceled:              { label: "Dibatalkan",        cls: "bg-red-50 text-red-600 border-red-200 ring-red-100",          icon: <XCircle size={12} className="shrink-0" /> },
+  // ── Proses / On-going ──
+  proses:                { label: "Proses",            cls: "bg-amber-50 text-amber-700 border-amber-200 ring-amber-100",  icon: <span className="relative flex h-2 w-2 shrink-0"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" /><span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" /></span> },
+  on_going:              { label: "Sedang Berjalan",   cls: "bg-amber-50 text-amber-700 border-amber-200 ring-amber-100",  icon: <span className="relative flex h-2 w-2 shrink-0"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" /><span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" /></span> },
+  active:                { label: "Aktif",             cls: "bg-amber-50 text-amber-700 border-amber-200 ring-amber-100",  icon: <span className="relative flex h-2 w-2 shrink-0"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" /><span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" /></span> },
+  // ── Pending / Menunggu ──
+  pending:               { label: "Menunggu",          cls: "bg-blue-50 text-blue-700 border-blue-200 ring-blue-100",      icon: <Clock size={12} className="shrink-0" /> },
+  menunggu:              { label: "Menunggu",          cls: "bg-blue-50 text-blue-700 border-blue-200 ring-blue-100",      icon: <Clock size={12} className="shrink-0" /> },
+  waiting:               { label: "Menunggu",          cls: "bg-blue-50 text-blue-700 border-blue-200 ring-blue-100",      icon: <Clock size={12} className="shrink-0" /> },
+  menunggu_driver:       { label: "Menunggu Driver",   cls: "bg-blue-50 text-blue-700 border-blue-200 ring-blue-100",      icon: <Clock size={12} className="shrink-0" /> },
+};
+
 const getStatusBadge = (status: string) => {
-  switch (status) {
-    case "SELESAI":
-      return <Badge className="bg-green-500 hover:bg-green-600 text-white text-xs">SELESAI</Badge>;
-    case "BATAL":
-      return <Badge className="bg-red-500 hover:bg-red-600 text-white text-xs">BATAL</Badge>;
-    case "PROSES":
-      return <Badge className="bg-orange-500 hover:bg-orange-600 text-white text-xs">PROSES</Badge>;
-    default:
-      return <Badge className="bg-gray-500 text-white text-xs">{status}</Badge>;
+  if (!status) return (
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 border border-gray-200">
+      <AlertCircle size={12} className="shrink-0" /> —
+    </span>
+  );
+
+  const key = status.toLowerCase().trim();
+  const mapped = STATUS_MAP[key];
+
+  if (mapped) {
+    return (
+      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ring-1 ${mapped.cls}`}>
+        {mapped.icon}
+        {mapped.label}
+      </span>
+    );
   }
+
+  // Fallback: hilangkan underscore, capitalize tiap kata
+  const label = key
+    .split("_")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+
+  return (
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200">
+      <AlertCircle size={12} className="shrink-0" />
+      {label}
+    </span>
+  );
 };
 
 const formatCurrency = (amount: number) => {

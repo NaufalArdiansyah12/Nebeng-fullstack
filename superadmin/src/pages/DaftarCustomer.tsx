@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Calendar as CalendarIcon, Download, Eye, Lock, LockOpen } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,9 +11,9 @@ import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import * as XLSX from "xlsx";
-import { useCustomer } from "@/contexts/CustomerContext";
 import BlockCustomerPopup from "@/components/BlockCustomerPopup";
 import UnblockCustomerPopup from "@/components/UnblockCustomerPopup";
+import { useCustomer } from "@/contexts/CustomerContext";
 import {
   Select,
   SelectContent,
@@ -23,17 +23,16 @@ import {
 } from "@/components/ui/select";
 
 const getStatusBadge = (status: string) => {
-  switch (status) {
-    case "TERVERIFIKASI":
-      return <Badge className="bg-green-500 hover:bg-green-600 text-white text-xs">TERVERIFIKASI</Badge>;
-    case "DITOLAK":
-      return <Badge className="bg-red-500 hover:bg-red-600 text-white text-xs">DITOLAK</Badge>;
-    case "PENGAJUAN":
-      return <Badge className="bg-orange-500 hover:bg-orange-600 text-white text-xs">PENGAJUAN</Badge>;
-    case "DIBLOCK":
-      return <Badge className="bg-gray-500 hover:bg-gray-600 text-white text-xs">DIBLOCK</Badge>;
+  const normalizedStatus = status?.toLowerCase() || 'active';
+  switch (normalizedStatus) {
+    case "active":
+    case "terverifikasi":
+      return <Badge className="bg-green-500 hover:bg-green-600 text-white text-xs">ACTIVE</Badge>;
+    case "diblock":
+    case "blocked":
+      return <Badge className="bg-red-500 hover:bg-red-600 text-white text-xs">BLOCKED</Badge>;
     default:
-      return <Badge className="bg-gray-500 text-white text-xs">{status}</Badge>;
+      return <Badge className="bg-gray-500 text-white text-xs">{status?.toUpperCase()}</Badge>;
   }
 };
 
@@ -44,49 +43,42 @@ const DaftarCustomer = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [entriesPerPage, setEntriesPerPage] = useState("10");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [statusFilter, setStatusFilter] = useState<string>("SEMUA");
-
-  // Block/Unblock modal states
-  const [showBlockConfirm, setShowBlockConfirm] = useState(false);
-  const [showBlockSuccess, setShowBlockSuccess] = useState(false);
-  const [showUnblockConfirm, setShowUnblockConfirm] = useState(false);
-  const [showUnblockSuccess, setShowUnblockSuccess] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>("AKTIF");
+  const [blockPopupOpen, setBlockPopupOpen] = useState(false);
+  const [blockSuccessOpen, setBlockSuccessOpen] = useState(false);
+  const [unblockPopupOpen, setUnblockPopupOpen] = useState(false);
+  const [unblockSuccessOpen, setUnblockSuccessOpen] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
 
-  // ✅ PERBAIKAN: Filter data dengan pengecekan customers dan type safety
+  // ✅ Filter data - tampilkan semua customer dengan filter
   const filteredData = useMemo(() => {
+    // ✅ Safety check
     if (!customers || !Array.isArray(customers)) {
       return [];
     }
 
     return customers.filter((customer) => {
-      // Pastikan semua field ada dan bertipe string/number
-      const id = customer?.id?.toString() || "";
-      const nama = customer?.nama || "";
-      const email = customer?.email || "";
-      const noTlp = customer?.no_tlp || "";
-      const status = customer?.status || "";
-      // Selalu exclude yang DIBLOCK dari daftar ini
-      if (status.toUpperCase() === "DIBLOCK") {
-        return false;
-      }
+      const customerStatus = customer.status?.toLowerCase() || 'active';
 
       const matchesSearch = searchQuery === "" ||
-        nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        id.includes(searchQuery) ||
-        noTlp.includes(searchQuery) ||
-        status.toLowerCase().includes(searchQuery.toLowerCase());
+        customer.nama?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        customer.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        customer.id?.toString().includes(searchQuery) ||
+        customer.no_tlp?.includes(searchQuery) ||
+        customer.jenis_kelamin?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        customer.status?.toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchesDate = !selectedDate ||
-        (customer?.tanggal_daftar instanceof Date &&
+        (customer.tanggal_daftar instanceof Date &&
           customer.tanggal_daftar.getFullYear() === selectedDate.getFullYear() &&
           customer.tanggal_daftar.getMonth() === selectedDate.getMonth() &&
           customer.tanggal_daftar.getDate() === selectedDate.getDate());
 
+      // Filter status: AKTIF = tidak blocked, DIBLOCK = blocked, SEMUA = semua
       const matchesStatus =
         statusFilter === "SEMUA" ||
-        status === statusFilter;
+        (statusFilter === "AKTIF" && customerStatus !== "diblock" && customerStatus !== "blocked") ||
+        (statusFilter === "DIBLOCK" && (customerStatus === "diblock" || customerStatus === "blocked"));
 
       return matchesSearch && matchesDate && matchesStatus;
     });
@@ -101,6 +93,7 @@ const DaftarCustomer = () => {
     currentPage * itemsPerPage
   );
 
+  // Reset to page 1 when search or date changes
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
     setCurrentPage(1);
@@ -120,11 +113,12 @@ const DaftarCustomer = () => {
     }
 
     const excelData = dataToExport.map(customer => ({
-      "NO. ID": customer.id || "-",
-      "NAMA": customer.nama || "-",
-      "EMAIL": customer.email || "-",
-      "NO. TLP": customer.no_tlp || "-",
-      "STATUS": customer.status || "-",
+      "NO. ID": customer.id,
+      "NAMA": customer.nama,
+      "EMAIL": customer.email,
+      "NO. TLP": customer.no_tlp,
+      "JENIS KELAMIN": customer.jenis_kelamin,
+      "STATUS": customer.status,
       "TANGGAL": customer.tanggal_daftar ? format(customer.tanggal_daftar, "dd-MM-yyyy") : "-"
     }));
 
@@ -134,6 +128,7 @@ const DaftarCustomer = () => {
       { wch: 10 },
       { wch: 25 },
       { wch: 30 },
+      { wch: 15 },
       { wch: 15 },
       { wch: 15 },
       { wch: 12 },
@@ -146,45 +141,50 @@ const DaftarCustomer = () => {
     XLSX.writeFile(workbook, `daftar-customer-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
   };
 
+  // ✅ Handle block customer dengan auto-close success modal
+  const handleBlockClick = (customerId: string) => {
+    setSelectedCustomerId(customerId);
+    setBlockPopupOpen(true);
+  };
+
+  const handleBlockConfirm = async () => {
+    setBlockPopupOpen(false);
+    if (selectedCustomerId) {
+      await blockCustomer(selectedCustomerId);
+    }
+    setBlockSuccessOpen(true);
+
+    // ✅ Auto close success modal setelah 1.5 detik
+    setTimeout(() => {
+      setBlockSuccessOpen(false);
+      setSelectedCustomerId(null);
+    }, 1500);
+  };
+
+  // ✅ Handle unblock customer dengan auto-close success modal
+  const handleUnblockClick = (customerId: string) => {
+    setSelectedCustomerId(customerId);
+    setUnblockPopupOpen(true);
+  };
+
+  const handleUnblockConfirm = async () => {
+    setUnblockPopupOpen(false);
+    if (selectedCustomerId) {
+      await unblockCustomer(selectedCustomerId);
+    }
+    setUnblockSuccessOpen(true);
+
+    // ✅ Auto close success modal setelah 1.5 detik
+    setTimeout(() => {
+      setUnblockSuccessOpen(false);
+      setSelectedCustomerId(null);
+    }, 1500);
+  };
+
+  // Handle status filter change
   const handleStatusFilterChange = (value: string) => {
     setStatusFilter(value);
     setCurrentPage(1);
-  };
-
-  const handleBlockClick = (customerId: number) => {
-    setSelectedCustomerId(customerId.toString());
-    setShowBlockConfirm(true);
-  };
-
-  const handleUnblockClick = (customerId: number) => {
-    setSelectedCustomerId(customerId.toString());
-    setShowUnblockConfirm(true);
-  };
-
-  const handleConfirmBlock = async () => {
-    if (selectedCustomerId) {
-      try {
-        await blockCustomer(selectedCustomerId);
-        setShowBlockConfirm(false);
-        setShowBlockSuccess(true);
-      } catch (error) {
-        console.error('Error blocking customer:', error);
-        setShowBlockConfirm(false);
-      }
-    }
-  };
-
-  const handleConfirmUnblock = async () => {
-    if (selectedCustomerId) {
-      try {
-        await unblockCustomer(selectedCustomerId);
-        setShowUnblockConfirm(false);
-        setShowUnblockSuccess(true);
-      } catch (error) {
-        console.error('Error unblocking customer:', error);
-        setShowUnblockConfirm(false);
-      }
-    }
   };
 
   // Generate page numbers for pagination
@@ -225,7 +225,7 @@ const DaftarCustomer = () => {
             <div className="relative w-72">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
               <Input
-                placeholder="Search nama, email, ID..."
+                placeholder="Search nama, email, ID, jenis kelamin..."
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 className="pl-10 h-10 bg-background border-border"
@@ -238,11 +238,9 @@ const DaftarCustomer = () => {
                   <SelectValue placeholder="Filter Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="SEMUA">Semua</SelectItem>
-                  <SelectItem value="PENGAJUAN">Pengajuan</SelectItem>
-                  <SelectItem value="TERVERIFIKASI">Terverifikasi</SelectItem>
-                  <SelectItem value="DITOLAK">Ditolak</SelectItem>
-                                  </SelectContent>
+                  <SelectItem value="AKTIF">Customer Aktif</SelectItem>
+                  <SelectItem value="SEMUA">Semua Customer</SelectItem>
+                </SelectContent>
               </Select>
 
               <Popover>
@@ -290,66 +288,63 @@ const DaftarCustomer = () => {
                   <th className="text-left py-3 px-4 font-medium">NAMA</th>
                   <th className="text-left py-3 px-4 font-medium">EMAIL</th>
                   <th className="text-left py-3 px-4 font-medium">NO. TLP</th>
+                  <th className="text-left py-3 px-4 font-medium">JENIS KELAMIN</th>
                   <th className="text-left py-3 px-4 font-medium">STATUS</th>
                   <th className="text-center py-3 px-4 font-medium rounded-tr-lg">AKSI</th>
                 </tr>
               </thead>
               <tbody>
                 {paginatedData.length > 0 ? (
-                  paginatedData.map((customer, index) => {
-                    // ✅ Validasi data sebelum render
-                    const customerId = customer?.id ?? 0;
-                    const customerName = customer?.nama ?? "-";
-                    const customerEmail = customer?.email ?? "-";
-                    const customerPhone = customer?.no_tlp ?? "-";
-                    const customerStatus = customer?.status ?? "-";
+                  paginatedData.map((customer, index) => (
+                    <tr key={index} className="border-b border-border/50 hover:bg-muted/30">
+                      <td className="py-4 px-4">{customer.id}</td>
+                      <td className="py-4 px-4">{customer.nama}</td>
+                      <td className="py-4 px-4 text-primary">{customer.email}</td>
+                      <td className="py-4 px-4">{customer.no_tlp}</td>
+                      <td className="py-4 px-4">{customer.jenis_kelamin || '-'}</td>
+                      <td className="py-4 px-4">
+                        {getStatusBadge(customer.status)}
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="flex items-center justify-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 bg-[#1e3a5f] hover:bg-[#152a45]"
+                            onClick={() => navigate(`/dashboard/costumer/${customer.id}`)}
+                          >
+                            <Eye size={18} className="text-white" />
+                          </Button>
 
-                    return (
-                      <tr key={index} className="border-b border-border/50 hover:bg-muted/30">
-                        <td className="py-4 px-4">{customerId}</td>
-                        <td className="py-4 px-4">{customerName}</td>
-                        <td className="py-4 px-4 text-primary">{customerEmail}</td>
-                        <td className="py-4 px-4">{customerPhone}</td>
-                        <td className="py-4 px-4">
-                          {getStatusBadge(customerStatus)}
-                        </td>
-                        <td className="py-4 px-4">
-                          <div className="flex items-center justify-center gap-2">
+                          {/* Conditional button: Block jika status TERVERIFIKASI, Unblock jika DIBLOCK */}
+                          {customer.status?.toUpperCase() === 'DIBLOCK' ? (
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 bg-[#1e3a5f] hover:bg-[#152a45]"
-                              onClick={() => navigate(`/dashboard/costumer/${customerId}`)}
+                              className="h-8 w-8 bg-green-600 hover:bg-green-700"
+                              onClick={() => handleUnblockClick(customer.id.toString())}
+                              title="Unblock Customer"
                             >
-                              <Eye size={18} className="text-white" />
+                              <LockOpen size={18} className="text-white" />
                             </Button>
-                            {customerStatus === "DIBLOCK" ? (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 bg-green-600 hover:bg-green-700"
-                                onClick={() => handleUnblockClick(customerId)}
-                              >
-                                <LockOpen size={18} className="text-white" />
-                              </Button>
-                            ) : (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 bg-red-500 hover:bg-red-600"
-                                onClick={() => handleBlockClick(customerId)}
-                              >
-                                <Lock size={18} className="text-white" />
-                              </Button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 bg-red-600 hover:bg-red-700"
+                              onClick={() => handleBlockClick(customer.id.toString())}
+                              title="Block Customer"
+                            >
+                              <Lock size={18} className="text-white" />
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                    <td colSpan={7} className="py-8 text-center text-muted-foreground">
                       Tidak ada data yang ditemukan
                     </td>
                   </tr>
@@ -412,33 +407,35 @@ const DaftarCustomer = () => {
         </CardContent>
       </Card>
 
-      {/* Block Customer Popup */}
+      {/* Block Confirmation Popup */}
       <BlockCustomerPopup
-        open={showBlockConfirm}
-        onOpenChange={setShowBlockConfirm}
-        onConfirm={handleConfirmBlock}
+        open={blockPopupOpen}
+        onOpenChange={setBlockPopupOpen}
+        onConfirm={handleBlockConfirm}
         type="confirm"
       />
 
+      {/* Block Success Popup */}
       <BlockCustomerPopup
-        open={showBlockSuccess}
-        onOpenChange={setShowBlockSuccess}
-        onConfirm={() => { }}
+        open={blockSuccessOpen}
+        onOpenChange={setBlockSuccessOpen}
+        onConfirm={() => {}}
         type="success"
       />
 
-      {/* Unblock Customer Popup */}
+      {/* Unblock Confirmation Popup */}
       <UnblockCustomerPopup
-        open={showUnblockConfirm}
-        onOpenChange={setShowUnblockConfirm}
-        onConfirm={handleConfirmUnblock}
+        open={unblockPopupOpen}
+        onOpenChange={setUnblockPopupOpen}
+        onConfirm={handleUnblockConfirm}
         type="confirm"
       />
 
+      {/* Unblock Success Popup */}
       <UnblockCustomerPopup
-        open={showUnblockSuccess}
-        onOpenChange={setShowUnblockSuccess}
-        onConfirm={() => { }}
+        open={unblockSuccessOpen}
+        onOpenChange={setUnblockSuccessOpen}
+        onConfirm={() => {}}
         type="success"
       />
     </div>

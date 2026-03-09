@@ -208,6 +208,43 @@ class _MitraTebenganDetailPageState extends State<MitraTebenganDetailPage> {
     }
   }
 
+  // Refresh booking status after complete trip (untuk show rating screen)
+  Future<void> _refreshBookingStatus() async {
+    try {
+      final bookingId = await _resolveBookingId();
+      if (bookingId == null) return;
+
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('api_token');
+      if (token == null) return;
+
+      // Fetch updated booking data
+      final booking = await _trackingService.fetchBooking(
+        bookingId: bookingId,
+        token: token,
+      );
+
+      final status = (booking['status'] ?? '').toString().toLowerCase();
+
+      if (mounted) {
+        setState(() {
+          // Update status to trigger UI change to rating screen
+          if (widget.item['ride'] is Map) {
+            widget.item['ride']['status'] = status;
+          }
+          // Refresh rating check
+          _hasRating = false;
+          _isCheckingRating = true;
+        });
+
+        // Recheck rating status
+        await _checkExistingRating();
+      }
+    } catch (e) {
+      print('Error refreshing booking status: $e');
+    }
+  }
+
   void _startStatusRefreshTimer() {
     _statusRefreshTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       _refreshStatusFromServer();
@@ -1150,6 +1187,14 @@ class _MitraTebenganDetailPageState extends State<MitraTebenganDetailPage> {
       return QROnlyScreen(
         qrCodeData: BookingInfoHelper.getQRCodeData(widget.item),
         bookingNumber: BookingInfoHelper.getBookingNumber(widget.item),
+        destinationLocationId:
+            BookingInfoHelper.getDestinationLocationId(widget.item),
+        bookingType: _state.bookingType,
+        bookingId: BookingInfoHelper.getBookingId(widget.item) ?? 0,
+        onTripCompleted: () {
+          // Refresh booking status and show rating screen
+          _refreshBookingStatus();
+        },
       );
     }
 

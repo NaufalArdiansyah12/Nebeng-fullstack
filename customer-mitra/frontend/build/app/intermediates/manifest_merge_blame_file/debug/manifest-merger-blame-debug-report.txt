@@ -453,144 +453,169 @@
 266                android:value="androidx.camera.camera2.Camera2Config$DefaultProvider" />
 266-->[androidx.camera:camera-camera2:1.3.1] /home/naufal/.gradle/caches/transforms-3/a18a3f8a8c19182294fade5c1f560a3b/transformed/jetified-camera-camera2-1.3.1/AndroidManifest.xml:32:17-86
 267        </service>
-268        <service
-268-->[com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.0] /home/naufal/.gradle/caches/transforms-3/a4c7afb9742cd1487d76e9d4c4726f29/transformed/jetified-play-services-mlkit-barcode-scanning-18.3.0/AndroidManifest.xml:9:9-15:19
-269            android:name="com.google.mlkit.common.internal.MlKitComponentDiscoveryService"
-269-->[com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.0] /home/naufal/.gradle/caches/transforms-3/a4c7afb9742cd1487d76e9d4c4726f29/transformed/jetified-play-services-mlkit-barcode-scanning-18.3.0/AndroidManifest.xml:10:13-91
-270            android:directBootAware="true"
-270-->[com.google.mlkit:common:18.9.0] /home/naufal/.gradle/caches/transforms-3/0f179ec2148c6f0fabe375fa04a8db34/transformed/jetified-common-18.9.0/AndroidManifest.xml:17:13-43
-271            android:exported="false" >
-271-->[com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.0] /home/naufal/.gradle/caches/transforms-3/a4c7afb9742cd1487d76e9d4c4726f29/transformed/jetified-play-services-mlkit-barcode-scanning-18.3.0/AndroidManifest.xml:11:13-37
-272            <meta-data
-272-->[com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.0] /home/naufal/.gradle/caches/transforms-3/a4c7afb9742cd1487d76e9d4c4726f29/transformed/jetified-play-services-mlkit-barcode-scanning-18.3.0/AndroidManifest.xml:12:13-14:85
-273                android:name="com.google.firebase.components:com.google.mlkit.vision.barcode.internal.BarcodeRegistrar"
-273-->[com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.0] /home/naufal/.gradle/caches/transforms-3/a4c7afb9742cd1487d76e9d4c4726f29/transformed/jetified-play-services-mlkit-barcode-scanning-18.3.0/AndroidManifest.xml:13:17-120
-274                android:value="com.google.firebase.components.ComponentRegistrar" />
-274-->[com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.0] /home/naufal/.gradle/caches/transforms-3/a4c7afb9742cd1487d76e9d4c4726f29/transformed/jetified-play-services-mlkit-barcode-scanning-18.3.0/AndroidManifest.xml:14:17-82
-275            <meta-data
-275-->[com.google.mlkit:vision-common:17.3.0] /home/naufal/.gradle/caches/transforms-3/f60e6cb79ca49c83ed1396fa3723b380/transformed/jetified-vision-common-17.3.0/AndroidManifest.xml:12:13-14:85
-276                android:name="com.google.firebase.components:com.google.mlkit.vision.common.internal.VisionCommonRegistrar"
-276-->[com.google.mlkit:vision-common:17.3.0] /home/naufal/.gradle/caches/transforms-3/f60e6cb79ca49c83ed1396fa3723b380/transformed/jetified-vision-common-17.3.0/AndroidManifest.xml:13:17-124
-277                android:value="com.google.firebase.components.ComponentRegistrar" />
-277-->[com.google.mlkit:vision-common:17.3.0] /home/naufal/.gradle/caches/transforms-3/f60e6cb79ca49c83ed1396fa3723b380/transformed/jetified-vision-common-17.3.0/AndroidManifest.xml:14:17-82
-278            <meta-data
-278-->[com.google.mlkit:common:18.9.0] /home/naufal/.gradle/caches/transforms-3/0f179ec2148c6f0fabe375fa04a8db34/transformed/jetified-common-18.9.0/AndroidManifest.xml:20:13-22:85
-279                android:name="com.google.firebase.components:com.google.mlkit.common.internal.CommonComponentRegistrar"
-279-->[com.google.mlkit:common:18.9.0] /home/naufal/.gradle/caches/transforms-3/0f179ec2148c6f0fabe375fa04a8db34/transformed/jetified-common-18.9.0/AndroidManifest.xml:21:17-120
-280                android:value="com.google.firebase.components.ComponentRegistrar" />
-280-->[com.google.mlkit:common:18.9.0] /home/naufal/.gradle/caches/transforms-3/0f179ec2148c6f0fabe375fa04a8db34/transformed/jetified-common-18.9.0/AndroidManifest.xml:22:17-82
-281        </service>
-282
-283        <provider
-283-->[com.google.mlkit:common:18.9.0] /home/naufal/.gradle/caches/transforms-3/0f179ec2148c6f0fabe375fa04a8db34/transformed/jetified-common-18.9.0/AndroidManifest.xml:9:9-13:38
-284            android:name="com.google.mlkit.common.internal.MlKitInitProvider"
-284-->[com.google.mlkit:common:18.9.0] /home/naufal/.gradle/caches/transforms-3/0f179ec2148c6f0fabe375fa04a8db34/transformed/jetified-common-18.9.0/AndroidManifest.xml:10:13-78
-285            android:authorities="com.example.nebeng.mlkitinitprovider"
-285-->[com.google.mlkit:common:18.9.0] /home/naufal/.gradle/caches/transforms-3/0f179ec2148c6f0fabe375fa04a8db34/transformed/jetified-common-18.9.0/AndroidManifest.xml:11:13-69
-286            android:exported="false"
-286-->[com.google.mlkit:common:18.9.0] /home/naufal/.gradle/caches/transforms-3/0f179ec2148c6f0fabe375fa04a8db34/transformed/jetified-common-18.9.0/AndroidManifest.xml:12:13-37
-287            android:initOrder="99" />
-287-->[com.google.mlkit:common:18.9.0] /home/naufal/.gradle/caches/transforms-3/0f179ec2148c6f0fabe375fa04a8db34/transformed/jetified-common-18.9.0/AndroidManifest.xml:13:13-35
-288
-289        <activity
-289-->[com.google.android.gms:play-services-base:18.3.0] /home/naufal/.gradle/caches/transforms-3/25e78ba83c2029ea8b5d616749f280a1/transformed/jetified-play-services-base-18.3.0/AndroidManifest.xml:20:9-22:45
-290            android:name="com.google.android.gms.common.api.GoogleApiActivity"
-290-->[com.google.android.gms:play-services-base:18.3.0] /home/naufal/.gradle/caches/transforms-3/25e78ba83c2029ea8b5d616749f280a1/transformed/jetified-play-services-base-18.3.0/AndroidManifest.xml:20:19-85
-291            android:exported="false"
-291-->[com.google.android.gms:play-services-base:18.3.0] /home/naufal/.gradle/caches/transforms-3/25e78ba83c2029ea8b5d616749f280a1/transformed/jetified-play-services-base-18.3.0/AndroidManifest.xml:22:19-43
-292            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
-292-->[com.google.android.gms:play-services-base:18.3.0] /home/naufal/.gradle/caches/transforms-3/25e78ba83c2029ea8b5d616749f280a1/transformed/jetified-play-services-base-18.3.0/AndroidManifest.xml:21:19-78
-293
-294        <meta-data
-294-->[com.google.android.gms:play-services-basement:18.3.0] /home/naufal/.gradle/caches/transforms-3/65235f76a9e044798db35ae3ab34c640/transformed/jetified-play-services-basement-18.3.0/AndroidManifest.xml:21:9-23:69
-295            android:name="com.google.android.gms.version"
-295-->[com.google.android.gms:play-services-basement:18.3.0] /home/naufal/.gradle/caches/transforms-3/65235f76a9e044798db35ae3ab34c640/transformed/jetified-play-services-basement-18.3.0/AndroidManifest.xml:22:13-58
-296            android:value="@integer/google_play_services_version" />
-296-->[com.google.android.gms:play-services-basement:18.3.0] /home/naufal/.gradle/caches/transforms-3/65235f76a9e044798db35ae3ab34c640/transformed/jetified-play-services-basement-18.3.0/AndroidManifest.xml:23:13-66
+268
+269        <activity
+269-->[com.google.android.gms:play-services-auth:21.0.0] /home/naufal/.gradle/caches/transforms-3/393152d8d0c7b1c329ef070673c7299a/transformed/jetified-play-services-auth-21.0.0/AndroidManifest.xml:23:9-27:75
+270            android:name="com.google.android.gms.auth.api.signin.internal.SignInHubActivity"
+270-->[com.google.android.gms:play-services-auth:21.0.0] /home/naufal/.gradle/caches/transforms-3/393152d8d0c7b1c329ef070673c7299a/transformed/jetified-play-services-auth-21.0.0/AndroidManifest.xml:24:13-93
+271            android:excludeFromRecents="true"
+271-->[com.google.android.gms:play-services-auth:21.0.0] /home/naufal/.gradle/caches/transforms-3/393152d8d0c7b1c329ef070673c7299a/transformed/jetified-play-services-auth-21.0.0/AndroidManifest.xml:25:13-46
+272            android:exported="false"
+272-->[com.google.android.gms:play-services-auth:21.0.0] /home/naufal/.gradle/caches/transforms-3/393152d8d0c7b1c329ef070673c7299a/transformed/jetified-play-services-auth-21.0.0/AndroidManifest.xml:26:13-37
+273            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+273-->[com.google.android.gms:play-services-auth:21.0.0] /home/naufal/.gradle/caches/transforms-3/393152d8d0c7b1c329ef070673c7299a/transformed/jetified-play-services-auth-21.0.0/AndroidManifest.xml:27:13-72
+274        <!--
+275            Service handling Google Sign-In user revocation. For apps that do not integrate with
+276            Google Sign-In, this service will never be started.
+277        -->
+278        <service
+278-->[com.google.android.gms:play-services-auth:21.0.0] /home/naufal/.gradle/caches/transforms-3/393152d8d0c7b1c329ef070673c7299a/transformed/jetified-play-services-auth-21.0.0/AndroidManifest.xml:33:9-37:51
+279            android:name="com.google.android.gms.auth.api.signin.RevocationBoundService"
+279-->[com.google.android.gms:play-services-auth:21.0.0] /home/naufal/.gradle/caches/transforms-3/393152d8d0c7b1c329ef070673c7299a/transformed/jetified-play-services-auth-21.0.0/AndroidManifest.xml:34:13-89
+280            android:exported="true"
+280-->[com.google.android.gms:play-services-auth:21.0.0] /home/naufal/.gradle/caches/transforms-3/393152d8d0c7b1c329ef070673c7299a/transformed/jetified-play-services-auth-21.0.0/AndroidManifest.xml:35:13-36
+281            android:permission="com.google.android.gms.auth.api.signin.permission.REVOCATION_NOTIFICATION"
+281-->[com.google.android.gms:play-services-auth:21.0.0] /home/naufal/.gradle/caches/transforms-3/393152d8d0c7b1c329ef070673c7299a/transformed/jetified-play-services-auth-21.0.0/AndroidManifest.xml:36:13-107
+282            android:visibleToInstantApps="true" />
+282-->[com.google.android.gms:play-services-auth:21.0.0] /home/naufal/.gradle/caches/transforms-3/393152d8d0c7b1c329ef070673c7299a/transformed/jetified-play-services-auth-21.0.0/AndroidManifest.xml:37:13-48
+283        <service
+283-->[com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.0] /home/naufal/.gradle/caches/transforms-3/a4c7afb9742cd1487d76e9d4c4726f29/transformed/jetified-play-services-mlkit-barcode-scanning-18.3.0/AndroidManifest.xml:9:9-15:19
+284            android:name="com.google.mlkit.common.internal.MlKitComponentDiscoveryService"
+284-->[com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.0] /home/naufal/.gradle/caches/transforms-3/a4c7afb9742cd1487d76e9d4c4726f29/transformed/jetified-play-services-mlkit-barcode-scanning-18.3.0/AndroidManifest.xml:10:13-91
+285            android:directBootAware="true"
+285-->[com.google.mlkit:common:18.9.0] /home/naufal/.gradle/caches/transforms-3/0f179ec2148c6f0fabe375fa04a8db34/transformed/jetified-common-18.9.0/AndroidManifest.xml:17:13-43
+286            android:exported="false" >
+286-->[com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.0] /home/naufal/.gradle/caches/transforms-3/a4c7afb9742cd1487d76e9d4c4726f29/transformed/jetified-play-services-mlkit-barcode-scanning-18.3.0/AndroidManifest.xml:11:13-37
+287            <meta-data
+287-->[com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.0] /home/naufal/.gradle/caches/transforms-3/a4c7afb9742cd1487d76e9d4c4726f29/transformed/jetified-play-services-mlkit-barcode-scanning-18.3.0/AndroidManifest.xml:12:13-14:85
+288                android:name="com.google.firebase.components:com.google.mlkit.vision.barcode.internal.BarcodeRegistrar"
+288-->[com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.0] /home/naufal/.gradle/caches/transforms-3/a4c7afb9742cd1487d76e9d4c4726f29/transformed/jetified-play-services-mlkit-barcode-scanning-18.3.0/AndroidManifest.xml:13:17-120
+289                android:value="com.google.firebase.components.ComponentRegistrar" />
+289-->[com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.0] /home/naufal/.gradle/caches/transforms-3/a4c7afb9742cd1487d76e9d4c4726f29/transformed/jetified-play-services-mlkit-barcode-scanning-18.3.0/AndroidManifest.xml:14:17-82
+290            <meta-data
+290-->[com.google.mlkit:vision-common:17.3.0] /home/naufal/.gradle/caches/transforms-3/f60e6cb79ca49c83ed1396fa3723b380/transformed/jetified-vision-common-17.3.0/AndroidManifest.xml:12:13-14:85
+291                android:name="com.google.firebase.components:com.google.mlkit.vision.common.internal.VisionCommonRegistrar"
+291-->[com.google.mlkit:vision-common:17.3.0] /home/naufal/.gradle/caches/transforms-3/f60e6cb79ca49c83ed1396fa3723b380/transformed/jetified-vision-common-17.3.0/AndroidManifest.xml:13:17-124
+292                android:value="com.google.firebase.components.ComponentRegistrar" />
+292-->[com.google.mlkit:vision-common:17.3.0] /home/naufal/.gradle/caches/transforms-3/f60e6cb79ca49c83ed1396fa3723b380/transformed/jetified-vision-common-17.3.0/AndroidManifest.xml:14:17-82
+293            <meta-data
+293-->[com.google.mlkit:common:18.9.0] /home/naufal/.gradle/caches/transforms-3/0f179ec2148c6f0fabe375fa04a8db34/transformed/jetified-common-18.9.0/AndroidManifest.xml:20:13-22:85
+294                android:name="com.google.firebase.components:com.google.mlkit.common.internal.CommonComponentRegistrar"
+294-->[com.google.mlkit:common:18.9.0] /home/naufal/.gradle/caches/transforms-3/0f179ec2148c6f0fabe375fa04a8db34/transformed/jetified-common-18.9.0/AndroidManifest.xml:21:17-120
+295                android:value="com.google.firebase.components.ComponentRegistrar" />
+295-->[com.google.mlkit:common:18.9.0] /home/naufal/.gradle/caches/transforms-3/0f179ec2148c6f0fabe375fa04a8db34/transformed/jetified-common-18.9.0/AndroidManifest.xml:22:17-82
+296        </service>
 297
 298        <provider
-298-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:24:9-32:20
-299            android:name="androidx.startup.InitializationProvider"
-299-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:25:13-67
-300            android:authorities="com.example.nebeng.androidx-startup"
-300-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:26:13-68
-301            android:exported="false" >
-301-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:27:13-37
-302            <meta-data
-302-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:29:13-31:52
-303                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
-303-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:30:17-85
-304                android:value="androidx.startup" />
-304-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:31:17-49
-305        </provider>
-306
-307        <receiver
-307-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:34:9-52:20
-308            android:name="androidx.profileinstaller.ProfileInstallReceiver"
-308-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:35:13-76
-309            android:directBootAware="false"
-309-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:36:13-44
-310            android:enabled="true"
-310-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:37:13-35
-311            android:exported="true"
-311-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:38:13-36
-312            android:permission="android.permission.DUMP" >
-312-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:39:13-57
-313            <intent-filter>
-313-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:40:13-42:29
-314                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
-314-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:41:17-91
-314-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:41:25-88
-315            </intent-filter>
-316            <intent-filter>
-316-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:43:13-45:29
-317                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
-317-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:44:17-85
-317-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:44:25-82
-318            </intent-filter>
-319            <intent-filter>
-319-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:46:13-48:29
-320                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
-320-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:47:17-88
-320-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:47:25-85
-321            </intent-filter>
-322            <intent-filter>
-322-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:49:13-51:29
-323                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
-323-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:50:17-95
-323-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:50:25-92
-324            </intent-filter>
-325        </receiver>
-326
-327        <service
-327-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /home/naufal/.gradle/caches/transforms-3/58a1f2811a68c0ccfc1417b174c2ec39/transformed/jetified-transport-backend-cct-3.1.8/AndroidManifest.xml:28:9-34:19
-328            android:name="com.google.android.datatransport.runtime.backends.TransportBackendDiscovery"
-328-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /home/naufal/.gradle/caches/transforms-3/58a1f2811a68c0ccfc1417b174c2ec39/transformed/jetified-transport-backend-cct-3.1.8/AndroidManifest.xml:29:13-103
-329            android:exported="false" >
-329-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /home/naufal/.gradle/caches/transforms-3/58a1f2811a68c0ccfc1417b174c2ec39/transformed/jetified-transport-backend-cct-3.1.8/AndroidManifest.xml:30:13-37
-330            <meta-data
-330-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /home/naufal/.gradle/caches/transforms-3/58a1f2811a68c0ccfc1417b174c2ec39/transformed/jetified-transport-backend-cct-3.1.8/AndroidManifest.xml:31:13-33:39
-331                android:name="backend:com.google.android.datatransport.cct.CctBackendFactory"
-331-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /home/naufal/.gradle/caches/transforms-3/58a1f2811a68c0ccfc1417b174c2ec39/transformed/jetified-transport-backend-cct-3.1.8/AndroidManifest.xml:32:17-94
-332                android:value="cct" />
-332-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /home/naufal/.gradle/caches/transforms-3/58a1f2811a68c0ccfc1417b174c2ec39/transformed/jetified-transport-backend-cct-3.1.8/AndroidManifest.xml:33:17-36
-333        </service>
-334        <service
-334-->[com.google.android.datatransport:transport-runtime:3.1.8] /home/naufal/.gradle/caches/transforms-3/4acb10c9d7acba030f0e8300c0924341/transformed/jetified-transport-runtime-3.1.8/AndroidManifest.xml:26:9-30:19
-335            android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.JobInfoSchedulerService"
-335-->[com.google.android.datatransport:transport-runtime:3.1.8] /home/naufal/.gradle/caches/transforms-3/4acb10c9d7acba030f0e8300c0924341/transformed/jetified-transport-runtime-3.1.8/AndroidManifest.xml:27:13-117
-336            android:exported="false"
-336-->[com.google.android.datatransport:transport-runtime:3.1.8] /home/naufal/.gradle/caches/transforms-3/4acb10c9d7acba030f0e8300c0924341/transformed/jetified-transport-runtime-3.1.8/AndroidManifest.xml:28:13-37
-337            android:permission="android.permission.BIND_JOB_SERVICE" >
-337-->[com.google.android.datatransport:transport-runtime:3.1.8] /home/naufal/.gradle/caches/transforms-3/4acb10c9d7acba030f0e8300c0924341/transformed/jetified-transport-runtime-3.1.8/AndroidManifest.xml:29:13-69
-338        </service>
-339
-340        <receiver
-340-->[com.google.android.datatransport:transport-runtime:3.1.8] /home/naufal/.gradle/caches/transforms-3/4acb10c9d7acba030f0e8300c0924341/transformed/jetified-transport-runtime-3.1.8/AndroidManifest.xml:32:9-34:40
-341            android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.AlarmManagerSchedulerBroadcastReceiver"
-341-->[com.google.android.datatransport:transport-runtime:3.1.8] /home/naufal/.gradle/caches/transforms-3/4acb10c9d7acba030f0e8300c0924341/transformed/jetified-transport-runtime-3.1.8/AndroidManifest.xml:33:13-132
-342            android:exported="false" />
-342-->[com.google.android.datatransport:transport-runtime:3.1.8] /home/naufal/.gradle/caches/transforms-3/4acb10c9d7acba030f0e8300c0924341/transformed/jetified-transport-runtime-3.1.8/AndroidManifest.xml:34:13-37
-343    </application>
-344
-345</manifest>
+298-->[com.google.mlkit:common:18.9.0] /home/naufal/.gradle/caches/transforms-3/0f179ec2148c6f0fabe375fa04a8db34/transformed/jetified-common-18.9.0/AndroidManifest.xml:9:9-13:38
+299            android:name="com.google.mlkit.common.internal.MlKitInitProvider"
+299-->[com.google.mlkit:common:18.9.0] /home/naufal/.gradle/caches/transforms-3/0f179ec2148c6f0fabe375fa04a8db34/transformed/jetified-common-18.9.0/AndroidManifest.xml:10:13-78
+300            android:authorities="com.example.nebeng.mlkitinitprovider"
+300-->[com.google.mlkit:common:18.9.0] /home/naufal/.gradle/caches/transforms-3/0f179ec2148c6f0fabe375fa04a8db34/transformed/jetified-common-18.9.0/AndroidManifest.xml:11:13-69
+301            android:exported="false"
+301-->[com.google.mlkit:common:18.9.0] /home/naufal/.gradle/caches/transforms-3/0f179ec2148c6f0fabe375fa04a8db34/transformed/jetified-common-18.9.0/AndroidManifest.xml:12:13-37
+302            android:initOrder="99" />
+302-->[com.google.mlkit:common:18.9.0] /home/naufal/.gradle/caches/transforms-3/0f179ec2148c6f0fabe375fa04a8db34/transformed/jetified-common-18.9.0/AndroidManifest.xml:13:13-35
+303
+304        <activity
+304-->[com.google.android.gms:play-services-base:18.3.0] /home/naufal/.gradle/caches/transforms-3/25e78ba83c2029ea8b5d616749f280a1/transformed/jetified-play-services-base-18.3.0/AndroidManifest.xml:20:9-22:45
+305            android:name="com.google.android.gms.common.api.GoogleApiActivity"
+305-->[com.google.android.gms:play-services-base:18.3.0] /home/naufal/.gradle/caches/transforms-3/25e78ba83c2029ea8b5d616749f280a1/transformed/jetified-play-services-base-18.3.0/AndroidManifest.xml:20:19-85
+306            android:exported="false"
+306-->[com.google.android.gms:play-services-base:18.3.0] /home/naufal/.gradle/caches/transforms-3/25e78ba83c2029ea8b5d616749f280a1/transformed/jetified-play-services-base-18.3.0/AndroidManifest.xml:22:19-43
+307            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+307-->[com.google.android.gms:play-services-base:18.3.0] /home/naufal/.gradle/caches/transforms-3/25e78ba83c2029ea8b5d616749f280a1/transformed/jetified-play-services-base-18.3.0/AndroidManifest.xml:21:19-78
+308
+309        <meta-data
+309-->[com.google.android.gms:play-services-basement:18.3.0] /home/naufal/.gradle/caches/transforms-3/65235f76a9e044798db35ae3ab34c640/transformed/jetified-play-services-basement-18.3.0/AndroidManifest.xml:21:9-23:69
+310            android:name="com.google.android.gms.version"
+310-->[com.google.android.gms:play-services-basement:18.3.0] /home/naufal/.gradle/caches/transforms-3/65235f76a9e044798db35ae3ab34c640/transformed/jetified-play-services-basement-18.3.0/AndroidManifest.xml:22:13-58
+311            android:value="@integer/google_play_services_version" />
+311-->[com.google.android.gms:play-services-basement:18.3.0] /home/naufal/.gradle/caches/transforms-3/65235f76a9e044798db35ae3ab34c640/transformed/jetified-play-services-basement-18.3.0/AndroidManifest.xml:23:13-66
+312
+313        <provider
+313-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:24:9-32:20
+314            android:name="androidx.startup.InitializationProvider"
+314-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:25:13-67
+315            android:authorities="com.example.nebeng.androidx-startup"
+315-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:26:13-68
+316            android:exported="false" >
+316-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:27:13-37
+317            <meta-data
+317-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:29:13-31:52
+318                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+318-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:30:17-85
+319                android:value="androidx.startup" />
+319-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:31:17-49
+320        </provider>
+321
+322        <receiver
+322-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:34:9-52:20
+323            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+323-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:35:13-76
+324            android:directBootAware="false"
+324-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:36:13-44
+325            android:enabled="true"
+325-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:37:13-35
+326            android:exported="true"
+326-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:38:13-36
+327            android:permission="android.permission.DUMP" >
+327-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:39:13-57
+328            <intent-filter>
+328-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:40:13-42:29
+329                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+329-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:41:17-91
+329-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:41:25-88
+330            </intent-filter>
+331            <intent-filter>
+331-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:43:13-45:29
+332                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+332-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:44:17-85
+332-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:44:25-82
+333            </intent-filter>
+334            <intent-filter>
+334-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:46:13-48:29
+335                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+335-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:47:17-88
+335-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:47:25-85
+336            </intent-filter>
+337            <intent-filter>
+337-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:49:13-51:29
+338                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+338-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:50:17-95
+338-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/naufal/.gradle/caches/transforms-3/576c7cdc90ad2e5ebe652d2abd662b98/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:50:25-92
+339            </intent-filter>
+340        </receiver>
+341
+342        <service
+342-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /home/naufal/.gradle/caches/transforms-3/58a1f2811a68c0ccfc1417b174c2ec39/transformed/jetified-transport-backend-cct-3.1.8/AndroidManifest.xml:28:9-34:19
+343            android:name="com.google.android.datatransport.runtime.backends.TransportBackendDiscovery"
+343-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /home/naufal/.gradle/caches/transforms-3/58a1f2811a68c0ccfc1417b174c2ec39/transformed/jetified-transport-backend-cct-3.1.8/AndroidManifest.xml:29:13-103
+344            android:exported="false" >
+344-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /home/naufal/.gradle/caches/transforms-3/58a1f2811a68c0ccfc1417b174c2ec39/transformed/jetified-transport-backend-cct-3.1.8/AndroidManifest.xml:30:13-37
+345            <meta-data
+345-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /home/naufal/.gradle/caches/transforms-3/58a1f2811a68c0ccfc1417b174c2ec39/transformed/jetified-transport-backend-cct-3.1.8/AndroidManifest.xml:31:13-33:39
+346                android:name="backend:com.google.android.datatransport.cct.CctBackendFactory"
+346-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /home/naufal/.gradle/caches/transforms-3/58a1f2811a68c0ccfc1417b174c2ec39/transformed/jetified-transport-backend-cct-3.1.8/AndroidManifest.xml:32:17-94
+347                android:value="cct" />
+347-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /home/naufal/.gradle/caches/transforms-3/58a1f2811a68c0ccfc1417b174c2ec39/transformed/jetified-transport-backend-cct-3.1.8/AndroidManifest.xml:33:17-36
+348        </service>
+349        <service
+349-->[com.google.android.datatransport:transport-runtime:3.1.8] /home/naufal/.gradle/caches/transforms-3/4acb10c9d7acba030f0e8300c0924341/transformed/jetified-transport-runtime-3.1.8/AndroidManifest.xml:26:9-30:19
+350            android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.JobInfoSchedulerService"
+350-->[com.google.android.datatransport:transport-runtime:3.1.8] /home/naufal/.gradle/caches/transforms-3/4acb10c9d7acba030f0e8300c0924341/transformed/jetified-transport-runtime-3.1.8/AndroidManifest.xml:27:13-117
+351            android:exported="false"
+351-->[com.google.android.datatransport:transport-runtime:3.1.8] /home/naufal/.gradle/caches/transforms-3/4acb10c9d7acba030f0e8300c0924341/transformed/jetified-transport-runtime-3.1.8/AndroidManifest.xml:28:13-37
+352            android:permission="android.permission.BIND_JOB_SERVICE" >
+352-->[com.google.android.datatransport:transport-runtime:3.1.8] /home/naufal/.gradle/caches/transforms-3/4acb10c9d7acba030f0e8300c0924341/transformed/jetified-transport-runtime-3.1.8/AndroidManifest.xml:29:13-69
+353        </service>
+354
+355        <receiver
+355-->[com.google.android.datatransport:transport-runtime:3.1.8] /home/naufal/.gradle/caches/transforms-3/4acb10c9d7acba030f0e8300c0924341/transformed/jetified-transport-runtime-3.1.8/AndroidManifest.xml:32:9-34:40
+356            android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.AlarmManagerSchedulerBroadcastReceiver"
+356-->[com.google.android.datatransport:transport-runtime:3.1.8] /home/naufal/.gradle/caches/transforms-3/4acb10c9d7acba030f0e8300c0924341/transformed/jetified-transport-runtime-3.1.8/AndroidManifest.xml:33:13-132
+357            android:exported="false" />
+357-->[com.google.android.datatransport:transport-runtime:3.1.8] /home/naufal/.gradle/caches/transforms-3/4acb10c9d7acba030f0e8300c0924341/transformed/jetified-transport-runtime-3.1.8/AndroidManifest.xml:34:13-37
+358    </application>
+359
+360</manifest>

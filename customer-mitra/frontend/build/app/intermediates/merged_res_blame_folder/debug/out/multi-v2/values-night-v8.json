@@ -1,25 +1,25 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.nebeng.app-mergeDebugResources-31:/values-night-v8/values-night-v8.xml",
+            "outputFile": "com.example.nebeng.app-mergeDebugResources-33:/values-night-v8/values-night-v8.xml",
             "map": [
                 {
                     "source": "/home/naufal/project/nebeng-fullstack/customer-mitra/frontend/android/app/src/main/res/values-night/styles.xml",
                     "from": {
-                        "startLines": "3,17",
+                        "startLines": "3,18",
                         "startColumns": "4,4",
-                        "startOffsets": "172,1029",
-                        "endLines": "10,19",
+                        "startOffsets": "172,1088",
+                        "endLines": "11,20",
                         "endColumns": "12,12",
-                        "endOffsets": "687,1193"
+                        "endOffsets": "746,1252"
                     },
                     "to": {
-                        "startLines": "3,10",
+                        "startLines": "3,11",
                         "startColumns": "4,4",
-                        "startOffsets": "107,500",
-                        "endLines": "9,12",
+                        "startOffsets": "107,559",
+                        "endLines": "10,13",
                         "endColumns": "12,12",
-                        "endOffsets": "495,664"
+                        "endOffsets": "554,723"
                     }
                 },
                 {

@@ -50,7 +50,6 @@ class NotificationApiService {
         return 0;
       }
     } catch (e) {
-      print('Error getting unread count: $e');
       return 0;
     }
   }
@@ -71,7 +70,6 @@ class NotificationApiService {
 
       return response.statusCode == 200;
     } catch (e) {
-      print('Error marking notification as read: $e');
       return false;
     }
   }
@@ -89,7 +87,6 @@ class NotificationApiService {
 
       return response.statusCode == 200;
     } catch (e) {
-      print('Error marking all as read: $e');
       return false;
     }
   }
@@ -110,7 +107,6 @@ class NotificationApiService {
 
       return response.statusCode == 200;
     } catch (e) {
-      print('Error deleting notification: $e');
       return false;
     }
   }
@@ -128,7 +124,6 @@ class NotificationApiService {
 
       return response.statusCode == 200;
     } catch (e) {
-      print('Error clearing read notifications: $e');
       return false;
     }
   }

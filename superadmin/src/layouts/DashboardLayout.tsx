@@ -13,6 +13,12 @@ const pageTitles: Record<string, string> = {
   "/dashboard/refund": "Refund",
   "/dashboard/laporan": "Laporan",
   "/dashboard/pengaturan": "Pengaturan",
+  "/dashboard/banners": "Banner",
+  "/dashboard/reward/catalog": "Katalog Reward",
+  "/dashboard/manajemen-admin": "Manajemen Admin",
+  "/dashboard/pos-mitra": "Pos Mitra",
+  "/dashboard/pos-mitra-by-location": "Terminal",
+  "/dashboard/qr-bypass-settings": "Pengaturan QR Bypass",
 };
 
 const DashboardLayout = () => {

@@ -35,6 +35,9 @@ class User extends Authenticatable
         'balance',
         'pin',
         'reward_points',
+        'gender',
+        'google_id',
+        'google_avatar',
     ];
 
     /**

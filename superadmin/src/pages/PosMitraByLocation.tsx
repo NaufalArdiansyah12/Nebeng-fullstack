@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { MapPin, Users, ChevronDown, ChevronUp, Eye, Plus, X } from "lucide-react";
+import { MapPin, Users, ChevronDown, ChevronUp, Eye, Plus, Search } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -15,12 +16,12 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { locationsApi, posmitraUsersApi, posmitraApi } from "@/services/api";
+import MapPicker from "@/components/MapPicker";
 
 interface Location {
   id: number;
@@ -49,10 +50,13 @@ const PosMitraByLocation = () => {
     [key: number]: PosMitra[];
   }>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
   const [showAddPosMitraForm, setShowAddPosMitraForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAddLocationDialog, setShowAddLocationDialog] = useState(false);
   const [isSubmittingLocation, setIsSubmittingLocation] = useState(false);
+  const [markerLat, setMarkerLat] = useState<number | null>(null);
+  const [markerLng, setMarkerLng] = useState<number | null>(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -121,16 +125,16 @@ const PosMitraByLocation = () => {
     setExpandedLocation(expandedLocation === locationId ? null : locationId);
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case "approved":
-        return "bg-green-100 text-green-800";
-      case "pending":
-        return "bg-yellow-100 text-yellow-800";
+        return <Badge className="bg-green-500 hover:bg-green-600 text-white text-xs">Terverifikasi</Badge>;
       case "rejected":
-        return "bg-red-100 text-red-800";
+        return <Badge className="bg-red-500 hover:bg-red-600 text-white text-xs">Ditolak</Badge>;
+      case "pending":
+        return <Badge className="bg-yellow-500 hover:bg-yellow-600 text-white text-xs">Menunggu</Badge>;
       default:
-        return "bg-gray-100 text-gray-800";
+        return <Badge className="bg-gray-400 hover:bg-gray-500 text-white text-xs">Belum Ada</Badge>;
     }
   };
 
@@ -149,7 +153,6 @@ const PosMitraByLocation = () => {
   const handleAddLocation = async () => {
     // Validasi form
     if (!locationFormData.name || !locationFormData.city || !locationFormData.address) {
-      alert("Mohon lengkapi semua field yang required");
       return;
     }
 
@@ -163,8 +166,6 @@ const PosMitraByLocation = () => {
         longitude: locationFormData.longitude || null,
       } as any);
 
-      alert("Lokasi Terminal berhasil ditambahkan!");
-      
       // Reset form
       setLocationFormData({
         name: "",
@@ -179,7 +180,6 @@ const PosMitraByLocation = () => {
       loadData();
     } catch (error) {
       console.error("Error adding location:", error);
-      alert("Gagal menambahkan lokasi terminal");
     } finally {
       setIsSubmittingLocation(false);
     }
@@ -188,7 +188,6 @@ const PosMitraByLocation = () => {
   const handleAddPosMitra = async () => {
     // Validasi form
     if (!formData.name || !formData.email || !formData.phone || !formData.location_id) {
-      alert("Mohon lengkapi semua field yang required");
       return;
     }
 
@@ -216,8 +215,6 @@ const PosMitraByLocation = () => {
         status: "pending",
       } as any);
 
-      alert("Pos Mitra berhasil ditambahkan!");
-      
       // Reset form
       setFormData({
         name: "",
@@ -236,7 +233,6 @@ const PosMitraByLocation = () => {
       loadData();
     } catch (error) {
       console.error("Error adding posmitra:", error);
-      alert("Gagal menambahkan pos mitra. Pastikan data sudah benar.");
     } finally {
       setIsSubmitting(false);
     }
@@ -244,425 +240,285 @@ const PosMitraByLocation = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg text-gray-600">Loading...</div>
+      <div className="flex items-center justify-center py-16">
+        <p className="text-muted-foreground">Memuat data...</p>
       </div>
     );
   }
 
+  const filteredLocations = locations.filter((loc) =>
+    searchTerm === "" ||
+    loc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    loc.city.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
-    <div className="flex flex-col gap-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Pos Mitra by Terminal</h1>
-          <p className="text-gray-500 mt-2">
-            Kelola posmitra berdasarkan lokasi terminal
-          </p>
-        </div>
-        <div className="flex gap-3">
-          {/* Dialog Tambah Lokasi */}
-          <Dialog open={showAddLocationDialog} onOpenChange={setShowAddLocationDialog}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="gap-2 border-blue-600 text-blue-600 hover:bg-blue-50">
-                <Plus size={20} />
+    <div className="space-y-6">
+
+      {/* ── Modal: Tambah Terminal ── */}
+      <Dialog open={showAddLocationDialog} onOpenChange={(open) => {
+        setShowAddLocationDialog(open);
+        if (!open) {
+          setLocationFormData({ name: "", city: "", address: "", latitude: "", longitude: "" });
+          setMarkerLat(null);
+          setMarkerLng(null);
+        }
+      }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold text-[#1e3a5f]">Tambah Lokasi Terminal Baru</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Nama Terminal <span className="text-red-500">*</span></Label>
+              <Input placeholder="Contoh: Terminal Pusat Kota" value={locationFormData.name} onChange={(e) => handleLocationInputChange("name", e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Kota <span className="text-red-500">*</span></Label>
+              <Input placeholder="Contoh: Jakarta" value={locationFormData.city} onChange={(e) => handleLocationInputChange("city", e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Alamat <span className="text-red-500">*</span></Label>
+              <Input placeholder="Contoh: Jl. Sudirman No. 1" value={locationFormData.address} onChange={(e) => handleLocationInputChange("address", e.target.value)} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">Latitude</Label>
+                <Input
+                  placeholder="-6.2088"
+                  value={locationFormData.latitude}
+                  onChange={(e) => {
+                    handleLocationInputChange("latitude", e.target.value);
+                    const v = parseFloat(e.target.value);
+                    setMarkerLat(isNaN(v) ? null : v);
+                  }}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">Longitude</Label>
+                <Input
+                  placeholder="106.8270"
+                  value={locationFormData.longitude}
+                  onChange={(e) => {
+                    handleLocationInputChange("longitude", e.target.value);
+                    const v = parseFloat(e.target.value);
+                    setMarkerLng(isNaN(v) ? null : v);
+                  }}
+                />
+              </div>
+            </div>
+            {/* Map picker */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Tandai Lokasi di Peta</Label>
+              <p className="text-xs text-muted-foreground">Klik pada peta untuk menentukan koordinat secara visual</p>
+              <MapPicker
+                lat={markerLat}
+                lng={markerLng}
+                onChange={(lat, lng) => {
+                  setMarkerLat(lat);
+                  setMarkerLng(lng);
+                  handleLocationInputChange("latitude", lat.toFixed(6));
+                  handleLocationInputChange("longitude", lng.toFixed(6));
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowAddLocationDialog(false)} disabled={isSubmittingLocation}>Batal</Button>
+            <Button onClick={handleAddLocation} disabled={isSubmittingLocation} className="bg-[#1e3a5f] hover:bg-[#152a45]">
+              {isSubmittingLocation ? "Menyimpan..." : "Simpan Terminal"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Modal: Tambah Pos Mitra ── */}
+      <Dialog open={showAddPosMitraForm} onOpenChange={(open) => {
+        setShowAddPosMitraForm(open);
+        if (!open) setFormData({ name: "", email: "", phone: "", location_id: "", verifikasi_nama: "", jenis_kelamin: "", tanggal_lahir: "", nik: "", alamat: "" });
+      }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold text-[#1e3a5f]">Tambah Pos Mitra Baru</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Nama Lengkap <span className="text-red-500">*</span></Label>
+              <Input placeholder="Masukkan nama lengkap" value={formData.name} onChange={(e) => handleInputChange("name", e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Email <span className="text-red-500">*</span></Label>
+              <Input type="email" placeholder="Masukkan email" value={formData.email} onChange={(e) => handleInputChange("email", e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">No. Telepon <span className="text-red-500">*</span></Label>
+              <Input placeholder="Contoh: 08123456789" value={formData.phone} onChange={(e) => handleInputChange("phone", e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Lokasi Terminal <span className="text-red-500">*</span></Label>
+              <Select value={formData.location_id} onValueChange={(v) => handleInputChange("location_id", v)}>
+                <SelectTrigger><SelectValue placeholder="Pilih terminal" /></SelectTrigger>
+                <SelectContent>
+                  {locations.map((loc) => (
+                    <SelectItem key={loc.id} value={loc.id.toString()}>{loc.name} - {loc.city}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Nama di KTP</Label>
+              <Input placeholder="Sesuai KTP (kosongkan jika sama)" value={formData.verifikasi_nama} onChange={(e) => handleInputChange("verifikasi_nama", e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">NIK</Label>
+              <Input placeholder="16 digit NIK" maxLength={16} value={formData.nik} onChange={(e) => handleInputChange("nik", e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Jenis Kelamin</Label>
+              <Select value={formData.jenis_kelamin} onValueChange={(v) => handleInputChange("jenis_kelamin", v)}>
+                <SelectTrigger><SelectValue placeholder="Pilih jenis kelamin" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Laki - Laki">Laki - Laki</SelectItem>
+                  <SelectItem value="Perempuan">Perempuan</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Tanggal Lahir</Label>
+              <Input type="date" value={formData.tanggal_lahir} onChange={(e) => handleInputChange("tanggal_lahir", e.target.value)} />
+            </div>
+            <div className="space-y-1.5 md:col-span-2">
+              <Label className="text-sm font-medium">Alamat</Label>
+              <Input placeholder="Masukkan alamat lengkap" value={formData.alamat} onChange={(e) => handleInputChange("alamat", e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter className="gap-2 mt-2">
+            <Button variant="outline" onClick={() => setShowAddPosMitraForm(false)} disabled={isSubmitting}>Batal</Button>
+            <Button onClick={handleAddPosMitra} disabled={isSubmitting} className="bg-[#1e3a5f] hover:bg-[#152a45]">
+              {isSubmitting ? "Menyimpan..." : "Simpan Pos Mitra"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Main Card ── */}
+      <Card className="shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-xl font-semibold">Daftar Terminal &amp; Pos Mitra</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {/* Toolbar */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="relative w-72">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+              <Input
+                placeholder="Cari terminal atau kota..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 h-10 bg-background border-border"
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <Button variant="outline" className="gap-2 border-[#1e3a5f] text-[#1e3a5f] hover:bg-[#1e3a5f]/5" onClick={() => setShowAddLocationDialog(true)}>
+                <MapPin size={18} />
                 Tambah Terminal
               </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>Tambah Lokasi Terminal Baru</DialogTitle>
-                <DialogDescription>
-                  Masukkan informasi lokasi terminal baru
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                {/* Nama Terminal */}
-                <div>
-                  <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                    Nama Terminal *
-                  </Label>
-                  <Input
-                    placeholder="Contoh: Terminal Pusat Kota"
-                    value={locationFormData.name}
-                    onChange={(e) => handleLocationInputChange("name", e.target.value)}
-                    className="bg-white border-gray-300"
-                  />
-                </div>
-
-                {/* Kota */}
-                <div>
-                  <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                    Kota *
-                  </Label>
-                  <Input
-                    placeholder="Contoh: Jakarta"
-                    value={locationFormData.city}
-                    onChange={(e) => handleLocationInputChange("city", e.target.value)}
-                    className="bg-white border-gray-300"
-                  />
-                </div>
-
-                {/* Alamat */}
-                <div>
-                  <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                    Alamat *
-                  </Label>
-                  <Input
-                    placeholder="Contoh: Jl. Sudirman No. 1"
-                    value={locationFormData.address}
-                    onChange={(e) => handleLocationInputChange("address", e.target.value)}
-                    className="bg-white border-gray-300"
-                  />
-                </div>
-
-                {/* Latitude */}
-                <div>
-                  <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                    Latitude
-                  </Label>
-                  <Input
-                    placeholder="Contoh: -6.2088"
-                    value={locationFormData.latitude}
-                    onChange={(e) => handleLocationInputChange("latitude", e.target.value)}
-                    className="bg-white border-gray-300"
-                  />
-                </div>
-
-                {/* Longitude */}
-                <div>
-                  <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                    Longitude
-                  </Label>
-                  <Input
-                    placeholder="Contoh: 106.8270"
-                    value={locationFormData.longitude}
-                    onChange={(e) => handleLocationInputChange("longitude", e.target.value)}
-                    className="bg-white border-gray-300"
-                  />
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-3 mt-6">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowAddLocationDialog(false)}
-                  className="flex-1"
-                >
-                  Batal
-                </Button>
-                <Button
-                  onClick={handleAddLocation}
-                  disabled={isSubmittingLocation}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700"
-                >
-                  {isSubmittingLocation ? "Menyimpan..." : "Simpan Terminal"}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          {/* Button Tambah Pos Mitra */}
-          <Button
-            onClick={() => setShowAddPosMitraForm(!showAddPosMitraForm)}
-            className="gap-2 bg-blue-600 hover:bg-blue-700"
-          >
-            <Plus size={20} />
-            Tambah Pos Mitra
-          </Button>
-        </div>
-      </div>
-
-      {/* Add Pos Mitra Form */}
-      {showAddPosMitraForm && (
-        <Card className="border-2 border-blue-200 bg-blue-50">
-          <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <CardTitle>Tambah Pos Mitra Baru</CardTitle>
-            <button
-              onClick={() => setShowAddPosMitraForm(false)}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <X size={24} />
-            </button>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Nama Lengkap */}
-              <div>
-                <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Nama Lengkap *
-                </Label>
-                <Input
-                  placeholder="Masukkan nama lengkap"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange("name", e.target.value)}
-                  className="bg-white border-gray-300"
-                />
-              </div>
-
-              {/* Email */}
-              <div>
-                <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Email *
-                </Label>
-                <Input
-                  type="email"
-                  placeholder="Masukkan email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange("email", e.target.value)}
-                  className="bg-white border-gray-300"
-                />
-              </div>
-
-              {/* No. Telepon */}
-              <div>
-                <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                  No. Telepon *
-                </Label>
-                <Input
-                  placeholder="Masukkan nomor telepon"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange("phone", e.target.value)}
-                  className="bg-white border-gray-300"
-                />
-              </div>
-
-              {/* Lokasi Terminal */}
-              <div>
-                <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Lokasi Terminal *
-                </Label>
-                <Select value={formData.location_id} onValueChange={(value) => handleInputChange("location_id", value)}>
-                  <SelectTrigger className="bg-white border-gray-300">
-                    <SelectValue placeholder="Pilih terminal" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {locations.map((loc) => (
-                      <SelectItem key={loc.id} value={loc.id.toString()}>
-                        {loc.name} - {loc.city}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Nama di KTP */}
-              <div>
-                <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Nama di KTP
-                </Label>
-                <Input
-                  placeholder="Masukkan nama sesuai KTP"
-                  value={formData.verifikasi_nama}
-                  onChange={(e) => handleInputChange("verifikasi_nama", e.target.value)}
-                  className="bg-white border-gray-300"
-                />
-              </div>
-
-              {/* NIK */}
-              <div>
-                <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                  NIK
-                </Label>
-                <Input
-                  placeholder="Masukkan NIK"
-                  value={formData.nik}
-                  onChange={(e) => handleInputChange("nik", e.target.value)}
-                  className="bg-white border-gray-300"
-                />
-              </div>
-
-              {/* Jenis Kelamin */}
-              <div>
-                <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Jenis Kelamin
-                </Label>
-                <Select value={formData.jenis_kelamin} onValueChange={(value) => handleInputChange("jenis_kelamin", value)}>
-                  <SelectTrigger className="bg-white border-gray-300">
-                    <SelectValue placeholder="Pilih jenis kelamin" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Laki - Laki">Laki - Laki</SelectItem>
-                    <SelectItem value="Perempuan">Perempuan</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Tanggal Lahir */}
-              <div>
-                <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Tanggal Lahir
-                </Label>
-                <Input
-                  type="date"
-                  value={formData.tanggal_lahir}
-                  onChange={(e) => handleInputChange("tanggal_lahir", e.target.value)}
-                  className="bg-white border-gray-300"
-                />
-              </div>
-
-              {/* Alamat */}
-              <div className="md:col-span-2">
-                <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Alamat
-                </Label>
-                <Input
-                  placeholder="Masukkan alamat"
-                  value={formData.alamat}
-                  onChange={(e) => handleInputChange("alamat", e.target.value)}
-                  className="bg-white border-gray-300"
-                />
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-3 mt-6">
-              <Button
-                variant="outline"
-                onClick={() => setShowAddPosMitraForm(false)}
-                className="flex-1"
-              >
-                Batal
-              </Button>
-              <Button
-                onClick={handleAddPosMitra}
-                disabled={isSubmitting}
-                className="flex-1 bg-blue-600 hover:bg-blue-700"
-              >
-                {isSubmitting ? "Menyimpan..." : "Simpan Pos Mitra"}
+              <Button className="gap-2 bg-[#1e3a5f] hover:bg-[#152a45]" onClick={() => setShowAddPosMitraForm(true)}>
+                <Plus size={18} />
+                Tambah Pos Mitra
               </Button>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
 
-      {/* Locations List */}
-      <div className="space-y-4">
-        {locations.map((location) => {
-          const posmitraList = posMitraByLocation[location.id] || [];
-          const isExpanded = expandedLocation === location.id;
+          {/* Locations accordion */}
+          <div className="space-y-3">
+            {filteredLocations.length === 0 ? (
+              <div className="py-12 text-center text-muted-foreground">
+                <MapPin size={40} className="mx-auto mb-3 text-gray-300" />
+                <p>Tidak ada lokasi terminal tersedia</p>
+              </div>
+            ) : (
+              filteredLocations.map((location) => {
+                const posmitraList = posMitraByLocation[location.id] || [];
+                const isExpanded = expandedLocation === location.id;
 
-          return (
-            <Card key={location.id} className="overflow-hidden">
-              <div
-                onClick={() => toggleLocation(location.id)}
-                className="cursor-pointer hover:bg-gray-50"
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-4 flex-1">
-                      <MapPin className="w-6 h-6 text-blue-600 mt-1 flex-shrink-0" />
-                      <div className="flex-1">
-                        <CardTitle className="text-lg mb-2">
-                          {location.name}
-                        </CardTitle>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600">
-                          <div>
-                            <span className="font-medium">Kota:</span> {location.city}
-                          </div>
-                          <div>
-                            <span className="font-medium">Alamat:</span>{" "}
-                            {location.address}
-                          </div>
-                          <div>
-                            <span className="font-medium">Koordinat:</span>{" "}
-                            {location.latitude}, {location.longitude}
-                          </div>
+                return (
+                  <div key={location.id} className="border border-border rounded-lg overflow-hidden">
+                    {/* Location header row */}
+                    <div
+                      className="flex items-center justify-between px-5 py-4 bg-[#1e3a5f] text-white cursor-pointer hover:bg-[#172f4f] transition"
+                      onClick={() => toggleLocation(location.id)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <MapPin size={18} className="text-blue-300 flex-shrink-0" />
+                        <div>
+                          <p className="font-semibold text-sm">{location.name}</p>
+                          <p className="text-xs text-blue-200">{location.city} · {location.address}</p>
                         </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-full text-xs">
+                          <Users size={14} />
+                          <span>{posmitraList.length} Pos Mitra</span>
+                        </div>
+                        {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-4 flex-shrink-0">
-                      <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg">
-                        <Users size={18} className="text-blue-600" />
-                        <span className="font-bold text-blue-600">
-                          {posmitraList.length}
-                        </span>
-                      </div>
-                      <button className="text-gray-400 hover:text-gray-600 p-2">
-                        {isExpanded ? (
-                          <ChevronUp size={24} />
+                    {/* Expanded: inner table */}
+                    {isExpanded && (
+                      <div className="bg-background">
+                        {posmitraList.length > 0 ? (
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="bg-muted/50 border-b border-border">
+                                <th className="text-left py-3 px-5 font-medium text-muted-foreground">NO</th>
+                                <th className="text-left py-3 px-4 font-medium text-muted-foreground">NAMA</th>
+                                <th className="text-left py-3 px-4 font-medium text-muted-foreground">EMAIL</th>
+                                <th className="text-left py-3 px-4 font-medium text-muted-foreground">TELEPON</th>
+                                <th className="text-center py-3 px-4 font-medium text-muted-foreground">STATUS</th>
+                                <th className="text-center py-3 px-4 font-medium text-muted-foreground">AKSI</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {posmitraList.map((pos, index) => (
+                                <tr key={pos.id} className="border-b border-border/50 hover:bg-muted/30">
+                                  <td className="py-3 px-5">{index + 1}</td>
+                                  <td className="py-3 px-4 font-medium text-primary">{pos.name}</td>
+                                  <td className="py-3 px-4">{pos.email}</td>
+                                  <td className="py-3 px-4">{pos.phone}</td>
+                                  <td className="py-3 px-4 text-center">{getStatusBadge(pos.verifikasi_status)}</td>
+                                  <td className="py-3 px-4">
+                                    <div className="flex items-center justify-center">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 bg-[#1e3a5f] hover:bg-[#152a45]"
+                                        onClick={() => handleViewDetail(pos.id)}
+                                        title="Lihat Detail"
+                                      >
+                                        <Eye size={16} className="text-white" />
+                                      </Button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
                         ) : (
-                          <ChevronDown size={24} />
+                          <div className="py-8 text-center text-muted-foreground text-sm">
+                            Tidak ada pos mitra di terminal ini
+                          </div>
                         )}
-                      </button>
-                    </div>
+                      </div>
+                    )}
                   </div>
-                </CardHeader>
-              </div>
-
-              {/* Expanded Content */}
-              {isExpanded && (
-                <CardContent className="pt-0 border-t">
-                  {posmitraList.length > 0 ? (
-                    <div className="space-y-3 mt-4">
-                      {posmitraList.map((pos, index) => (
-                        <div
-                          key={pos.id}
-                          className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
-                        >
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3">
-                              <span className="text-sm font-medium text-gray-500 w-6">
-                                {index + 1}.
-                              </span>
-                              <div className="flex-1">
-                                <div className="font-medium text-gray-900">
-                                  {pos.name}
-                                </div>
-                                <div className="text-sm text-gray-600">
-                                  {pos.email}
-                                </div>
-                                <div className="text-sm text-gray-500">
-                                  {pos.phone}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-3">
-                            <span
-                              className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                                pos.verifikasi_status
-                              )}`}
-                            >
-                              {pos.verifikasi_status}
-                            </span>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleViewDetail(pos.id)}
-                              className="gap-2"
-                            >
-                              <Eye size={16} />
-                              Detail
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="py-8 text-center text-gray-500">
-                      <p>Tidak ada posmitra di lokasi ini</p>
-                    </div>
-                  )}
-                </CardContent>
-              )}
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Empty State */}
-      {locations.length === 0 && (
-        <Card>
-          <CardContent className="py-12 text-center text-gray-500">
-            <MapPin size={48} className="mx-auto mb-4 text-gray-400" />
-            <p>Tidak ada lokasi terminal tersedia</p>
-          </CardContent>
-        </Card>
-      )}
+                );
+              })
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

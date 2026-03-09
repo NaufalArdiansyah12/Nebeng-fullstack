@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+// Admin routes menggunakan prefix /api/admin
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/admin';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -59,10 +60,10 @@ api.interceptors.response.use(
 
 // Admin API
 export const adminApi = {
-  getProfile: () => api.get('/admin/profile'),
-  updateProfile: (data: any) => api.put('/admin/profile', data),
+  getProfile: () => api.get('/auth/profile'),
+  updateProfile: (data: any) => api.put('/auth/profile', data),
   // ✅ UPDATED: Hanya kirim newPassword (tidak perlu currentPassword)
-  updatePassword: (data: { newPassword: string }) => api.put('/admin/password', data),
+  updatePassword: (data: { newPassword: string }) => api.put('/auth/password', data),
 };
 
 // Customer API
@@ -266,11 +267,11 @@ export const rewardApi = {
 
 // Banners API
 export const bannersApi = {
-  getAll: () => api.get('/v1/banners'),
-  getById: (id: string) => api.get(`/v1/banners/${id}`),
-  create: (data: any) => api.post('/v1/banners', data),
-  update: (id: string, data: any) => api.put(`/v1/banners/${id}`, data),
-  delete: (id: string) => api.delete(`/v1/banners/${id}`),
+  getAll: () => api.get('/banners'),
+  getById: (id: string) => api.get(`/banners/${id}`),
+  create: (data: any) => api.post('/banners', data),
+  update: (id: string, data: any) => api.put(`/banners/${id}`, data),
+  delete: (id: string) => api.delete(`/banners/${id}`),
 };
 
 export default api;

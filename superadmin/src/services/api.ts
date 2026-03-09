@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+// Superadmin routes menggunakan prefix /api/superadmin
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/superadmin';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -158,7 +159,9 @@ export const mitraApi = {
   getKendaraanDetailById: (kendaraanId: string) => api.get(`/mitra/kendaraan/detail/${kendaraanId}`),
   addKendaraan: (id: string, data: any) => api.post(`/mitra/${id}/kendaraan`, data),
   updateKendaraan: (mitraId: string, kendaraanId: string, data: any) => api.put(`/mitra/${mitraId}/kendaraan/${kendaraanId}`, data),
-  deleteKendaraan: (mitraId: string, kendaraanId: string) => api.delete(`/mitra/${mitraId}/kendaraan/${kendaraanId}`),
+  deleteKendaraan: (kendaraanId: string) => api.delete(`/mitra/kendaraan/${kendaraanId}`),
+  approveKendaraan: (kendaraanId: string) => api.patch(`/mitra/kendaraan/${kendaraanId}/approve`),
+  rejectKendaraan: (kendaraanId: string) => api.patch(`/mitra/kendaraan/${kendaraanId}/reject`),
 };
 
 // Pesanan API
@@ -241,6 +244,39 @@ export const posmitraUsersApi = {
   create: (data: any) => api.post('/posmitra-users', data),
   update: (id: string, data: any) => api.put(`/posmitra-users/${id}`, data),
   delete: (id: string) => api.delete(`/posmitra-users/${id}`),
+};
+
+// Banners API
+export const bannersApi = {
+  getAll: () => api.get('/banners'),
+  getById: (id: string) => api.get(`/banners/${id}`),
+  create: (data: any) => api.post('/banners', data),
+  update: (id: string, data: any) => api.put(`/banners/${id}`, data),
+  delete: (id: string) => api.delete(`/banners/${id}`),
+};
+
+// Reward Catalog API
+export const rewardApi = {
+  // Catalog (rewards table)
+  getAllRewards: () => api.get('/reward/rewards/all'),
+  getRewardById: (id: string) => api.get(`/reward/rewards/${id}`),
+  createReward: (data: any) => api.post('/reward/rewards', data),
+  updateReward: (id: string, data: any) => api.put(`/reward/rewards/${id}`, data),
+  deleteReward: (id: string) => api.delete(`/reward/rewards/${id}`),
+  // Redemptions
+  getAllRedemptions: () => api.get('/reward'),
+  getRedemptionById: (id: string) => api.get(`/reward/${id}`),
+  updateRedemptionStatus: (id: string, status: string) => api.patch(`/reward/${id}/status`, { status }),
+};
+
+// Manajemen Admin API
+export const managemenAdminApi = {
+  getAll: () => api.get('/admin/list'),
+  getById: (id: string) => api.get(`/admin/list/${id}`),
+  create: (data: any) => api.post('/admin/list', data),
+  update: (id: string, data: any) => api.put(`/admin/list/${id}`, data),
+  delete: (id: string) => api.delete(`/admin/list/${id}`),
+  resetPassword: (id: string, data: { newPassword: string }) => api.put(`/admin/list/${id}/password`, data),
 };
 
 export default api;
